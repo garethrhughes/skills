@@ -174,6 +174,41 @@ Use the decision-log skill to log the decision made in the last conversation.
 Use the dev-workflow skill to walk through the full feature cycle for this task.
 ```
 
+```
+Use the project-bootstrap skill to set up this project.
+```
+
+```
+Use the project-onboard skill to onboard this existing codebase.
+```
+
+### project-bootstrap
+
+Run this skill once when starting a **new project**. It walks through a structured interview
+covering app stack, infrastructure, observability, security/compliance, and domain decisions.
+Accept the opinionated defaults by saying "yes" or "default" at any phase, or provide your own
+values. At the end it produces:
+
+- A fully populated `CLAUDE.md` in the project root
+- A `## Project Context` block automatically inserted into each skill in `.opencode/skills/`
+
+```
+Use the project-bootstrap skill to set up this project.
+```
+
+### project-onboard
+
+Run this skill once when **adopting an existing codebase**. Instead of interviewing you from
+scratch, it reads the repo first — package files, config, IaC, CI/CD — and only asks you for
+what the code cannot answer. At the end it produces the same outputs as `project-bootstrap`:
+
+- A fully populated `CLAUDE.md` in the project root
+- A `## Project Context` block automatically inserted into each skill in `.opencode/skills/`
+
+```
+Use the project-onboard skill to onboard this existing codebase.
+```
+
 ## Customisation
 
 Each skill contains a `## Project Context` section near the top. This section is intentionally
