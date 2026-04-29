@@ -63,10 +63,19 @@ git clone https://github.com/garethrhughes/skills .opencode/skills
 
 Open OpenCode from your project root and check that the skills appear in the skill tool.
 
-**3. Customise for the project**
+**3. Configure the project context**
 
-With skills committed to the repo, you can edit the `## Project Context` section of each
-SKILL.md directly — changes are tracked in version control alongside your code.
+Run the `project-bootstrap` skill to interactively configure your project. It will ask
+structured questions about your stack, infrastructure, observability, and security posture,
+then produce a complete `CLAUDE.md` and populate the `## Project Context` block in each
+skill automatically.
+
+```
+Use the project-bootstrap skill to set up this project.
+```
+
+Alternatively, edit the `## Project Context` section of each SKILL.md directly — changes
+are tracked in version control alongside your code.
 
 ---
 
@@ -75,6 +84,66 @@ SKILL.md directly — changes are tracked in version control alongside your code
 Keep the global symlink for the base skills and copy only the skills you want to override
 into `.opencode/skills/` in a specific project. OpenCode will prefer the project-local
 version when both exist.
+
+## Use with other AI tools
+
+The skill content is plain Markdown and works anywhere you can provide a system prompt.
+Two helper scripts handle the mechanical parts of installing skills as agents for other tools.
+
+---
+
+### GitHub Copilot agents
+
+Symlinks each skill into `.github/agents/` in your project root. Copilot picks up `.md`
+files in that directory as custom agents automatically.
+
+```bash
+# From your project root
+bash path/to/skills/scripts/install-copilot-agents.sh
+
+# Or if skills are global:
+bash ~/.config/opencode/skills/scripts/install-copilot-agents.sh
+```
+
+Re-run whenever skills change — symlinks always point at the latest content.
+
+> **Note:** The `compatibility: opencode` and `permission:` frontmatter blocks are
+> ignored by Copilot. The `infosec` skill's read-only intent is advisory; Copilot has
+> no runtime enforcement equivalent.
+
+---
+
+### Claude Code subagents
+
+Generates a `.claude/agents/<skill-name>.md` file for each skill. Unlike the Copilot
+script, this one transforms the content rather than symlinking, because Claude Code uses
+different frontmatter fields (`tools`, `description`) and some skills need tool
+restrictions baked in (e.g. `infosec` is restricted to read-only tools).
+
+```bash
+# From your project root
+bash path/to/skills/scripts/install-claude-agents.sh
+
+# Or if skills are global:
+bash ~/.config/opencode/skills/scripts/install-claude-agents.sh
+```
+
+Re-run whenever skills change to regenerate the agent files from the latest skill content.
+
+The script applies these tool restrictions automatically:
+
+| Agent | Tools |
+|---|---|
+| `infosec` | `Read, Grep, Glob, WebFetch` — read-only, never edits |
+| `reviewer` | `Read, Grep, Glob, Bash` |
+| `architect` | `Read, Grep, Glob, Write, Edit, WebFetch` |
+| `decision-log` | `Read, Grep, Glob, Write, Edit` |
+| `developer`, `dev-workflow`, `project-bootstrap` | All tools |
+
+Commit `.claude/agents/` to version control so your whole team shares the same agents.
+Claude Code loads them automatically at session start.
+
+---
 
 ## Usage
 
