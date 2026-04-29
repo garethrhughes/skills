@@ -57,7 +57,7 @@ shares the same definitions.
 cp -r ~/Documents/skills .opencode/skills
 
 # Or, if you haven't cloned the repo yet:
-git clone https://github.com/garethrhughes/skills .opencode/skills
+git clone --depth 1 https://github.com/garethrhughes/skills .opencode/skills && rm -rf .opencode/skills/.git
 ```
 
 **2. Verify**
