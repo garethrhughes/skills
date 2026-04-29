@@ -448,15 +448,42 @@ This should be a dense, scannable summary — not the full CLAUDE.md.
 
 ## After Output
 
+### Step 1 — Detect local skills
+
+Before telling the user what to do, check whether skills are local to the project:
+
+- Look for `.opencode/skills/` in the project root
+- If it exists, list which SKILL.md files are present
+
+### Step 2 — Insert Project Context into local skills
+
+If `.opencode/skills/` exists:
+
+For each SKILL.md found, replace the `## Project Context` placeholder block — the block
+that begins with the `> Fill in before use:` blockquote and ends at the `---` rule that
+follows it — with the generated Project Context block from Output 2. Do this for every
+skill file present.
+
+Confirm to the user which files were updated, e.g.:
+> "Updated Project Context in: architect, developer, reviewer, infosec, dev-workflow"
+
+If `.opencode/skills/` does not exist, tell the user:
+
+> "Skills are not local to this project. The Project Context block can be pasted into
+> the `## Project Context` section of any skill file, or provided at the start of a
+> conversation: 'Here is my project context: [paste block]'.
+>
+> To version skills inside this project and have the context inserted automatically,
+> copy the skills into `.opencode/skills/` — see the skills README for instructions."
+
+### Step 3 — Finish
+
 Tell the user:
 
 > "Your CLAUDE.md is ready to commit to the root of your repository.
-> The Project Context block can be pasted into the `## Project Context` section
-> of any skill file, or shared at the start of a conversation: 'Here is my project
-> context: [paste block]'.
 >
 > Suggested next steps:
-> 1. Commit `CLAUDE.md` to your repo root
+> 1. Commit `CLAUDE.md` and any updated skill files to version control
 > 2. Scaffold `infra/modules/`, `infra/envs/{dev,staging,prod}/`, `docs/proposals/`,
 >    and `docs/decisions/` directories
 > 3. If you have existing architectural decisions, run: `use the decision-log skill to seed the initial ADRs`
