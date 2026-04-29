@@ -53,11 +53,10 @@ shares the same definitions.
 
 ```bash
 # From your project root
-cp -r ~/Documents/skills ./.opencode/skills
+cp -r ~/Documents/skills .opencode/skills
 
 # Or, if you haven't cloned the repo yet:
-git clone https://github.com/garethrhughes/skills /tmp/skills
-cp -r /tmp/skills ./.opencode/skills
+git clone https://github.com/garethrhughes/skills .opencode/skills
 ```
 
 **2. Verify**
