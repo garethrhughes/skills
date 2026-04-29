@@ -8,18 +8,18 @@ Reusable OpenCode skills for structured software development with AI agents.
 |---|---|
 | [architect](architect/SKILL.md) | Drives technical design decisions, writes proposals before significant changes, and maintains the proposal index |
 | [developer](developer/SKILL.md) | Writes production-quality TypeScript following TDD (red-green-refactor) and project conventions |
-| [reviewer](reviewer/SKILL.md) | Reviews staged changes for security, correctness, performance, and convention adherence; returns a PASS / PASS WITH COMMENTS / BLOCK verdict |
+| [reviewer](reviewer/SKILL.md) | Reviews staged changes for security, correctness, performance, IaC safety, observability, and convention adherence; returns a PASS / PASS WITH COMMENTS / BLOCK verdict with Acceptance Criteria traceability |
+| [infosec](infosec/SKILL.md) | Read-only security and compliance audit (ISO27001-aligned by default). Audits encryption, access control, audit logging, secrets, IAM, network exposure, and supply chain. Returns APPROVED / REQUIRES CHANGES / APPROVED WITH EXCEPTION |
 | [decision-log](decision-log/SKILL.md) | Captures and maintains architectural decisions (ADRs) in `docs/decisions/` with a running index |
-| [dev-workflow](dev-workflow/SKILL.md) | Full feature development cycle: proposal → implementation → review → decision logging → PR |
+| [dev-workflow](dev-workflow/SKILL.md) | Full feature development cycle: proposal → implementation → review → infosec sign-off → decision logging → PR |
+| [project-bootstrap](project-bootstrap/SKILL.md) | Interactive bootstrap that asks a structured set of questions (app stack, IaC, observability, security/compliance, domain) and produces a complete CLAUDE.md and Project Context block |
 
 ## Setup
 
 ### 1. Clone the repository
 
-Replace `<url>` with the HTTPS or SSH URL of this repository (find it on the GitHub repository page).
-
 ```bash
-git clone <url> ~/Documents/skills
+git clone https://github.com/garethrhughes/skills ~/Documents/skills
 ```
 
 ### 2. Symlink for global OpenCode access
@@ -31,7 +31,7 @@ ln -s ~/Documents/skills ~/.config/opencode/skills
 ### 3. Verify
 
 Open OpenCode and check that the skills appear in the skill tool. You should see `architect`,
-`developer`, `reviewer`, `decision-log`, and `dev-workflow` listed.
+`developer`, `reviewer`, `infosec`, `decision-log`, `dev-workflow`, and `project-bootstrap` listed.
 
 ## Usage
 
@@ -47,6 +47,10 @@ Use the developer skill to implement the feature described in proposal 0042.
 
 ```
 Use the reviewer skill to review the staged changes in this branch.
+```
+
+```
+Use the infosec skill to audit this PR for ISO27001 compliance and security issues.
 ```
 
 ```
