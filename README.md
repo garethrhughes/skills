@@ -13,6 +13,7 @@ Reusable OpenCode skills for structured software development with AI agents.
 | [decision-log](decision-log/SKILL.md) | Captures and maintains architectural decisions (ADRs) in `docs/decisions/` with a running index |
 | [dev-workflow](dev-workflow/SKILL.md) | Full feature development cycle: proposal → implementation → review → infosec sign-off → decision logging → PR |
 | [project-bootstrap](project-bootstrap/SKILL.md) | Interactive bootstrap that asks a structured set of questions (app stack, IaC, observability, security/compliance, domain) and produces a complete CLAUDE.md and Project Context block |
+| [project-onboard](project-onboard/SKILL.md) | Interactive onboarding for an existing codebase — investigates the repo to fill in CLAUDE.md and the Project Context block, asking the user only what the code can't answer |
 
 ## Setup
 
