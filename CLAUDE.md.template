@@ -1,0 +1,144 @@
+# CLAUDE.md — [Project Name]
+
+## Project Overview
+
+[Short description: what does this system do, who uses it, what problem does it solve?]
+
+---
+
+## Tech Stack
+
+### Backend
+| Concern | Choice |
+|---|---|
+| Framework | [fill in] |
+| Language | [fill in] |
+| ORM / Data layer | [fill in] |
+| Auth | [fill in] |
+| API Docs | [fill in] |
+| Testing | [fill in] |
+| Migrations | [fill in] |
+
+### Frontend
+| Concern | Choice |
+|---|---|
+| Framework | [fill in] |
+| Language | [fill in] |
+| Styling | [fill in] |
+| State | [fill in] |
+| Testing | [fill in] |
+| HTTP | [fill in] |
+
+### Infrastructure
+| Concern | Choice |
+|---|---|
+| Database | [fill in] |
+| Task Automation | [fill in] |
+| Config | [fill in] |
+
+---
+
+## Repository Structure
+
+```
+/
+├── apps/
+│   ├── api/
+│   │   └── src/
+│   │       ├── app.module.ts
+│   │       ├── main.ts
+│   │       ├── config/
+│   │       ├── auth/
+│   │       ├── [domain-module]/
+│   │       ├── database/       # entities, migrations, seeds
+│   │       └── common/         # guards, decorators, interceptors
+│   └── web/
+│       ├── app/
+│       │   ├── layout.tsx
+│       │   ├── page.tsx
+│       │   └── [feature]/page.tsx
+│       ├── components/
+│       │   ├── charts/
+│       │   ├── layout/
+│       │   └── ui/
+│       ├── store/
+│       └── lib/
+├── docs/
+│   ├── proposals/
+│   │   └── README.md
+│   └── decisions/
+│       └── README.md
+├── docker-compose.yml
+├── Makefile
+└── .env.example
+```
+
+---
+
+## Architecture Rules
+
+### Backend
+- One module per feature domain — no cross-domain imports except through explicit interfaces
+- Controllers are thin — all business logic lives in services
+- All calls to external APIs go through a single typed client — never call external APIs directly from domain services
+- Environment config via `ConfigService` only — never `process.env` directly
+- No hardcoded external URLs, IDs, or credentials — always from config
+- No N+1 queries — related data fetched in bulk
+- All unbounded queries require a `where` clause or explicit pagination
+
+### Frontend
+- All API calls through a single typed wrapper in `lib/api.ts`
+- State stores in `store/` — one file per concern; mutations only via defined actions
+- No logic in page components — delegate to services or custom hooks
+- Components with large data tables must use `useMemo` for derived calculations
+
+### TypeScript
+- Strict mode throughout — no `any`, no implicit returns
+
+---
+
+## Security Rules (hard blocks)
+
+- No credentials, tokens, or secrets committed in any file
+- `process.env` must not be accessed outside the config service
+- All controller endpoints require an auth guard, except explicitly public routes (e.g. health check, API docs)
+- No SQL built via string interpolation — use parameterised queries or ORM query builders
+- No hardcoded external service URLs or resource IDs in source code
+
+---
+
+## Testing Requirements
+
+### Backend
+- Unit tests for all service methods — mock external clients and ORM repositories
+- Do not test controllers directly — test services
+- Integration tests for critical API endpoints using a mock or test database
+
+### Frontend
+- Unit tests for all significant components
+- Unit tests for state stores in isolation
+- No logic under test should hit a real network
+
+---
+
+## Design & Proposal Workflow
+
+Write a proposal in `docs/proposals/NNNN-short-kebab-case-title.md` before implementing any:
+- New module, service, or significant component
+- Module boundary or data flow change
+- New external API integration point
+- Schema change affecting more than one entity
+- Cross-cutting concern (caching, error handling strategy, etc.)
+
+When a proposal is accepted, create the corresponding ADR in `docs/decisions/NNNN-title.md`
+and update the proposal status to `Accepted`.
+
+See the `architect` and `decision-log` skills for the exact proposal and ADR formats.
+
+---
+
+## Settled Decisions (do not revisit without a superseding ADR)
+
+| # | Decision |
+|---|---|
+| — | *(add ADR entries here as decisions are made)* |
