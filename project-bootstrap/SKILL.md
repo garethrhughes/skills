@@ -29,13 +29,20 @@ Before asking any questions, tell the user:
 > "I'll ask you a series of short questions to bootstrap your project's CLAUDE.md
 > and skill context block. There are 6 phases. Answer as much or as little as you
 > know — I'll mark anything unknown as `[TBD]` and you can fill it in later.
+>
+> For most questions I'll show a **default** in bold brackets — this is the approach
+> used in the reference stack (NestJS 11 + TypeScript / Next.js 16 App Router /
+> PostgreSQL + TypeORM / Docker Compose / AWS ECS Fargate). To accept a default,
+> just say **'yes'**, **'default'**, or press Enter. Override it by giving a different answer.
+>
 > Let's start."
 
 ---
 
 ## Phase 1 — Project Identity
 
-Ask the following. All are required (use `[TBD]` if the user doesn't know yet):
+Ask the following. All are required (use `[TBD]` if the user doesn't know yet).
+There are no defaults for this phase — every answer is project-specific.
 
 | # | Question | CLAUDE.md field |
 |---|---|---|
@@ -52,25 +59,25 @@ After receiving answers, reflect back: "Got it — [name]: [one-line summary]. M
 Ask about each concern in turn. Group them into three rounds to keep it conversational.
 
 **Round A — Backend (ask as one message):**
-- What backend framework and language? (e.g. NestJS + TypeScript, Django + Python, Express + TypeScript)
-- What database and ORM/data layer? (e.g. PostgreSQL + TypeORM, MongoDB + Mongoose, none)
-- How is authentication handled? (e.g. API key header, JWT, OAuth2, none)
-- Are there API docs? (e.g. Swagger/OpenAPI, none)
-- What is the backend testing framework? (e.g. Jest, pytest, Vitest)
-- How are schema migrations managed? (e.g. TypeORM CLI, Alembic, Flyway, none)
+- What backend framework and language? [**NestJS 11 + TypeScript strict mode**]
+- What database and ORM/data layer? [**PostgreSQL 16 + TypeORM** (CLI migrations)]
+- How is authentication handled? [**None at application level — CORS as sole access control**]
+- Are there API docs? [**Swagger via `@nestjs/swagger`** — served at `/api-docs`, unguarded]
+- What is the backend testing framework? [**Jest + Supertest**]
+- How are schema migrations managed? [**TypeORM CLI** — `npm run migration:run`; migrations must implement both `up()` and `down()`]
 
 **Round B — Frontend (ask as one message, or skip if backend-only):**
-- Is there a frontend? If yes: what framework? (e.g. Next.js App Router, React + Vite, Vue 3, none)
-- Styling approach? (e.g. Tailwind CSS v4, CSS Modules, styled-components)
-- State management? (e.g. Zustand, Redux, React Query, none)
-- Frontend testing framework? (e.g. Vitest + RTL, Jest + Enzyme, Playwright)
-- How does the frontend call the backend? (e.g. typed fetch wrapper in lib/api.ts, tRPC, REST via axios)
+- Is there a frontend? If yes: what framework? [**Next.js 16 (App Router) + React 19**]
+- Styling approach? [**Tailwind CSS v4 — CSS-first config via `@theme` in `globals.css`; no `tailwind.config.js`**]
+- State management? [**Zustand** — one store file per concern in `store/`]
+- Frontend testing framework? [**Vitest + React Testing Library**]
+- How does the frontend call the backend? [**Typed `fetch` wrappers in `lib/api.ts`** — no direct fetch calls outside this file]
 
 **Round C — Infrastructure (ask as one message):**
-- How is the local dev environment set up? (e.g. Docker Compose, local install, devcontainer)
-- Where does it deploy? (e.g. AWS ECS, Vercel + Railway, Heroku, on-prem)
-- How is config/env managed? (e.g. .env files + dotenv, AWS Secrets Manager, Vault)
-- Is there a task runner? (e.g. Makefile, npm scripts, Taskfile)
+- How is the local dev environment set up? [**Docker Compose** — PostgreSQL 16, database `ai_starter`, port 5432]
+- Where does it deploy? [**AWS ECS Fargate** — behind CloudFront + WAF IP allowlist; ECR for images]
+- How is config/env managed? [**`.env` files** (never committed); `.env.example` provided; backend reads via NestJS `ConfigService` only]
+- Is there a task runner? [**Makefile** — targets: `up`, `down`, `migrate`, `dev-api`, `dev-web`, `test-api`, `test-web`, `deploy`]
 
 After all three rounds, print a confirmation table:
 
@@ -88,11 +95,13 @@ Ask: "Does this look right? Any corrections?"
 
 ## Phase 3 — Repository Structure
 
+Defaults (shown in brackets) are based on the reference stack.
+
 Ask:
-- Is this a monorepo or a single-app repo?
-- What are the top-level directories? (e.g. apps/api, apps/web, backend, frontend, infra, packages)
-- For each main app directory: what is the internal module/folder structure? (high level — e.g. "backend has modules: auth, users, orders, each with controller + service + entity")
-- Where do docs, proposals, and ADRs live? (default: `docs/proposals/` and `docs/decisions/` — confirm or override)
+- Is this a monorepo or a single-app repo? [**Monorepo**]
+- What are the top-level directories? [**`backend/`, `frontend/`, `infra/terraform/`, `docs/`, `scripts/`** — plus `apps/` for any auxiliary services (e.g. MCP server)]
+- For each main app directory: what is the internal module/folder structure? [**Backend: one NestJS module per feature domain, each containing `*.controller.ts`, `*.service.ts`, `*.module.ts`, and `dto/`. Shared: `database/entities/`, `database/migrations/`, `config/`, `common/`. Frontend: `app/` (App Router pages), `components/ui/`, `components/layout/`, `store/`, `lib/`, `hooks/`**]
+- Where do docs, proposals, and ADRs live? [**`docs/proposals/` and `docs/decisions/`** — confirm or override]
 
 Use the answers to build a file tree. If the user doesn't know the exact structure yet,
 produce a skeleton with `[fill in]` placeholders for the module names.
@@ -101,14 +110,16 @@ produce a skeleton with `[fill in]` placeholders for the module names.
 
 ## Phase 4 — Architecture Rules & Conventions
 
+Defaults (shown in brackets) are based on the reference stack.
 Ask as a single message — the user can answer briefly for each:
 
-- Are controllers thin (logic in services)? Or is there another pattern in use?
-- Is there a single typed client for all calls to external APIs/services? What is it called and where does it live?
-- How is environment config accessed? (confirm: ConfigService / settings module / direct process.env)
-- Are there any hard rules around queries? (e.g. no N+1, all queries paginated, no unbounded scans)
-- Any frontend-specific rules? (e.g. no logic in page components, memoisation requirements)
-- Any TypeScript strictness rules? (e.g. strict mode, no `any`, no implicit returns)
+- Are controllers thin (logic in services)? [**Yes — controllers are thin; all business logic lives in services**]
+- Is there a single typed client for all calls to external APIs/services? What is it called and where does it live? [**Yes — a single `[ServiceName]ClientService` in its own module; domain services never call external APIs directly**]
+- How is environment config accessed? [**NestJS `ConfigService` only — `process.env` must never be accessed outside of config module setup**]
+- Are there any hard rules around queries? [**No N+1 queries — related data fetched in bulk. All `find()` calls on large tables require a `where` clause or explicit pagination**]
+- Any frontend-specific rules? [**No logic in page components — delegate to services or custom hooks. All API calls through `lib/api.ts`. No direct state mutation outside Zustand store actions**]
+- Any TypeScript strictness rules? [**Strict mode throughout — no `any`, no implicit returns**]
+- Any rate-limiting rules? [**`@nestjs/throttler` applied globally — 100 req/min/IP** (adjust limit as needed)]
 - Any other architectural rules specific to this project?
 
 Tell the user: "These become the '## Architecture Rules' section of your CLAUDE.md.
@@ -118,31 +129,42 @@ I'll include the standard defaults and add your project-specific ones."
 
 ## Phase 5 — Security & External Integrations
 
+Defaults (shown in brackets) are based on the reference stack.
+
 Ask:
 - Are there external APIs or third-party services this project integrates with?
   For each: name, what it's used for, and any rate-limiting or auth constraints.
-- What are the security-sensitive areas? (e.g. payment data, PII, internal only vs public)
-- Any specific security rules beyond the standard set? (no secrets in code, no SQL interpolation, etc.)
-- Are there API endpoints that must be public (unauthenticated)? List them.
+  [**Example default: a third-party REST API authenticated via Bearer token, rate-limited to X req/min — implement exponential backoff with max 3 retries on HTTP 429**]
+- What are the security-sensitive areas? [**Internal tool — no public access; access restricted at infrastructure level (e.g. WAF IP allowlist)**]
+- Any specific security rules beyond the standard set? [**No secrets in code, no `process.env` outside config module, no SQL string interpolation, no hardcoded external URLs or resource IDs**]
+- Are there API endpoints that must be public (unauthenticated)? [**`GET /health` and `GET /api-docs` are unguarded; all other endpoints require authentication if auth is enabled**]
 
 ---
 
 ## Phase 6 — Domain & Settled Decisions
 
+Defaults (shown in brackets) are based on the reference stack.
+
 Ask:
 - What are the key domain concepts or entities in this system?
   (e.g. "User, Order, Product, Invoice" — a rough list, not a schema)
+  [**No default — this is project-specific. Prompt the user to list the main nouns in their system.**]
 - Have any significant architectural decisions already been made?
   For each decision: what was decided, and why (brief).
   These will seed the `## Settled Decisions` table in CLAUDE.md.
+  [**Suggest seeding with any choices already confirmed from Phase 2–5, e.g. "Use PostgreSQL as the primary data store", "No application-level auth — CORS as sole access control", "Monorepo with backend/ and frontend/ directories"**]
 - Are there known edge cases or gotchas the team is aware of?
-  (e.g. "timezone handling is critical", "the legacy API returns inconsistent date formats")
+  [**Example defaults to prompt thinking: timezone handling, external API rate limits, pagination of large result sets, handling of partial/in-progress domain objects**]
 
 ---
 
 ## Output Generation
 
-Once all phases are complete, produce the following two outputs:
+Once all phases are complete, produce the following two outputs.
+
+**Important:** When the user accepted a default answer, write the full expanded default
+value into the output — never write "default" or "same as reference stack". The output
+must always be a complete, specific, human-readable document.
 
 ### Output 1 — CLAUDE.md
 
