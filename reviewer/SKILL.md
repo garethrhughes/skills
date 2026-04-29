@@ -16,7 +16,7 @@ line-level references where possible.
 > key conventions, and any domain-specific rules.
 >
 > Example: "Backend: NestJS 11, TypeORM, PostgreSQL. Single-user internal tool. Auth: static
-> API key via Passport HeaderAPIKeyStrategy. All schema changes via TypeORM migrations."
+> API key via header-based API key (Passport). All schema changes via TypeORM migrations."
 
 ---
 

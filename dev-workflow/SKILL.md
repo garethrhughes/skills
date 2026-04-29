@@ -46,7 +46,7 @@ as trivial).
 **When:** Proposal is accepted (or change is confirmed trivial).
 
 Use the **developer** skill to:
-1. Create a new branch: `git checkout -b feature/NNNN-short-title`
+1. Create a new branch: `git checkout -b feature/NNNN-short-title` *(adjust the branch naming convention to match your project's standard, or use the convention defined in your CLAUDE.md)*
 2. Follow the red-green-refactor TDD cycle for every unit of behaviour:
    - Write a failing test first
    - Write the minimum code to make it pass

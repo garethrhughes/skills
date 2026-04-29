@@ -63,7 +63,7 @@ write the implementation, the test is wrong.
   directly from domain services
 - ORM entities use decorators; migrations generated via ORM CLI, never edited manually
 - Migrations must implement both `up()` and `down()`
-- External HTTP calls use exponential backoff with max 3 retries on rate-limit responses (429)
+- External HTTP calls must implement retry logic with exponential backoff on rate-limit responses (429) — the exact retry count should follow the limit defined in your Project Context
 - Apply auth guards to all controller endpoints except explicitly public routes (e.g. health,
   API docs)
 - No hardcoded external URLs, IDs, or credentials — always read from `ConfigService`
@@ -89,7 +89,7 @@ write the implementation, the test is wrong.
 - Do not test controllers directly — test services
 - Integration tests for critical API endpoints using a mock or in-memory DB
 
-### Frontend (Vitest + React Testing Library)
+### Frontend (using the testing framework defined in your Project Context)
 - Unit tests for all significant components
 - Unit tests for state stores in isolation
 - No test should hit a real network

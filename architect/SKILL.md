@@ -38,7 +38,7 @@ proposal in `docs/proposals/`.
   directly from domain services
 - Configuration (rules, thresholds, feature toggles) is stored in the database or config
   files and loaded at runtime — never hardcoded
-- Migrations must be reversible (both `up()` and `down()` implemented)
+- Database schema migrations, where used, must be reversible — both `up()` and `down()` must be implemented
 - Shared types go in a shared package or are clearly documented as intentional duplication
 
 ## When to Write a Proposal

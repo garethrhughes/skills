@@ -40,36 +40,18 @@
 
 ## Repository Structure
 
+> Fill in your actual directory and file structure.
+
 ```
 /
-├── apps/
-│   ├── api/
-│   │   └── src/
-│   │       ├── app.module.ts
-│   │       ├── main.ts
-│   │       ├── config/
-│   │       ├── auth/
-│   │       ├── [domain-module]/
-│   │       ├── database/       # entities, migrations, seeds
-│   │       └── common/         # guards, decorators, interceptors
-│   └── web/
-│       ├── app/
-│       │   ├── layout.tsx
-│       │   ├── page.tsx
-│       │   └── [feature]/page.tsx
-│       ├── components/
-│       │   ├── charts/
-│       │   ├── layout/
-│       │   └── ui/
-│       ├── store/
-│       └── lib/
+├── [backend app directory]/
+│   └── src/
+│       └── [describe your module structure here]
+├── [frontend app directory]/
+│   └── [describe your component/page structure here]
 ├── docs/
 │   ├── proposals/
-│   │   └── README.md
 │   └── decisions/
-│       └── README.md
-├── docker-compose.yml
-├── Makefile
 └── .env.example
 ```
 

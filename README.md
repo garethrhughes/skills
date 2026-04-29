@@ -16,6 +16,8 @@ Reusable OpenCode skills for structured software development with AI agents.
 
 ### 1. Clone the repository
 
+Replace `<url>` with the HTTPS or SSH URL of this repository (find it on the GitHub repository page).
+
 ```bash
 git clone <url> ~/Documents/skills
 ```
@@ -66,6 +68,8 @@ section of each skill, or paste it at the start of a conversation with instructi
 > "Here is my project context — treat this as the project context for the skill you are using."
 
 A `CLAUDE.md.template` file is provided in this repository as a starting point for new projects.
+
+> **Note:** in OpenCode, your project's `CLAUDE.md` is already loaded into every conversation automatically — you may not need to repeat the full context in each skill's `## Project Context` section. Instead, focus on any skill-specific overrides or additions.
 
 ## CLAUDE.md Template
 

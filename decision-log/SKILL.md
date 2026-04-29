@@ -117,5 +117,5 @@ When asked to log a decision:
 Flag any implementation that contradicts an existing ADR. Reference the ADR number in your
 comment. Example:
 
-> "This hardcodes the done-status as `Done` — ADR-0003 specifies this must be configurable
-> per entity via the config entity. Please load from config."
+> "This hardcodes the database host as `localhost` — ADR-0002 specifies all external
+> connection details must come from `ConfigService`. Please load from config."
