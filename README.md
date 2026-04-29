@@ -16,22 +16,66 @@ Reusable OpenCode skills for structured software development with AI agents.
 
 ## Setup
 
-### 1. Clone the repository
+Choose the approach that fits your workflow.
+
+---
+
+### Option A — Global symlink (use skills across all projects)
+
+Skills live in one place and are available in every OpenCode session.
+
+**1. Clone the repository**
 
 ```bash
 git clone https://github.com/garethrhughes/skills ~/Documents/skills
 ```
 
-### 2. Symlink for global OpenCode access
+**2. Symlink into OpenCode's global skills directory**
 
 ```bash
 ln -s ~/Documents/skills ~/.config/opencode/skills
 ```
 
-### 3. Verify
+**3. Verify**
 
 Open OpenCode and check that the skills appear in the skill tool. You should see `architect`,
 `developer`, `reviewer`, `infosec`, `decision-log`, `dev-workflow`, and `project-bootstrap` listed.
+
+---
+
+### Option B — Copy into a project (version skills alongside your code)
+
+Skills live inside the project repository. Useful when you want to customise skills
+per-project, pin them at a specific version, or commit them to the repo so the whole team
+shares the same definitions.
+
+**1. Copy the skills directory into your project**
+
+```bash
+# From your project root
+cp -r ~/Documents/skills ./.opencode/skills
+
+# Or, if you haven't cloned the repo yet:
+git clone https://github.com/garethrhughes/skills /tmp/skills
+cp -r /tmp/skills ./.opencode/skills
+```
+
+**2. Verify**
+
+Open OpenCode from your project root and check that the skills appear in the skill tool.
+
+**3. Customise for the project**
+
+With skills committed to the repo, you can edit the `## Project Context` section of each
+SKILL.md directly — changes are tracked in version control alongside your code.
+
+---
+
+### Option C — Both (global base, project-level overrides)
+
+Keep the global symlink for the base skills and copy only the skills you want to override
+into `.opencode/skills/` in a specific project. OpenCode will prefer the project-local
+version when both exist.
 
 ## Usage
 
