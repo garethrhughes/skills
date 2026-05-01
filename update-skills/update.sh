@@ -13,6 +13,7 @@ if [ -z "${_UPDATE_SKILLS_SELF_COPY:-}" ]; then
   _tmp_self="$(mktemp)"
   cp "$0" "$_tmp_self"
   chmod +x "$_tmp_self"
+  _UPDATE_SKILLS_ORIG_DIR="$(cd "$(dirname "$0")" && pwd)" \
   _UPDATE_SKILLS_SELF_COPY=1 exec bash "$_tmp_self" "$@"
 fi
 
@@ -20,7 +21,7 @@ set -euo pipefail
 
 UPSTREAM="https://github.com/garethrhughes/skills.git"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="${_UPDATE_SKILLS_ORIG_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 SKILLS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "Upstream   : $UPSTREAM"
@@ -177,6 +178,8 @@ MODIFIED=""
 for after_file in "$AFTER_DIR"/*.md; do
   [ -f "$after_file" ] || continue
   skill="$(basename "$after_file" .md)"
+  # skip internal snapshot files (prefixed with __)
+  case "$skill" in __*) continue ;; esac
   before_file="$BEFORE_DIR/$skill.md"
   if [ ! -f "$before_file" ]; then
     ADDED="$ADDED $skill"
@@ -188,6 +191,7 @@ done
 for before_file in "$BEFORE_DIR"/*.md; do
   [ -f "$before_file" ] || continue
   skill="$(basename "$before_file" .md)"
+  case "$skill" in __*) continue ;; esac
   if [ ! -f "$AFTER_DIR/$skill.md" ]; then
     REMOVED="$REMOVED $skill"
   fi
