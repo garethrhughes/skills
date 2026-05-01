@@ -78,7 +78,6 @@ If not found, tell the user:
 > your `~/.zshrc` (or `~/.bashrc`) and restart your terminal:
 >
 > ```sh
-> export SQUIRREL_API_BASE_URL="https://api.squirrelnotes.app"
 > export SQUIRREL_API_KEY="sqn_your_api_key"
 > export SQUIRREL_PASSPHRASE="your-passphrase"
 > ```
@@ -145,15 +144,18 @@ different root.)*
 "squirrel-notes": {
   "type": "local",
   "command": ["npx", "-y", "@squirrelnotes.app/mcp"],
+  "environment": {
+    "SQUIRREL_API_BASE_URL": "https://api.squirrelnotes.app",
+    "SQUIRREL_API_KEY": "{env:SQUIRREL_API_KEY}",
+    "SQUIRREL_PASSPHRASE": "{env:SQUIRREL_PASSPHRASE}"
+  },
   "enabled": true
 }
 ```
-*All three credentials must be set in your shell profile — OpenCode does not
-resolve `{env:...}` substitutions inside the `environment` block, and the
-`environment` block overrides shell env vars, so omit it entirely. Add these
-to your `~/.zshrc` (or `~/.bashrc`) and restart your terminal:*
+*`SQUIRREL_API_KEY` and `SQUIRREL_PASSPHRASE` must be exported in your shell so
+OpenCode can resolve the `{env:...}` substitutions. Add these to your `~/.zshrc`
+(or `~/.bashrc`) and restart your terminal:*
 ```sh
-export SQUIRREL_API_BASE_URL="https://api.squirrelnotes.app"
 export SQUIRREL_API_KEY="sqn_your_api_key"
 export SQUIRREL_PASSPHRASE="your-passphrase"
 ```
