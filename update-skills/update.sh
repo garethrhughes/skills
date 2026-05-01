@@ -52,6 +52,9 @@ replace_project_context() {
   mv "$tmp" "$file"
 }
 
+# Root-level files that are copied verbatim (no Project Context merging)
+ROOT_FILES="README.md CLAUDE.md.template"
+
 CLONE_DIR="$(mktemp -d)"
 BEFORE_DIR="$(mktemp -d)"
 AFTER_DIR="$(mktemp -d)"
@@ -69,6 +72,11 @@ for f in "$SKILLS_DIR"/*/SKILL.md; do
   skill="$(basename "$(dirname "$f")")"
   cp "$f" "$BEFORE_DIR/$skill.md"
   extract_project_context "$f" > "$CONTEXT_DIR/$skill.ctx"
+done
+
+# Snapshot root files before update
+for rf in $ROOT_FILES; do
+  [ -f "$SKILLS_DIR/$rf" ] && cp "$SKILLS_DIR/$rf" "$BEFORE_DIR/__root__$rf"
 done
 
 for upstream_skill_dir in "$CLONE_DIR"/*/; do
@@ -98,10 +106,20 @@ for upstream_skill_dir in "$CLONE_DIR"/*/; do
   fi
 done
 
+# Copy root-level files from upstream
+for rf in $ROOT_FILES; do
+  [ -f "$CLONE_DIR/$rf" ] && cp "$CLONE_DIR/$rf" "$SKILLS_DIR/$rf"
+done
+
 for f in "$SKILLS_DIR"/*/SKILL.md; do
   [ -f "$f" ] || continue
   skill="$(basename "$(dirname "$f")")"
   cp "$f" "$AFTER_DIR/$skill.md"
+done
+
+# Snapshot root files after update
+for rf in $ROOT_FILES; do
+  [ -f "$SKILLS_DIR/$rf" ] && cp "$SKILLS_DIR/$rf" "$AFTER_DIR/__root__$rf"
 done
 
 ADDED=""
@@ -131,7 +149,23 @@ added_count=0; removed_count=0; modified_count=0
 for s in $ADDED;    do added_count=$((added_count+1));      done
 for s in $REMOVED;  do removed_count=$((removed_count+1));  done
 for s in $MODIFIED; do modified_count=$((modified_count+1));done
-TOTAL=$(( added_count + removed_count + modified_count ))
+
+# Count modified root files
+ROOT_MODIFIED=""
+for rf in $ROOT_FILES; do
+  before="$BEFORE_DIR/__root__$rf"
+  after="$AFTER_DIR/__root__$rf"
+  [ -f "$after" ] || continue
+  if [ ! -f "$before" ]; then
+    ROOT_MODIFIED="$ROOT_MODIFIED $rf"
+  elif ! diff -q "$before" "$after" > /dev/null 2>&1; then
+    ROOT_MODIFIED="$ROOT_MODIFIED $rf"
+  fi
+done
+root_modified_count=0
+for rf in $ROOT_MODIFIED; do root_modified_count=$((root_modified_count+1)); done
+
+TOTAL=$(( added_count + removed_count + modified_count + root_modified_count ))
 
 if [ $TOTAL -eq 0 ]; then
   echo "STATUS: up-to-date"
@@ -165,6 +199,20 @@ if [ $modified_count -gt 0 ]; then
       --label "before/$skill/SKILL.md" \
       --label "after/$skill/SKILL.md" \
       "$BEFORE_DIR/$skill.md" "$AFTER_DIR/$skill.md" \
+      | sed 's/^/    /' || true
+  done
+  echo ""
+fi
+
+if [ $root_modified_count -gt 0 ]; then
+  echo "--- ROOT FILES UPDATED ($root_modified_count) ---"
+  for rf in $ROOT_MODIFIED; do
+    echo ""
+    echo "  file: $rf"
+    diff --unified=3 \
+      --label "before/$rf" \
+      --label "after/$rf" \
+      "$BEFORE_DIR/__root__$rf" "$AFTER_DIR/__root__$rf" \
       | sed 's/^/    /' || true
   done
   echo ""
