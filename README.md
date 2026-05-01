@@ -14,6 +14,7 @@ Reusable OpenCode skills for structured software development with AI agents.
 | [create-feature](create-feature/SKILL.md) | Full feature development cycle: proposal → implementation → review → infosec sign-off → decision logging → PR |
 | [project-bootstrap](project-bootstrap/SKILL.md) | Interactive bootstrap that asks a structured set of questions (app stack, IaC, observability, security/compliance, domain) and produces a complete CLAUDE.md and Project Context block |
 | [project-onboard](project-onboard/SKILL.md) | Interactive onboarding for an existing codebase — investigates the repo to fill in CLAUDE.md and the Project Context block, asking the user only what the code can't answer |
+| [mcp-setup](mcp-setup/SKILL.md) | Interactive MCP server setup — presents a menu of free MCP servers (Context7, GitHub, Filesystem, Fetch, Memory, Semgrep) and writes the chosen config into `opencode.json`; invoked automatically by `project-bootstrap` and `project-onboard` |
 | [update-skills](update-skills/SKILL.md) | Pulls the latest skills from the upstream repository and reports what changed (added, removed, modified) with a unified diff per skill |
 
 ## Setup
@@ -41,7 +42,8 @@ ln -s ~/Documents/skills ~/.config/opencode/skills
 **3. Verify**
 
 Open OpenCode and check that the skills appear in the skill tool. You should see `architect`,
-`developer`, `reviewer`, `infosec`, `decision-log`, `create-feature`, and `project-bootstrap` listed.
+`developer`, `reviewer`, `infosec`, `decision-log`, `create-feature`, `project-bootstrap`,
+`project-onboard`, `mcp-setup`, and `update-skills` listed.
 
 ---
 
@@ -185,6 +187,17 @@ Use the project-onboard skill to onboard this existing codebase.
 
 ```
 Use the update-skills skill to update all skills to the latest version.
+```
+
+### mcp-setup
+
+Run this skill to configure MCP servers for a project. It presents a menu of six free options
+and writes the selected config into `opencode.json` in the project root, merging with any
+existing config. It is invoked automatically as part of `project-bootstrap` and `project-onboard`,
+but can also be run standalone at any time to add or reconfigure servers.
+
+```
+Use the mcp-setup skill to configure MCP servers for this project.
 ```
 
 ### project-bootstrap

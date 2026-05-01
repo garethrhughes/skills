@@ -478,37 +478,11 @@ If `.opencode/skills/` does not exist, tell the user:
 
 ### Step 3 — MCP Setup
 
-Set up MCP servers for the project by creating or updating `opencode.json` in the project root.
+Invoke the `mcp-setup` skill to let the user choose which MCP servers to add to
+this project. The mcp-setup skill will handle reading/writing `opencode.json` and
+explaining each option.
 
-Check whether `opencode.json` already exists in the project root:
-
-- If it exists, read it and merge the MCP entries in — do not overwrite existing keys.
-- If it does not exist, create it.
-
-Add the following MCP servers:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "context7": {
-      "type": "remote",
-      "url": "https://mcp.context7.com/mcp"
-    }
-  }
-}
-```
-
-After writing the file, tell the user:
-
-> "Created/updated `opencode.json` with the following MCP servers:
->
-> - **context7** — live documentation lookup via [Context7](https://context7.com). Add `use context7` to any prompt to search up-to-date library docs.
->
-> To get higher rate limits, sign up at context7.com and add your API key:
-> ```json
-> \"headers\": { \"CONTEXT7_API_KEY\": \"{env:CONTEXT7_API_KEY}\" }
-> ```"
+After mcp-setup completes, continue to Step 4.
 
 ---
 
