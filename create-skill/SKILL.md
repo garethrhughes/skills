@@ -195,17 +195,32 @@ fenced code block. For example:
 
 ## Updating the README
 
-After writing the SKILL.md, update `README.md` in the skills root:
+Which README you update depends on where the skill lives:
 
-1. Add a new row to the `## Skills` table:
-   ```
-   | [<skill-name>](<skill-name>/SKILL.md) | <one-line description> |
-   ```
-2. If the skill has a non-obvious usage pattern, add a named subsection under `## Usage`
-   following the same style as the existing entries.
+- **Skills repo** (the skills root *is* the git repo root — e.g. working directly in
+  this `skills` repository): update `README.md` at the skills root. This is the
+  README that catalogues every skill.
+- **Project repo** (the skills root is nested inside a larger project — e.g.
+  `.opencode/skills/` or `.claude/skills/` inside some project): update the
+  **project's root `README.md`**, not any README inside the skills folder. Leave
+  the skills folder's own README (if any) alone.
 
-For updates to existing skills: check whether the description row in the README needs to
-be updated to reflect the change.
+To tell which case you're in: if the parent of the skills root contains a `.git`
+directory and isn't the skills root itself, you're in a project repo.
+
+In either case, the update is the same:
+
+1. Add a new row to the `## Skills` table (create the table under a `## Skills`
+   heading if it does not already exist):
+   ```
+   | [<skill-name>](<path-to-skill>/SKILL.md) | <one-line description> |
+   ```
+   Use a path relative to the README being edited.
+2. If the skill has a non-obvious usage pattern, add a named subsection under
+   `## Usage` following the same style as the existing entries.
+
+For updates to existing skills: check whether the description row in the relevant
+README needs to be updated to reflect the change.
 
 ---
 
