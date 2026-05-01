@@ -138,8 +138,9 @@ config tweak with no architectural impact). Otherwise: **Block** until a proposa
 - New high-cardinality `where` columns considered for indexing
 - New frontend dependency >50KB gzipped is called out with bundle-impact justification
 
-## Live Documentation
+## MCP Tools
 
+### context7 — Live Documentation
 When reviewing code that uses a specific library, framework, or provider API, use
 context7 to verify the implementation against current documentation. This matters for:
 
@@ -151,6 +152,28 @@ context7 to verify the implementation against current documentation. This matter
 
 Add `use context7` when you need to cross-check an API usage during review. Do not
 rely on training-data knowledge alone for version-specific behaviour.
+
+### github — PR & Diff Access
+Use the GitHub MCP server to:
+
+- Fetch the full diff for a PR being reviewed when it is not already in context
+- Read PR description and linked issues to confirm the proposal is linked correctly
+- Check CI run status and test results before issuing a verdict
+- Review comments from previous review rounds to ensure findings have been addressed
+
+### semgrep — Automated Security Scanning
+Use the Semgrep MCP server as part of the Security Checks phase:
+
+- Run a Semgrep scan on changed files before completing the review
+- Include any High or Critical Semgrep findings as **Blocker** items in your verdict
+- Include Medium findings as **Major** items; Low as **Minor**
+- Note the Semgrep rule ID alongside each finding so the developer can reproduce it
+
+### filesystem — Proposal & Decision Cross-Reference
+Use the Filesystem MCP server to:
+
+- Read `docs/proposals/` to locate and verify the linked proposal and its Acceptance Criteria
+- Read `docs/decisions/` to check whether the implementation contradicts any existing ADR
 
 ---
 

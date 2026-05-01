@@ -186,8 +186,9 @@ in your Project Context).
 - But: any service method without a test is a defect. Any non-trivial infra module
   without a test is a defect.
 
-## Live Documentation
+## MCP Tools
 
+### context7 — Live Documentation
 Use context7 to retrieve up-to-date documentation whenever you are:
 
 - Implementing against a framework or library API (NestJS, Next.js, TypeORM, Tailwind, etc.)
@@ -197,6 +198,32 @@ Use context7 to retrieve up-to-date documentation whenever you are:
 Add `use context7` to your lookups before writing implementation code that depends on
 external API contracts. Do not guess at API shapes from training data — always verify
 against live docs, especially for framework features that change across minor versions.
+
+### github — Branch & PR Operations
+Use the GitHub MCP server to:
+
+- Create and push branches when starting a new feature (`feature/NNNN-short-title`)
+- Open pull requests targeting the project's default branch
+- Check CI status on a branch before considering implementation complete
+- Read existing PRs to understand what is already in flight before starting work
+
+### filesystem — Source File Operations
+Use the Filesystem MCP server for direct file reads and writes when the standard editor
+tools are insufficient — for example:
+
+- Reading a large set of related files (migrations, IaC modules) to understand a pattern
+  before writing new code
+- Verifying generated output (compiled JS, plan files, test snapshots) that is not part
+  of the active editor session
+
+### semgrep — Static Analysis
+Use the Semgrep MCP server to run static analysis scans before marking implementation
+complete. This catches common security and quality issues early — before the reviewer and
+infosec steps:
+
+- Run a scan on any new service or controller file before committing
+- Pay particular attention to injection risks, secrets in code, and missing validation
+- Address any High or Critical findings before handoff to the reviewer skill
 
 ---
 

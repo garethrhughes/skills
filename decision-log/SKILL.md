@@ -112,6 +112,19 @@ When asked to log a decision:
 | [0001](0001-cache-external-data-in-postgres.md) | Cache external data in Postgres | Accepted | YYYY-MM-DD |
 ```
 
+## MCP Tools
+
+### filesystem — ADR File Operations
+Use the Filesystem MCP server to:
+
+- List `docs/decisions/` to find the highest existing NNNN before creating a new ADR
+- Read existing ADRs to check for related decisions to link
+- Write new ADR files directly to `docs/decisions/NNNN-title.md`
+- Update the decision index at `docs/decisions/README.md`
+- Read `docs/proposals/` to locate the originating proposal when logging an accepted decision
+
+---
+
 ## When Reviewing Code
 
 Flag any implementation that contradicts an existing ADR. Reference the ADR number in your

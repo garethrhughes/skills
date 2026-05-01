@@ -414,9 +414,38 @@ APPROVED WITH EXCEPTION — N issue(s) accepted as documented risk:
 1. [Issue + control mapping + business justification + mitigation + ADR link]
 ```
 
----
+## MCP Tools
 
-## Sign-Off Process
+### semgrep — Automated Security Scanning
+Use the Semgrep MCP server as the first step of every review. Run a scan against the
+staged diff or changed files before performing manual checks:
+
+- Run with security-focused rule sets (OWASP Top 10, secrets detection, injection)
+- Treat High / Critical findings as **REQUIRES CHANGES** — include the rule ID and
+  file location in your report
+- Treat Medium findings as individual issues to evaluate in context
+- Do not skip Semgrep output — it may surface issues not visible in a manual diff review
+
+### github — PR & Diff Access
+Use the GitHub MCP server to:
+
+- Fetch the full diff for a PR when it is not already in context
+- Read the PR description to verify infosec-relevant details are documented
+  (infra plan output, new dependency justifications, auth guard decisions)
+- Check that the infosec sign-off comment is not already present from a prior run
+  before issuing a new verdict
+
+### filesystem — Policy & Decision Cross-Reference
+Use the Filesystem MCP server to:
+
+- Read `docs/decisions/` to verify that any APPROVED WITH EXCEPTION findings from
+  prior reviews have been logged as ADRs before re-approving
+- Read `docs/proposals/` to understand the full scope of the change under review,
+  including the Infrastructure Addendum if present
+- Read existing data classification or access control matrix documents referenced in
+  the Project Context
+
+---
 
 A change reaches infosec sign-off after the reviewer skill has returned PASS or
 PASS WITH COMMENTS. Infosec is the **final gate** before merge for any change touching

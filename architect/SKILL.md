@@ -303,8 +303,9 @@ Maintain a running index of all proposals:
 - When a proposal is accepted, create the corresponding ADR(s) in `docs/decisions/` and
   update the proposal status to `Accepted`, linking the ADR numbers.
 
-## Live Documentation
+## MCP Tools
 
+### context7 — Live Documentation
 When your design involves a library, framework, or cloud service API, use context7 to
 retrieve up-to-date documentation before making recommendations. This is especially
 important for:
@@ -316,6 +317,23 @@ important for:
 Add `use context7` to your internal lookups when researching options. Do not rely on
 training-data knowledge alone for API signatures, provider resource arguments, or
 framework conventions that evolve across versions.
+
+### github — Repository & Reference Research
+Use the GitHub MCP server when you need to:
+
+- Browse reference implementations or official example repositories to inform a design
+- Check how an open-source library structures its modules before recommending a pattern
+- Read open issues or changelogs to understand known limitations of a dependency
+- Inspect an existing PR or branch to understand an in-flight design before writing a proposal
+
+### filesystem — Proposal & Decision Files
+Use the Filesystem MCP server to:
+
+- Read existing proposals in `docs/proposals/` before writing a new one (to avoid
+  duplicate numbering and to understand prior context)
+- Read existing ADRs in `docs/decisions/` before referencing them in a proposal
+- Write new proposal files directly to `docs/proposals/NNNN-title.md`
+- Update the proposal index at `docs/proposals/README.md`
 
 ---
 

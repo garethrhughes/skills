@@ -159,6 +159,24 @@ to `Accepted`, linking the ADR numbers.
 
 ---
 
+## MCP Tools Available Across the Cycle
+
+The following MCP servers are available to the skills invoked during this workflow. This
+section summarises where each is most relevant:
+
+| MCP Server | Most relevant steps | Primary use |
+|---|---|---|
+| **context7** | Step 1, Step 2 | Look up live framework/provider docs before designing or coding |
+| **github** | Step 2, Step 3, Step 6 | Branch/PR operations, CI status checks, diff access for review |
+| **filesystem** | Step 1, Step 2, Step 5 | Read/write proposals, ADRs, and source files |
+| **semgrep** | Step 2, Step 3, Step 4 | Static analysis — run before handoff at each gate |
+
+Each skill in the cycle is responsible for using these tools appropriately — the guidance
+above is a cross-step reference to avoid duplication. See each individual skill for
+step-specific instructions.
+
+---
+
 ## Iteration Reference
 
 | Situation | Action |
