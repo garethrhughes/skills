@@ -46,7 +46,42 @@ and correct ambiguous findings.
 
 ## Phase 0 — Orientation
 
-Before doing anything else, tell the user:
+### Step 0.1 — Detect existing AI setup
+
+Before saying anything else, scan the project root for existing AI configuration files
+and directories:
+
+- `CLAUDE.md`
+- `AGENTS.md`
+- `.claude/` (Claude Code agents, commands, settings)
+- `.github/agents/` (GitHub Copilot agents)
+- `.github/copilot-instructions.md`
+- `.opencode/` (OpenCode skills, agents, commands)
+- `cursor/` or `.cursor/` (Cursor rules)
+- Any other AI assistant instruction files (`.aider*`, `codeium*`, etc.)
+
+If **any** are found, list them to the user and ask:
+
+> "I found the following existing AI configuration in this project:
+>
+> - [list each file/directory found]
+>
+> Would you like me to remove any of these before we start? This is useful if you're
+> replacing an existing setup with these skills.
+>
+> Reply with the numbers or names of items to remove, or 'none' to keep everything
+> as-is."
+
+Wait for the user's response. Remove only the items they confirm. If they confirm
+removal, delete the files/directories and tell the user what was removed.
+
+If **nothing** is found, skip this step silently and proceed.
+
+---
+
+### Step 0.2 — Orientation
+
+Tell the user:
 
 > "I'll onboard this existing codebase by reading it first. There are **8 phases**
 > covering project identity, application stack, infrastructure-as-code, repository
