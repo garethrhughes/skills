@@ -1,148 +1,141 @@
 #!/usr/bin/env bash
-# update.sh — pull the latest skills and report changes
+# update.sh - fetch the latest skills from upstream and merge into installed location
 #
-# This script is bundled with the update-skills skill and is executed via
-# the run_skill_script tool. It must be run from the skill's own directory;
-# the skills repo root is one level up.
+# The skills directory does NOT need to be a git repository. Clones upstream
+# to a temp dir, diffs each SKILL.md against the installed version, copies
+# in changes while preserving existing ## Project Context sections.
 #
 # Compatible with bash 3 (macOS default).
-#
-# After pulling, any ## Project Context section that was already present in a
-# SKILL.md is preserved — the upstream version of that section is never written
-# back to disk.
-#
-# Exit codes:
-#   0  success (updated or already up to date)
-#   1  error (git failure, dirty tree, etc.)
 
 set -euo pipefail
 
-# ── Resolve paths ────────────────────────────────────────────────────────────
+UPSTREAM="https://github.com/garethrhughes/skills.git"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+SKILLS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-if [[ ! -d "$REPO_DIR/.git" ]]; then
-  echo "ERROR: skills directory is not a git repository: $REPO_DIR" >&2
-  exit 1
-fi
-
-# ── Remote / branch info ─────────────────────────────────────────────────────
-REMOTE_URL="https://github.com/garethrhughes/skills.git"
-BRANCH="$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '(unknown)')"
-
-echo "Repository : $REMOTE_URL"
-echo "Branch     : $BRANCH"
+echo "Upstream   : $UPSTREAM"
+echo "Skills dir : $SKILLS_DIR"
 echo ""
 
-# ── Helper: extract the ## Project Context block from a SKILL.md ─────────────
-# Prints everything from the "## Project Context" heading up to (but not
-# including) the next "## " heading, or end of file.
+# Write awk programs to temp files to avoid quoting issues
+AWK_EXTRACT="$(mktemp)"
+AWK_REPLACE="$(mktemp)"
+
+cat > "$AWK_EXTRACT" << 'AWK'
+/^## Project Context/ { b=1 }
+b && /^## / && !/^## Project Context/ { b=0 }
+b { print }
+AWK
+
+cat > "$AWK_REPLACE" << 'AWK'
+/^## Project Context/ {
+  b=1
+  while ((getline ln < ctx_file) > 0) print ln
+  close(ctx_file)
+  next
+}
+b && /^## / && !/^## Project Context/ { b=0 }
+!b { print }
+AWK
+
 extract_project_context() {
-  local file="$1"
-  awk '
-    /^## Project Context/ { in_block=1 }
-    in_block && /^## / && !/^## Project Context/ { in_block=0 }
-    in_block { print }
-  ' "$file"
+  awk -f "$AWK_EXTRACT" "$1"
 }
 
-# ── Helper: replace the ## Project Context block in a SKILL.md ───────────────
-# Writes the file back with the saved context substituted in.
-# $1 = skill file path, $2 = file containing the saved context block
 replace_project_context() {
   local file="$1"
   local ctx_file="$2"
   local tmp
   tmp="$(mktemp)"
-
-  awk '
-    /^## Project Context/ {
-      in_block=1
-      # Print the saved context from the external file
-      while ((getline line < ctx_file) > 0) print line
-      close(ctx_file)
-      next
-    }
-    in_block && /^## / && !/^## Project Context/ { in_block=0 }
-    !in_block { print }
-  ' ctx_file="$ctx_file" "$file" > "$tmp"
-
+  awk -v ctx_file="$ctx_file" -f "$AWK_REPLACE" "$file" > "$tmp"
   mv "$tmp" "$file"
 }
 
-# ── Temp dirs for before/after snapshots ─────────────────────────────────────
+CLONE_DIR="$(mktemp -d)"
 BEFORE_DIR="$(mktemp -d)"
 AFTER_DIR="$(mktemp -d)"
 CONTEXT_DIR="$(mktemp -d)"
-trap 'rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR"' EXIT
+cleanup() { rm -rf "$CLONE_DIR" "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT" "$AWK_REPLACE"; }
+trap cleanup EXIT
 
-# ── Snapshot SKILL.md contents before pull (and save any Project Context) ────
-for f in "$REPO_DIR"/*/SKILL.md; do
-  [[ -f "$f" ]] || continue
+echo "Fetching upstream skills..."
+git clone --depth 1 --quiet "$UPSTREAM" "$CLONE_DIR"
+echo "Done."
+echo ""
+
+for f in "$SKILLS_DIR"/*/SKILL.md; do
+  [ -f "$f" ] || continue
   skill="$(basename "$(dirname "$f")")"
   cp "$f" "$BEFORE_DIR/$skill.md"
-  # Save the existing Project Context (may be empty / just the placeholder)
   extract_project_context "$f" > "$CONTEXT_DIR/$skill.ctx"
 done
 
-# ── git pull ─────────────────────────────────────────────────────────────────
-PULL_OUTPUT="$(git -C "$REPO_DIR" pull --ff-only 2>&1)"
-echo "$PULL_OUTPUT"
-echo ""
+for upstream_skill_dir in "$CLONE_DIR"/*/; do
+  [ -d "$upstream_skill_dir" ] || continue
+  skill="$(basename "$upstream_skill_dir")"
+  upstream_file="$upstream_skill_dir/SKILL.md"
+  [ -f "$upstream_file" ] || continue
 
-# ── Restore Project Context sections ─────────────────────────────────────────
-# For every skill that existed before the pull, put the user's context back.
-for ctx_file in "$CONTEXT_DIR"/*.ctx; do
-  [[ -f "$ctx_file" ]] || continue
-  skill="$(basename "$ctx_file" .ctx)"
-  skill_file="$REPO_DIR/$skill/SKILL.md"
-  [[ -f "$skill_file" ]] || continue
+  installed_dir="$SKILLS_DIR/$skill"
+  installed_file="$installed_dir/SKILL.md"
 
-  saved_ctx="$(cat "$ctx_file")"
-  [[ -z "$saved_ctx" ]] && continue   # no context to restore
+  if [ ! -d "$installed_dir" ]; then
+    cp -r "$upstream_skill_dir" "$installed_dir"
+  else
+    cp "$upstream_file" "$installed_file"
+    for upstream_extra in "$upstream_skill_dir"*; do
+      [ -f "$upstream_extra" ] || continue
+      fname="$(basename "$upstream_extra")"
+      [ "$fname" = "SKILL.md" ] && continue
+      cp "$upstream_extra" "$installed_dir/$fname"
+    done
+  fi
 
-  replace_project_context "$skill_file" "$ctx_file"
+  ctx_file="$CONTEXT_DIR/$skill.ctx"
+  if [ -f "$ctx_file" ] && [ -s "$ctx_file" ]; then
+    replace_project_context "$installed_file" "$ctx_file"
+  fi
 done
 
-# ── Snapshot SKILL.md contents after pull + context restore ──────────────────
-for f in "$REPO_DIR"/*/SKILL.md; do
-  [[ -f "$f" ]] || continue
+for f in "$SKILLS_DIR"/*/SKILL.md; do
+  [ -f "$f" ] || continue
   skill="$(basename "$(dirname "$f")")"
   cp "$f" "$AFTER_DIR/$skill.md"
 done
 
-# ── Detect added, removed, modified skills ───────────────────────────────────
-ADDED=()
-REMOVED=()
-MODIFIED=()
+ADDED=""
+REMOVED=""
+MODIFIED=""
 
-# Skills present after pull — check if new or changed
 for after_file in "$AFTER_DIR"/*.md; do
-  [[ -f "$after_file" ]] || continue
+  [ -f "$after_file" ] || continue
   skill="$(basename "$after_file" .md)"
   before_file="$BEFORE_DIR/$skill.md"
-  if [[ ! -f "$before_file" ]]; then
-    ADDED+=("$skill")
+  if [ ! -f "$before_file" ]; then
+    ADDED="$ADDED $skill"
   elif ! diff -q "$before_file" "$after_file" > /dev/null 2>&1; then
-    MODIFIED+=("$skill")
+    MODIFIED="$MODIFIED $skill"
   fi
 done
 
-# Skills that disappeared
 for before_file in "$BEFORE_DIR"/*.md; do
-  [[ -f "$before_file" ]] || continue
+  [ -f "$before_file" ] || continue
   skill="$(basename "$before_file" .md)"
-  if [[ ! -f "$AFTER_DIR/$skill.md" ]]; then
-    REMOVED+=("$skill")
+  if [ ! -f "$AFTER_DIR/$skill.md" ]; then
+    REMOVED="$REMOVED $skill"
   fi
 done
 
-# ── Report ───────────────────────────────────────────────────────────────────
-TOTAL=$(( ${#ADDED[@]} + ${#REMOVED[@]} + ${#MODIFIED[@]} ))
+added_count=0; removed_count=0; modified_count=0
+for s in $ADDED;    do added_count=$((added_count+1));      done
+for s in $REMOVED;  do removed_count=$((removed_count+1));  done
+for s in $MODIFIED; do modified_count=$((modified_count+1));done
+TOTAL=$(( added_count + removed_count + modified_count ))
 
-if [[ $TOTAL -eq 0 ]]; then
+if [ $TOTAL -eq 0 ]; then
   echo "STATUS: up-to-date"
-  echo "All skills are already up to date. No changes pulled."
+  echo "All skills are already up to date. No changes applied."
   exit 0
 fi
 
@@ -150,30 +143,25 @@ echo "STATUS: updated"
 echo "CHANGES: $TOTAL skill(s) affected"
 echo ""
 
-if [[ ${#ADDED[@]} -gt 0 ]]; then
-  echo "--- ADDED (${#ADDED[@]}) ---"
-  for skill in "${ADDED[@]}"; do
-    echo "  + $skill"
-  done
+if [ $added_count -gt 0 ]; then
+  echo "--- ADDED ($added_count) ---"
+  for skill in $ADDED; do echo "  + $skill"; done
   echo ""
 fi
 
-if [[ ${#REMOVED[@]} -gt 0 ]]; then
-  echo "--- REMOVED (${#REMOVED[@]}) ---"
-  for skill in "${REMOVED[@]}"; do
-    echo "  - $skill"
-  done
+if [ $removed_count -gt 0 ]; then
+  echo "--- REMOVED ($removed_count) ---"
+  for skill in $REMOVED; do echo "  - $skill"; done
   echo ""
 fi
 
-if [[ ${#MODIFIED[@]} -gt 0 ]]; then
-  echo "--- MODIFIED (${#MODIFIED[@]}) ---"
-  for skill in "${MODIFIED[@]}"; do
+if [ $modified_count -gt 0 ]; then
+  echo "--- MODIFIED ($modified_count) ---"
+  for skill in $MODIFIED; do
     echo ""
     echo "  skill: $skill"
     echo "  diff (## Project Context excluded):"
-    diff \
-      --unified=3 \
+    diff --unified=3 \
       --label "before/$skill/SKILL.md" \
       --label "after/$skill/SKILL.md" \
       "$BEFORE_DIR/$skill.md" "$AFTER_DIR/$skill.md" \
