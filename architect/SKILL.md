@@ -141,7 +141,8 @@ Describe the approach at a system level. Include:
 - Any new files, entities, or interfaces introduced
 - How existing code is modified or replaced
 
-Use diagrams (ASCII or Mermaid) where they add clarity.
+Include one or more Mermaid diagrams to illustrate the design (see **Diagrams** guidance
+below). Every proposal must have at least one diagram.
 
 ## Alternatives Considered
 
@@ -211,6 +212,78 @@ Note: `terraform destroy` is **not** a rollback plan for stateful resources
 (databases, persistent volumes). Document the data preservation strategy.
 ```
 
+## Diagrams
+
+Every proposal must include at least one Mermaid diagram embedded directly in the
+proposal Markdown. Choose the diagram type that best communicates the design:
+
+| Type | When to use |
+|---|---|
+| `flowchart` | Request/response flow, decision logic, process steps |
+| `sequenceDiagram` | Interactions between services, async message passing, auth flows |
+| `classDiagram` | Domain model, entity relationships, module dependencies |
+| `erDiagram` | Database schema changes or new entities |
+| `C4Context` / `C4Container` | System boundary and component decomposition |
+| `stateDiagram-v2` | Entity lifecycle, state machine behaviour |
+
+### Guidance
+
+- Use one diagram per concern — do not try to show everything in a single chart
+- Prefer `sequenceDiagram` for any proposal touching API contracts or async flows
+- Prefer `erDiagram` for any proposal touching the database schema
+- Prefer `flowchart LR` for data pipelines and processing chains
+- Label all participants, actors, and relationships clearly
+- For infra proposals, include a `flowchart` or `C4Container` showing network
+  topology and resource boundaries
+
+### Example — sequence diagram
+
+~~~markdown
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as API (NestJS)
+    participant Cache as Cache (Redis)
+    participant DB as Database (PostgreSQL)
+
+    Client->>API: GET /resource/:id
+    API->>Cache: get(key)
+    alt Cache hit
+        Cache-->>API: cached value
+        API-->>Client: 200 OK (cached)
+    else Cache miss
+        Cache-->>API: null
+        API->>DB: SELECT ...
+        DB-->>API: row
+        API->>Cache: set(key, value, ttl)
+        API-->>Client: 200 OK
+    end
+```
+~~~
+
+### Example — ER diagram
+
+~~~markdown
+```mermaid
+erDiagram
+    USER {
+        uuid id PK
+        string email
+        string password_hash
+        timestamp created_at
+    }
+    SESSION {
+        uuid id PK
+        uuid user_id FK
+        string refresh_token_hash
+        timestamp expires_at
+    }
+    USER ||--o{ SESSION : "has"
+```
+~~~
+
+---
+
 ## Proposal Index (docs/proposals/README.md)
 
 Maintain a running index of all proposals:
@@ -229,6 +302,22 @@ Maintain a running index of all proposals:
 - An **ADR** is written *after* the decision is confirmed — it is the record of what was decided.
 - When a proposal is accepted, create the corresponding ADR(s) in `docs/decisions/` and
   update the proposal status to `Accepted`, linking the ADR numbers.
+
+## Live Documentation
+
+When your design involves a library, framework, or cloud service API, use context7 to
+retrieve up-to-date documentation before making recommendations. This is especially
+important for:
+
+- Framework version-specific APIs (NestJS, Next.js, OpenTofu/Terraform providers)
+- Cloud service configurations (AWS, GCP, Azure resource options)
+- Any third-party integration where defaults or behaviour may have changed
+
+Add `use context7` to your internal lookups when researching options. Do not rely on
+training-data knowledge alone for API signatures, provider resource arguments, or
+framework conventions that evolve across versions.
+
+---
 
 ## When Answering
 

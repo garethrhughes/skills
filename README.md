@@ -14,6 +14,7 @@ Reusable OpenCode skills for structured software development with AI agents.
 | [dev-workflow](dev-workflow/SKILL.md) | Full feature development cycle: proposal → implementation → review → infosec sign-off → decision logging → PR |
 | [project-bootstrap](project-bootstrap/SKILL.md) | Interactive bootstrap that asks a structured set of questions (app stack, IaC, observability, security/compliance, domain) and produces a complete CLAUDE.md and Project Context block |
 | [project-onboard](project-onboard/SKILL.md) | Interactive onboarding for an existing codebase — investigates the repo to fill in CLAUDE.md and the Project Context block, asking the user only what the code can't answer |
+| [update-skills](update-skills/SKILL.md) | Pulls the latest skills from the upstream repository and reports what changed (added, removed, modified) with a unified diff per skill |
 
 ## Setup
 
@@ -180,6 +181,10 @@ Use the project-bootstrap skill to set up this project.
 
 ```
 Use the project-onboard skill to onboard this existing codebase.
+```
+
+```
+Use the update-skills skill to update all skills to the latest version.
 ```
 
 ### project-bootstrap

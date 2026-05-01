@@ -639,14 +639,50 @@ If `.opencode/skills/` does not exist, tell the user:
 > automatically, copy the skills into `.opencode/skills/` — see the skills
 > README for instructions."
 
-### Step 3 — Finish
+### Step 3 — MCP Setup
+
+Set up MCP servers for the project by creating or updating `opencode.json` in the project root.
+
+Check whether `opencode.json` already exists in the project root:
+
+- If it exists, read it and merge the MCP entries in — do not overwrite existing keys.
+- If it does not exist, create it.
+
+Add the following MCP servers:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
+    }
+  }
+}
+```
+
+After writing the file, tell the user:
+
+> "Created/updated `opencode.json` with the following MCP servers:
+>
+> - **context7** — live documentation lookup via [Context7](https://context7.com). Add `use context7` to any prompt to search up-to-date library docs.
+>
+> To get higher rate limits, sign up at context7.com and add your API key:
+> ```json
+> \"headers\": { \"CONTEXT7_API_KEY\": \"{env:CONTEXT7_API_KEY}\" }
+> ```"
+
+---
+
+### Step 4 — Finish
 
 Tell the user:
 
 > "Your CLAUDE.md is ready to commit to the root of your repository.
 >
 > Suggested next steps:
-> 1. Commit `CLAUDE.md` and any updated skill files to version control
+> 1. Commit `CLAUDE.md`, `opencode.json`, and any updated skill files to version control
 > 2. Review the **Onboarding Notes** section — each bullet is a candidate for a
 >    proposal via the `architect` skill, or a backlog ticket
 > 3. If `docs/proposals/` and `docs/decisions/` don't exist yet, scaffold them

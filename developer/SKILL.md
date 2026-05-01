@@ -186,6 +186,20 @@ in your Project Context).
 - But: any service method without a test is a defect. Any non-trivial infra module
   without a test is a defect.
 
+## Live Documentation
+
+Use context7 to retrieve up-to-date documentation whenever you are:
+
+- Implementing against a framework or library API (NestJS, Next.js, TypeORM, Tailwind, etc.)
+- Writing IaC that references a provider resource or data source (AWS, GCP, Azure)
+- Unsure of the correct method signature, config option, or decorator for the version in use
+
+Add `use context7` to your lookups before writing implementation code that depends on
+external API contracts. Do not guess at API shapes from training data — always verify
+against live docs, especially for framework features that change across minor versions.
+
+---
+
 ## New Dependencies & Supply Chain
 
 Always call out any new package, Terraform module, or provider being added. State:

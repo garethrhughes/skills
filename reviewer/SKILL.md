@@ -138,6 +138,22 @@ config tweak with no architectural impact). Otherwise: **Block** until a proposa
 - New high-cardinality `where` columns considered for indexing
 - New frontend dependency >50KB gzipped is called out with bundle-impact justification
 
+## Live Documentation
+
+When reviewing code that uses a specific library, framework, or provider API, use
+context7 to verify the implementation against current documentation. This matters for:
+
+- Checking whether a method, decorator, or config option is used correctly for the
+  version in the lockfile
+- Verifying IaC resource arguments and defaults match the provider version in
+  `.terraform.lock.hcl` or equivalent
+- Confirming that deprecated APIs are flagged — even if the code appears to work
+
+Add `use context7` when you need to cross-check an API usage during review. Do not
+rely on training-data knowledge alone for version-specific behaviour.
+
+---
+
 ## Documentation Checks
 
 - Proposals in `docs/proposals/` that preceded this change should have their status updated
