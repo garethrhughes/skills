@@ -72,6 +72,13 @@ for f in "$SKILLS_DIR"/*/SKILL.md; do
   skill="$(basename "$(dirname "$f")")"
   cp "$f" "$BEFORE_DIR/$skill.md"
   extract_project_context "$f" > "$CONTEXT_DIR/$skill.ctx"
+  # Snapshot non-SKILL.md files in the skill dir
+  for extra in "$SKILLS_DIR/$skill/"*; do
+    [ -f "$extra" ] || continue
+    efname="$(basename "$extra")"
+    [ "$efname" = "SKILL.md" ] && continue
+    cp "$extra" "$BEFORE_DIR/__extra__${skill}__${efname}"
+  done
 done
 
 # Snapshot root files before update
@@ -132,6 +139,13 @@ for f in "$SKILLS_DIR"/*/SKILL.md; do
   [ -f "$f" ] || continue
   skill="$(basename "$(dirname "$f")")"
   cp "$f" "$AFTER_DIR/$skill.md"
+  # Snapshot non-SKILL.md files in the skill dir after update
+  for extra in "$SKILLS_DIR/$skill/"*; do
+    [ -f "$extra" ] || continue
+    efname="$(basename "$extra")"
+    [ "$efname" = "SKILL.md" ] && continue
+    cp "$extra" "$AFTER_DIR/__extra__${skill}__${efname}"
+  done
 done
 
 # Snapshot root files after update
@@ -205,7 +219,22 @@ done
 scripts_modified_count=0
 for f in $SCRIPTS_MODIFIED; do scripts_modified_count=$((scripts_modified_count+1)); done
 
-TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count ))
+# Count modified skill extra files (e.g. update.sh inside update-skills/)
+EXTRAS_MODIFIED=""
+for after_f in "$AFTER_DIR"/__extra__*; do
+  [ -f "$after_f" ] || continue
+  key="$(basename "$after_f" | sed 's/^__extra__//')"  # skill__filename
+  before_f="$BEFORE_DIR/__extra__$key"
+  if [ ! -f "$before_f" ]; then
+    EXTRAS_MODIFIED="$EXTRAS_MODIFIED $key"
+  elif ! diff -q "$before_f" "$after_f" > /dev/null 2>&1; then
+    EXTRAS_MODIFIED="$EXTRAS_MODIFIED $key"
+  fi
+done
+extras_modified_count=0
+for e in $EXTRAS_MODIFIED; do extras_modified_count=$((extras_modified_count+1)); done
+
+TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count ))
 
 if [ $TOTAL -eq 0 ]; then
   echo "STATUS: up-to-date"
@@ -269,6 +298,28 @@ if [ $scripts_modified_count -gt 0 ]; then
       diff --unified=3 \
         --label "before/scripts/$f" \
         --label "after/scripts/$f" \
+        "$before_f" "$after_f" \
+        | sed 's/^/    /' || true
+    else
+      echo "    (new file)"
+    fi
+  done
+  echo ""
+fi
+
+if [ $extras_modified_count -gt 0 ]; then
+  echo "--- SKILL FILES UPDATED ($extras_modified_count) ---"
+  for e in $EXTRAS_MODIFIED; do
+    skill="${e%%__*}"
+    fname="${e#*__}"
+    echo ""
+    echo "  file: $skill/$fname"
+    before_f="$BEFORE_DIR/__extra__$e"
+    after_f="$AFTER_DIR/__extra__$e"
+    if [ -f "$before_f" ]; then
+      diff --unified=3 \
+        --label "before/$skill/$fname" \
+        --label "after/$skill/$fname" \
         "$before_f" "$after_f" \
         | sed 's/^/    /' || true
     else
