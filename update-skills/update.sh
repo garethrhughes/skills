@@ -7,6 +7,15 @@
 #
 # Compatible with bash 3 (macOS default).
 
+# Self-reinvocation guard: copy this script to a temp file and re-exec from
+# there so that replacing update.sh on disk mid-run does not cause errors.
+if [ -z "${_UPDATE_SKILLS_SELF_COPY:-}" ]; then
+  _tmp_self="$(mktemp)"
+  cp "$0" "$_tmp_self"
+  chmod +x "$_tmp_self"
+  _UPDATE_SKILLS_SELF_COPY=1 exec bash "$_tmp_self" "$@"
+fi
+
 set -euo pipefail
 
 UPSTREAM="https://github.com/garethrhughes/skills.git"
