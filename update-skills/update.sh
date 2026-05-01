@@ -131,6 +131,23 @@ for upstream_skill_dir in "$CLONE_DIR"/*/; do
   fi
 done
 
+# Remove skills that existed in the installed README (i.e. were upstream skills)
+# but are no longer present in the upstream clone.
+# Using the pre-update installed README (snapshotted in BEFORE_DIR) ensures we
+# catch skills removed from both the upstream repo and its README in the same
+# release, and avoids touching local skills that were never listed there.
+INSTALLED_README="$BEFORE_DIR/__root__README.md"
+if [ -f "$INSTALLED_README" ]; then
+  for installed_skill_dir in "$SKILLS_DIR"/*/; do
+    [ -d "$installed_skill_dir" ] || continue
+    skill="$(basename "$installed_skill_dir")"
+    [ -f "$installed_skill_dir/SKILL.md" ] || continue
+    if grep -q "\[$skill\](" "$INSTALLED_README" 2>/dev/null && [ ! -d "$CLONE_DIR/$skill" ]; then
+      rm -rf "$installed_skill_dir"
+    fi
+  done
+fi
+
 # Copy root-level files from upstream
 for rf in $ROOT_FILES; do
   [ -f "$CLONE_DIR/$rf" ] && cp "$CLONE_DIR/$rf" "$SKILLS_DIR/$rf"

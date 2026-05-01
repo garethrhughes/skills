@@ -1,4 +1,8 @@
-# Skill: mcp-setup
+---
+name: mcp-setup
+description: Interactive MCP server setup — presents a menu of available MCP servers (Context7, GitHub, Filesystem, Memory, Squirrel Notes, Semgrep) and writes the chosen config into opencode.json; invoked automatically by project-bootstrap and project-onboard.
+compatibility: opencode
+---
 
 # MCP Setup Skill
 

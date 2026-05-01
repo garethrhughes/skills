@@ -1,0 +1,222 @@
+---
+name: create-skill
+description: Interactively creates or updates OpenCode skills. Asks structured questions about the skill's purpose, responsibilities, workflow, and MCP tool usage, then produces a correctly formatted SKILL.md and registers it in the skills README.
+compatibility: opencode
+---
+
+# Create Skill
+
+You create and update OpenCode skills. You know the full SKILL.md format, conventions,
+and structure of this skills repository. You guide the user through a structured interview
+to gather everything needed, then produce a complete, ready-to-use SKILL.md.
+
+---
+
+## Mode Selection
+
+Before asking any questions, determine which mode applies:
+
+- **Create** — the user wants a brand new skill that does not yet exist
+- **Update** — the user wants to modify, extend, or rename an existing skill
+
+Ask explicitly if it is not clear from the user's request.
+
+---
+
+## Interview — Create Mode
+
+Ask the following questions. You may ask them in one batch or grouped by theme — do not
+drip-feed one question at a time. Wait for answers before generating.
+
+### 1. Identity
+- What should the skill be named? (lowercase, hyphen-separated, e.g. `code-review`)
+- Write a one-sentence `description` field for the skill frontmatter. What does it do,
+  and when should an agent invoke it?
+
+### 2. Purpose & Responsibilities
+- What is this skill's primary job? What does it produce or enable?
+- What is explicitly **out of scope** — what should it never do?
+- Is the skill **read-only** (audit/review style) or does it write/edit files?
+
+### 3. Workflow
+- Does this skill follow a step-by-step workflow the agent should execute in order,
+  or is it a reference skill (a set of rules/conventions the agent follows while working)?
+- If it has a workflow: describe each step, what triggers each step, and what the
+  handoff condition is to the next step.
+- Are there iteration loops — conditions that send the agent back to an earlier step?
+
+### 4. Output
+- What does the skill produce? (files written, verdicts returned, reports generated, etc.)
+- Is there a specific output format the skill must follow?
+
+### 5. MCP Tools
+- Which of the available MCP servers should this skill use?
+  (context7, github, filesystem, semgrep — or none)
+- For each: in what specific situations should it be used within this skill?
+
+### 6. Project Context
+- Does this skill need a `## Project Context` placeholder that the user fills in per
+  project? (Most skills do — only omit for skills that operate on the skills repo itself.)
+
+### 7. Conventions & Rules
+- Are there specific rules, constraints, or principles the agent must follow while
+  executing this skill? (e.g. "never edit code", "always write a test before implementation",
+  "all decisions must be recorded as ADRs")
+
+---
+
+## Interview — Update Mode
+
+Ask:
+1. Which skill is being updated? List the available skills if the user is unsure.
+2. What specifically should change? (add a section, modify behaviour, add MCP tools,
+   rename, restructure workflow, etc.)
+3. Read the existing SKILL.md using the filesystem MCP server (or Read tool) before
+   proposing any edits — understand the current content fully first.
+4. Confirm the intended change with the user before writing.
+
+---
+
+## Generating the SKILL.md
+
+Once you have all the answers, generate the complete file. Do not generate a partial
+skeleton and ask the user to fill it in — produce the final, ready-to-use content.
+
+### File Location
+
+```
+<skills-root>/<skill-name>/SKILL.md
+```
+
+Where `<skills-root>` is the directory containing all skill folders (e.g.
+`~/.config/opencode/skills/` for a global install, or `.opencode/skills/` for a
+project-local install). If in doubt, read the existing skills to infer the root.
+
+### Required Frontmatter
+
+```yaml
+---
+name: <skill-name>
+description: <one-sentence description — this appears in the skill picker>
+compatibility: opencode
+---
+```
+
+### Required Top-Level Sections
+
+Every skill must have these sections in this order:
+
+1. `# <Skill Name> Skill` — H1 heading with a 2–4 sentence summary of what the agent is
+   and what it does
+2. `## Project Context` — placeholder block (omit only for skills that operate on the
+   skills repo itself, such as `update-skills` and `create-skill`)
+3. The skill's substantive content (responsibilities, workflow, rules, output format, etc.)
+4. `## MCP Tools` — only if the skill uses one or more MCP servers (see format below)
+
+### `## Project Context` Placeholder Format
+
+```markdown
+## Project Context
+
+> Fill in before use: Replace this section with your project's stack, conventions, and
+> any domain-specific rules relevant to this skill.
+>
+> Example: "…"
+```
+
+The example should be tailored to what this specific skill actually needs from the
+project context.
+
+---
+
+### `## MCP Tools` Section Format
+
+Include one sub-section per MCP server used. Each sub-section must specify:
+- **When** to use this tool (specific trigger conditions, not generic advice)
+- **What** to do with it (concrete actions, not vague capabilities)
+
+```markdown
+## MCP Tools
+
+### context7 — Live Documentation
+Use context7 when…
+
+- [specific situation 1]
+- [specific situation 2]
+
+### github — [purpose in this skill]
+Use the GitHub MCP server to…
+
+### filesystem — [purpose in this skill]
+Use the Filesystem MCP server to…
+
+### semgrep — [purpose in this skill]
+Use the Semgrep MCP server to…
+```
+
+Only include servers that this skill actually uses.
+
+---
+
+### Workflow Step Format
+
+If the skill has a sequential workflow, use this format for each step:
+
+```markdown
+### Step N — [Step Name] ([skill or tool used])
+
+**When:** [trigger condition]
+
+[Agent instructions for this step]
+
+**Handoff to Step N+1 when:** [condition]
+```
+
+---
+
+### Output Format Section
+
+If the skill returns a structured verdict or report, specify the exact format using a
+fenced code block. For example:
+
+```markdown
+## Output Format
+
+\```
+## Verdict: PASS | PASS WITH COMMENTS | BLOCK
+
+**[Severity]** `path/to/file.ts` (line N)
+**Issue:** …
+**Fix:** …
+\```
+```
+
+---
+
+## Updating the README
+
+After writing the SKILL.md, update `README.md` in the skills root:
+
+1. Add a new row to the `## Skills` table:
+   ```
+   | [<skill-name>](<skill-name>/SKILL.md) | <one-line description> |
+   ```
+2. If the skill has a non-obvious usage pattern, add a named subsection under `## Usage`
+   following the same style as the existing entries.
+
+For updates to existing skills: check whether the description row in the README needs to
+be updated to reflect the change.
+
+---
+
+## Rules
+
+- Never generate a partial SKILL.md and ask the user to complete it. Produce the full file.
+- Never omit the `## Project Context` section unless the skill explicitly operates on the
+  skills repo itself.
+- Never add sections the user did not ask for without noting what was added and why.
+- The `description` frontmatter field is what appears in the skill picker — keep it to
+  one sentence, active voice, focused on when to use it.
+- Read-only skills must say so explicitly in the H1 summary section (e.g. "This skill is
+  **read-only**").
+- Do not invent MCP tool usage. Only include servers the user confirmed this skill needs.
