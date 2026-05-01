@@ -79,6 +79,14 @@ for rf in $ROOT_FILES; do
   [ -f "$SKILLS_DIR/$rf" ] && cp "$SKILLS_DIR/$rf" "$BEFORE_DIR/__root__$rf"
 done
 
+# Snapshot scripts/ before update
+if [ -d "$SKILLS_DIR/scripts" ]; then
+  for f in "$SKILLS_DIR/scripts/"*; do
+    [ -f "$f" ] || continue
+    cp "$f" "$BEFORE_DIR/__scripts__$(basename "$f")"
+  done
+fi
+
 for upstream_skill_dir in "$CLONE_DIR"/*/; do
   [ -d "$upstream_skill_dir" ] || continue
   skill="$(basename "$upstream_skill_dir")"
@@ -111,6 +119,15 @@ for rf in $ROOT_FILES; do
   [ -f "$CLONE_DIR/$rf" ] && cp "$CLONE_DIR/$rf" "$SKILLS_DIR/$rf"
 done
 
+# Sync scripts/ from upstream
+if [ -d "$CLONE_DIR/scripts" ]; then
+  mkdir -p "$SKILLS_DIR/scripts"
+  for f in "$CLONE_DIR/scripts/"*; do
+    [ -f "$f" ] || continue
+    cp "$f" "$SKILLS_DIR/scripts/$(basename "$f")"
+  done
+fi
+
 for f in "$SKILLS_DIR"/*/SKILL.md; do
   [ -f "$f" ] || continue
   skill="$(basename "$(dirname "$f")")"
@@ -121,6 +138,14 @@ done
 for rf in $ROOT_FILES; do
   [ -f "$SKILLS_DIR/$rf" ] && cp "$SKILLS_DIR/$rf" "$AFTER_DIR/__root__$rf"
 done
+
+# Snapshot scripts/ after update
+if [ -d "$SKILLS_DIR/scripts" ]; then
+  for f in "$SKILLS_DIR/scripts/"*; do
+    [ -f "$f" ] || continue
+    cp "$f" "$AFTER_DIR/__scripts__$(basename "$f")"
+  done
+fi
 
 ADDED=""
 REMOVED=""
@@ -165,7 +190,22 @@ done
 root_modified_count=0
 for rf in $ROOT_MODIFIED; do root_modified_count=$((root_modified_count+1)); done
 
-TOTAL=$(( added_count + removed_count + modified_count + root_modified_count ))
+# Count modified scripts
+SCRIPTS_MODIFIED=""
+for after_f in "$AFTER_DIR"/__scripts__*; do
+  [ -f "$after_f" ] || continue
+  fname="$(basename "$after_f" | sed 's/^__scripts__//')"
+  before_f="$BEFORE_DIR/__scripts__$fname"
+  if [ ! -f "$before_f" ]; then
+    SCRIPTS_MODIFIED="$SCRIPTS_MODIFIED $fname"
+  elif ! diff -q "$before_f" "$after_f" > /dev/null 2>&1; then
+    SCRIPTS_MODIFIED="$SCRIPTS_MODIFIED $fname"
+  fi
+done
+scripts_modified_count=0
+for f in $SCRIPTS_MODIFIED; do scripts_modified_count=$((scripts_modified_count+1)); done
+
+TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count ))
 
 if [ $TOTAL -eq 0 ]; then
   echo "STATUS: up-to-date"
@@ -214,6 +254,26 @@ if [ $root_modified_count -gt 0 ]; then
       --label "after/$rf" \
       "$BEFORE_DIR/__root__$rf" "$AFTER_DIR/__root__$rf" \
       | sed 's/^/    /' || true
+  done
+  echo ""
+fi
+
+if [ $scripts_modified_count -gt 0 ]; then
+  echo "--- SCRIPTS UPDATED ($scripts_modified_count) ---"
+  for f in $SCRIPTS_MODIFIED; do
+    echo ""
+    echo "  file: scripts/$f"
+    before_f="$BEFORE_DIR/__scripts__$f"
+    after_f="$AFTER_DIR/__scripts__$f"
+    if [ -f "$before_f" ]; then
+      diff --unified=3 \
+        --label "before/scripts/$f" \
+        --label "after/scripts/$f" \
+        "$before_f" "$after_f" \
+        | sed 's/^/    /' || true
+    else
+      echo "    (new file)"
+    fi
   done
   echo ""
 fi
