@@ -11,7 +11,7 @@ Reusable OpenCode skills for structured software development with AI agents.
 | [reviewer](reviewer/SKILL.md) | Reviews staged changes for security, correctness, performance, IaC safety, observability, and convention adherence; returns a PASS / PASS WITH COMMENTS / BLOCK verdict with Acceptance Criteria traceability |
 | [infosec](infosec/SKILL.md) | Read-only security and compliance audit (ISO27001-aligned by default). Audits encryption, access control, audit logging, secrets, IAM, network exposure, and supply chain. Returns APPROVED / REQUIRES CHANGES / APPROVED WITH EXCEPTION |
 | [decision-log](decision-log/SKILL.md) | Captures and maintains architectural decisions (ADRs) in `docs/decisions/` with a running index |
-| [dev-workflow](dev-workflow/SKILL.md) | Full feature development cycle: proposal → implementation → review → infosec sign-off → decision logging → PR |
+| [create-feature](create-feature/SKILL.md) | Full feature development cycle: proposal → implementation → review → infosec sign-off → decision logging → PR |
 | [project-bootstrap](project-bootstrap/SKILL.md) | Interactive bootstrap that asks a structured set of questions (app stack, IaC, observability, security/compliance, domain) and produces a complete CLAUDE.md and Project Context block |
 | [project-onboard](project-onboard/SKILL.md) | Interactive onboarding for an existing codebase — investigates the repo to fill in CLAUDE.md and the Project Context block, asking the user only what the code can't answer |
 | [update-skills](update-skills/SKILL.md) | Pulls the latest skills from the upstream repository and reports what changed (added, removed, modified) with a unified diff per skill |
@@ -41,7 +41,7 @@ ln -s ~/Documents/skills ~/.config/opencode/skills
 **3. Verify**
 
 Open OpenCode and check that the skills appear in the skill tool. You should see `architect`,
-`developer`, `reviewer`, `infosec`, `decision-log`, `dev-workflow`, and `project-bootstrap` listed.
+`developer`, `reviewer`, `infosec`, `decision-log`, `create-feature`, and `project-bootstrap` listed.
 
 ---
 
@@ -140,7 +140,7 @@ The script applies these tool restrictions automatically:
 | `reviewer` | `Read, Grep, Glob, Bash` |
 | `architect` | `Read, Grep, Glob, Write, Edit, WebFetch` |
 | `decision-log` | `Read, Grep, Glob, Write, Edit` |
-| `developer`, `dev-workflow`, `project-bootstrap` | All tools |
+| `developer`, `create-feature`, `project-bootstrap` | All tools |
 
 Commit `.claude/agents/` to version control so your whole team shares the same agents.
 Claude Code loads them automatically at session start.
@@ -172,7 +172,7 @@ Use the decision-log skill to log the decision made in the last conversation.
 ```
 
 ```
-Use the dev-workflow skill to walk through the full feature cycle for this task.
+Use the create-feature skill to walk through the full feature cycle for this task.
 ```
 
 ```

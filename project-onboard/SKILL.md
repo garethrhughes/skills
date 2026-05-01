@@ -662,7 +662,7 @@ the `---` rule that follows it — with the generated Project Context block from
 Output 2. Do this for every skill file present.
 
 Confirm to the user which files were updated, e.g.:
-> "Updated Project Context in: architect, developer, reviewer, infosec, dev-workflow"
+> "Updated Project Context in: architect, developer, reviewer, infosec, create-feature"
 
 If `.opencode/skills/` does not exist, tell the user:
 
@@ -726,4 +726,4 @@ Tell the user:
 >    `use the decision-log skill to import the existing ADRs into the index`
 > 5. For a deeper security pass on the gaps surfaced in Phase 7, run:
 >    `use the infosec skill to audit this codebase`
-> 6. For your first new feature, run: `use the dev-workflow skill`"
+> 6. For your first new feature, run: `use the create-feature skill`"

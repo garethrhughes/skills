@@ -465,7 +465,7 @@ follows it — with the generated Project Context block from Output 2. Do this f
 skill file present.
 
 Confirm to the user which files were updated, e.g.:
-> "Updated Project Context in: architect, developer, reviewer, infosec, dev-workflow"
+> "Updated Project Context in: architect, developer, reviewer, infosec, create-feature"
 
 If `.opencode/skills/` does not exist, tell the user:
 
@@ -523,4 +523,4 @@ Tell the user:
 > 2. Scaffold `infra/modules/`, `infra/envs/{dev,staging,prod}/`, `docs/proposals/`,
 >    and `docs/decisions/` directories
 > 3. If you have existing architectural decisions, run: `use the decision-log skill to seed the initial ADRs`
-> 4. For your first feature, run: `use the dev-workflow skill`"
+> 4. For your first feature, run: `use the create-feature skill`"

@@ -51,7 +51,7 @@ skill_tools() {
     reviewer)     echo "Read, Grep, Glob, Bash" ;;
     architect)    echo "Read, Grep, Glob, Write, Edit, WebFetch" ;;
     decision-log) echo "Read, Grep, Glob, Write, Edit" ;;
-    *)            echo "" ;;  # developer, dev-workflow, project-bootstrap: all tools
+    *)            echo "" ;;  # developer, create-feature, project-bootstrap: all tools
   esac
 }
 
@@ -74,7 +74,7 @@ skill_description() {
     decision-log)
       echo "Use to record an architectural or technical decision as an ADR in docs/decisions/. Triggered after a technology is chosen, a pattern adopted, a trade-off made, or a proposal accepted."
       ;;
-    dev-workflow)
+    create-feature)
       echo "Use to walk through the full feature development cycle: proposal → implementation → code review → infosec sign-off → decision logging → PR."
       ;;
     project-bootstrap)

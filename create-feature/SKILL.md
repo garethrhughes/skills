@@ -1,10 +1,10 @@
 ---
-name: dev-workflow
+name: create-feature
 description: The full feature development cycle as a numbered checklist — from proposal through implementation, review, infosec sign-off, decision logging, and PR. Defines when each agent handoff happens, the dedicated path for infrastructure changes, and how to handle iteration loops.
 compatibility: opencode
 ---
 
-# Dev Workflow Skill
+# Create Feature Skill
 
 This skill describes the complete feature development cycle used in this project. Follow
 these steps in order for any non-trivial piece of work. Each step maps to a specific skill.
