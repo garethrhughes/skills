@@ -31,15 +31,20 @@ Use the **architect** skill to:
    network changes, new resources)
 2. If yes: write a proposal in `docs/proposals/NNNN-short-title.md`, including the
    **Infrastructure Addendum** if any infra is touched
-3. Get the proposal reviewed (share with the team / another agent) and update status to
-   `Accepted`
-4. Create any ADR(s) that the proposal produces in `docs/decisions/`
+3. **Present the completed proposal to the user and explicitly ask them to either:**
+   - **Accept the proposal** (proceed to Step 2), or
+   - **Provide feedback** (revise the proposal and re-present for approval)
+   
+   Do not proceed until the user explicitly accepts. If the user provides feedback, incorporate
+   it, update the proposal, and ask again. Repeat until the user accepts.
+4. Once accepted: update the proposal status to `Accepted`
+5. Create any ADR(s) that the proposal produces in `docs/decisions/`
 
 **Skip this step only for:** trivial bug fixes, copy changes, or configuration tweaks that
 do not affect architecture, module boundaries, schema, infra, or security posture.
 
-**Handoff to Step 2 when:** the proposal status is `Accepted` (or the change is confirmed
-as trivial).
+**Handoff to Step 2 when:** the user has explicitly accepted the proposal (or the change is
+confirmed as trivial).
 
 ---
 
