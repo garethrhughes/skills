@@ -19,6 +19,38 @@ these steps in order for any non-trivial piece of work. Each step maps to a spec
 
 ---
 
+## Feature Intake
+
+Before starting the cycle, gather the feature brief from the user.
+
+Ask the following in a single prompt — do not drip-feed one question at a time:
+
+> "Before we start, I need a brief for this feature:
+>
+> 1. **Feature description** — What should this feature do? Describe the desired behaviour from the user's or system's perspective.
+> 2. **Acceptance criteria** — What conditions must be true for this feature to be considered complete? List them as bullet points if possible (e.g. "Given X, when Y, then Z").
+>
+> You can be as concise or detailed as you like — I'll use this to drive the proposal in Step 1."
+
+Wait for the user's response. Do not proceed until both a description and at least one acceptance criterion have been provided.
+
+Once received, reflect the brief back in a compact summary table:
+
+```
+| Field                | Provided value                              |
+|----------------------|---------------------------------------------|
+| Feature description  | {description}                               |
+| Acceptance criteria  | {criterion 1}                               |
+|                      | {criterion 2}                               |
+|                      | ...                                         |
+```
+
+Ask: "Does this capture what you need? Confirm to proceed, or correct anything above."
+
+Wait for confirmation before moving to Step 1.
+
+---
+
 ## The Full Feature Development Cycle
 
 ### Step 1 — Design (Architect skill)
@@ -31,12 +63,29 @@ Use the **architect** skill to:
    network changes, new resources)
 2. If yes: write a proposal in `docs/proposals/NNNN-short-title.md`, including the
    **Infrastructure Addendum** if any infra is touched
-3. **Present the completed proposal to the user and explicitly ask them to either:**
-   - **Accept the proposal** (proceed to Step 2), or
-   - **Provide feedback** (revise the proposal and re-present for approval)
-   
+3. **Present the completed proposal to the user as a structured summary table, then ask for sign-off:**
+
+   ```
+   | Section                  | Summary                                      |
+   |--------------------------|----------------------------------------------|
+   | Problem / motivation     | {one-line summary}                           |
+   | Proposed solution        | {one-line summary}                           |
+   | Acceptance criteria      | {criterion 1}                                |
+   |                          | {criterion 2}                                |
+   | Key design decisions     | {decision 1}                                 |
+   |                          | {decision 2}                                 |
+   | Infrastructure changes   | {yes — {summary} / no}                       |
+   | Security considerations  | {yes — {summary} / none identified}          |
+   | Proposal file            | docs/proposals/NNNN-short-title.md           |
+   ```
+
+   Then ask:
+
+   > "Does this proposal meet the brief? Reply **accept** to proceed to implementation,
+   > or provide feedback and I'll revise and re-present."
+
    Do not proceed until the user explicitly accepts. If the user provides feedback, incorporate
-   it, update the proposal, and ask again. Repeat until the user accepts.
+   it, update the proposal, update the summary table, and ask again. Repeat until the user accepts.
 4. Once accepted: update the proposal status to `Accepted`
 5. Create any ADR(s) that the proposal produces in `docs/decisions/`
 
