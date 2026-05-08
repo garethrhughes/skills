@@ -474,21 +474,23 @@ This should be a dense, scannable summary — not the full CLAUDE.md.
 
 ## After Output
 
+The post-output workflow has seven steps. Run them strictly in order. If any step fails,
+stop and report the failure to the user before continuing — do not paper over a broken
+scaffold by moving on.
+
 ### Step 1 — Detect local skills
 
-Before telling the user what to do, check whether skills are local to the project:
+Check whether skills are local to the project:
 
 - Look for `.opencode/skills/` in the project root
 - If it exists, list which SKILL.md files are present
 
 ### Step 2 — Insert Project Context into local skills
 
-If `.opencode/skills/` exists:
-
-For each SKILL.md found, replace the `## Project Context` placeholder block — the block
-that begins with the `> Fill in before use:` blockquote and ends at the `---` rule that
-follows it — with the generated Project Context block from Output 2. Do this for every
-skill file present.
+If `.opencode/skills/` exists, for each SKILL.md found, replace the `## Project Context`
+placeholder block — the block that begins with the `> Fill in before use:` blockquote
+and ends at the `---` rule that follows it — with the generated Project Context block
+from Output 2. Do this for every skill file present.
 
 Confirm to the user which files were updated, e.g.:
 > "Updated Project Context in: architect, developer, reviewer, infosec, create-feature"
@@ -502,25 +504,254 @@ If `.opencode/skills/` does not exist, tell the user:
 > To version skills inside this project and have the context inserted automatically,
 > copy the skills into `.opencode/skills/` — see the skills README for instructions."
 
-### Step 3 — MCP Setup
+### Step 3 — Scaffold the Project
 
-Invoke the `mcp-setup` skill to let the user choose which MCP servers to add to
-this project. The mcp-setup skill will handle reading/writing `opencode.json` and
-explaining each option.
+**Driving principle:** every file and directory created in this step must be derivable
+from an answer the user gave in Phases 1–8. Do not invent structure, dependencies, or
+config that the user did not select. Where the user accepted a default, use the expanded
+default value (not the literal word "default").
 
-After mcp-setup completes, continue to Step 4.
+**Inputs you must read before doing anything else:**
 
----
+| Decision | Source |
+|---|---|
+| Repo layout (monorepo vs single-app, top-level dirs) | Phase 4 |
+| Backend framework, language, ORM, validation, logger, test runner, auth | Phase 2 Round A |
+| Frontend present? If so framework, styling, state, test runner | Phase 2 Round B |
+| Local dev approach (Docker Compose? what services?) | Phase 3 |
+| IaC tool, state backend, environments | Phase 3 |
+| Task runner (Makefile, just, npm scripts only, etc.) | Phase 3 |
+| Internal module structure (per-app folder layout) | Phase 4 |
 
-### Step 4 — Finish
+State these inputs back to the user as a one-line summary before scaffolding, e.g.
+"Scaffolding: monorepo with `backend/` (NestJS) and `frontend/` (Next.js); Docker Compose
+for Postgres; OpenTofu under `infra/`; Makefile as task runner."
+
+#### 3.1 Prefer official scaffolders
+
+Where the chosen framework ships a first-party scaffolder, use it instead of
+hand-writing files — it produces a known-good `package.json`, `tsconfig.json`,
+linter config, and entry point that the framework will keep in sync over time.
+
+| Framework (from Phase 2) | Command |
+|---|---|
+| NestJS | `nest new <dir> --package-manager npm --skip-git` |
+| Next.js | `npx create-next-app@latest <dir> --typescript --eslint --app --src-dir=false --tailwind=<yes\|no> --import-alias='@/*'` |
+| Express / Fastify (no scaffolder) | Hand-write minimal `package.json` + `tsconfig.json` + entry point |
+| Vite + React | `npm create vite@latest <dir> -- --template react-ts` |
+| SvelteKit | `npx sv create <dir>` |
+| Other | Use the framework's documented scaffolder if one exists; otherwise hand-write the minimum |
+
+If the user chose something not in the table, search the framework docs for an
+official scaffolder before falling back to hand-written files.
+
+After the scaffolder runs, **only then** layer on project-specific additions
+(extra dependencies, the chosen ORM, the chosen logger, the chosen state library,
+etc.) on top of the scaffolded baseline.
+
+#### 3.2 Repo layout
+
+Create the top-level structure exactly as captured in Phase 4. Do not assume
+`backend/` + `frontend/` — a single-app repo has no such split, and a different
+monorepo layout (e.g. `apps/api`, `apps/web`, `packages/shared`) must be honoured.
+
+#### 3.3 IaC layout
+
+Only create IaC directories if Phase 3 specified an IaC tool. If yes:
+
+- Create the directory structure the user described (default: `infra/modules/` and
+  one directory under `infra/envs/` per environment they listed)
+- Create `infra/.gitignore` with patterns for the chosen tool:
+  - OpenTofu / Terraform: `.terraform/`, `*.tfstate`, `*.tfstate.backup`, `*.tfvars` (except `*.example.tfvars`), `.terraform.lock.hcl` is **kept** (committed)
+  - Pulumi: `Pulumi.*.yaml` secrets, `node_modules/`
+  - AWS CDK: `cdk.out/`, `*.js` (if TypeScript), `node_modules/`
+- Pin provider versions where the chosen tool supports it (per `RULES.md#infrastructure-as-code`)
+
+#### 3.4 Local dev
+
+Only create `docker-compose.yml` if the user said Docker Compose in Phase 3. The
+services in it must exactly match what the user said they need (e.g. only Postgres
+if no Redis was mentioned). For non-Docker local dev (Devbox, Nix, native install),
+follow whatever the user described.
+
+#### 3.5 Task runner
+
+Generate task-runner files **only for the runner the user chose** in Phase 3:
+
+- **Makefile**: create one Makefile per app directory plus a root Makefile that delegates
+- **just**: create a `justfile` instead of a Makefile
+- **npm scripts only**: put everything in `package.json` `scripts`, no Makefile
+
+Targets must be derived from what actually exists in the project. Don't include
+`migrate` if there's no ORM with migrations. Don't include `dev-web` if there's no
+frontend. Don't include `plan`/`apply` if there's no IaC. A reasonable default set
+for a backend with a database and IaC is:
+
+```
+up        # start local dependencies (compose up -d, etc.)
+down      # stop local dependencies
+dev       # run the app in dev mode
+test      # run the test suite
+lint      # run linter + formatter check
+build     # produce a production build
+migrate   # only if migrations exist
+plan      # only if IaC exists
+apply     # only if IaC exists
+```
+
+In a monorepo, prefix targets with the app name (`dev-api`, `test-web`, etc.) and
+make the root targets fan out.
+
+#### 3.6 Lint & format config
+
+For each TypeScript/JavaScript app:
+
+- **ESLint**: use the modern flat-config format (`eslint.config.js` or
+  `eslint.config.mjs`), not the deprecated `.eslintrc.*`. If the framework's
+  scaffolder produced an ESLint config, leave it in place and only add rules.
+  At minimum, enable `@typescript-eslint` strict + the framework's recommended
+  preset.
+- **Prettier**: create `.prettierrc.json` with a minimal config:
+  ```json
+  {
+    "singleQuote": true,
+    "trailingComma": "all",
+    "printWidth": 100
+  }
+  ```
+  Add plugins **only if the relevant tool is in the stack**:
+  - `prettier-plugin-tailwindcss` only if the user chose Tailwind in Phase 2
+  - `prettier-plugin-packagejson` only if the user explicitly opted in (don't add by default)
+
+  Add `.prettierignore` with `dist/`, `build/`, `coverage/`, `.next/`, `node_modules/`,
+  and any other generated directories the framework uses.
+
+If the user has overridden any formatting choice in Phase 5, honour the override.
+
+#### 3.7 Config & env
+
+For each app:
+
+- Create `.env.example` listing every env var the app needs, with safe placeholder
+  values and a one-line comment per var. Variables come from the user's answers
+  (database URL if there's a database, JWT secret if auth was selected, third-party
+  API keys from Phase 7, etc.) — do not invent variables.
+- Add `.env`, `.env.local`, `.env.*.local` to `.gitignore` per `RULES.md#configuration--secrets`.
+- Wire env access through the framework's typed config mechanism per
+  `RULES.md#configuration--secrets` (e.g. `ConfigService` for NestJS, a Zod-validated
+  `config/` module for Next.js). Do **not** allow `process.env` reads outside that module.
+
+#### 3.8 Docs directories
+
+Create `docs/proposals/` and `docs/decisions/` regardless of stack — these are required
+by the proposal/ADR workflow that all generated `CLAUDE.md` files reference. Add a
+single `.gitkeep` in each so git tracks them while empty.
+
+#### 3.9 Install dependencies
+
+Run the install command for the chosen package manager (`npm install`,
+`pnpm install`, `yarn install`, `bun install`) in each app directory (or once at the
+root for a workspace-style monorepo). Capture the output. If install fails, stop and
+report the error — do not proceed to the README or smoke test.
+
+### Step 4 — Create Project README
+
+Generate `README.md` at the repo root, populated from the user's actual answers and
+the files just scaffolded. Do **not** invent commands — read the generated `Makefile` /
+`justfile` / `package.json` `scripts` and document only what exists.
+
+Sections (omit any that don't apply):
+
+```markdown
+# {project name}
+
+{one-line description from Phase 1.2}
+
+## Prerequisites
+
+- Node {version pinned in package.json `engines.node`, or current LTS}
+- {package manager} {version}
+- Docker + Docker Compose *(only if Phase 3 uses it)*
+- {IaC tool} {version} *(only if Phase 3 uses one)*
+- {cloud CLI, e.g. AWS CLI v2} *(only if deploying to that cloud)*
+
+## Quick Start
+
+\```bash
+# 1. Copy environment template
+cp .env.example .env  # then fill in any [REQUIRED] values
+
+# 2. Start local dependencies
+{the actual command from the generated task runner, e.g. `make up`}
+
+# 3. Install dependencies (skip if already done)
+{the actual install command}
+
+# 4. Run database migrations  *(only if ORM with migrations)*
+{the actual migrate command}
+
+# 5. Start the app(s)
+{the actual dev command(s)}
+\```
+
+The {backend|app} will be available at http://localhost:{port from config}.
+{If frontend: The frontend will be available at http://localhost:{frontend port}.}
+
+## Available Commands
+
+{Render a table of every target in the generated Makefile/justfile/scripts with
+its one-line description.}
+
+## Architecture
+
+{1–2 sentences derived from the Project Context block.}
+
+## Documentation
+
+- [`CLAUDE.md`](./CLAUDE.md) — authoritative project context, conventions, and rules
+- [`docs/proposals/`](./docs/proposals/) — design proposals
+- [`docs/decisions/`](./docs/decisions/) — architecture decision records (ADRs)
+
+## Contributing
+
+This project follows the conventions in [`CLAUDE.md`](./CLAUDE.md), which references
+the canonical engineering rules. Please read it before opening a PR.
+```
+
+### Step 5 — Smoke test the scaffold
+
+Verify the scaffold actually works before handing back to the user. Run, in order,
+and stop at the first failure:
+
+1. **Typecheck**: run the project's typecheck command (e.g. `npm run typecheck`,
+   `tsc --noEmit`). For each app.
+2. **Lint**: run the lint command for each app.
+3. **Build** (if a build script exists): run it for each app.
+4. **Start local dependencies**: run the equivalent of `make up` (only if a local
+   dependency stack exists). Wait for services to become healthy.
+5. **Run migrations** (only if migrations exist) against the local database.
+6. **Start the app(s)** in dev mode in the background, wait up to 30 seconds for
+   readiness (e.g. poll `GET /health` for a backend with that endpoint, or watch
+   for the framework's "ready on port X" log line). Then stop them.
+
+Report each step's outcome to the user. If a step fails, surface the exact error
+output and ask the user how they want to proceed (fix-and-retry vs. accept-and-move-on)
+— do not silently continue.
+
+### Step 6 — MCP Setup
+
+Now that the project exists on disk, invoke the `mcp-setup` skill to let the user
+choose which MCP servers to add. The mcp-setup skill will handle reading/writing
+`opencode.json` and explaining each option.
+
+### Step 7 — Finish
 
 Tell the user:
 
-> "Your CLAUDE.md is ready to commit to the root of your repository.
+> "Your project is bootstrapped, installed, and verified.
 >
 > Suggested next steps:
-> 1. Commit `CLAUDE.md`, `opencode.json`, and any updated skill files to version control
-> 2. Scaffold `infra/modules/`, `infra/envs/{dev,staging,prod}/`, `docs/proposals/`,
->    and `docs/decisions/` directories
+> 1. Commit `CLAUDE.md`, `README.md`, `opencode.json`, and any updated skill files to version control
+> 2. Start developing — the dev command is `{actual dev command from the scaffold}`
 > 3. If you have existing architectural decisions, run: `use the decision-log skill to seed the initial ADRs`
 > 4. For your first feature, run: `use the create-feature skill`"
