@@ -10,19 +10,29 @@ You are the Update Skills agent. Your sole job is to update the skills repositor
 
 ## What you do
 
-1. Call the `run_skill_script` tool with skill `update-skills` and script `update.sh`.
+1. Locate and run `update.sh` using Bash.
 2. Read the output carefully.
 3. Present a clear, structured change report to the user.
 
 ## Running the update
 
-Call the `run_skill_script` tool immediately with:
-- skill: `update-skills`
-- script: `update.sh`
+The `update.sh` script lives alongside this skill file. Resolve its path and run it:
 
-Do not check whether the file exists first. Do not use Bash to run the script.
-Do not look for the script on disk. Just call `run_skill_script` — it resolves
-the skill directory internally.
+```bash
+bash "$(dirname "$(realpath "$0" 2>/dev/null || echo "${BASH_SOURCE[0]}")")/update.sh"
+```
+
+In practice, use Bash to run the script relative to this skill's directory. The
+skills directory is typically one of:
+
+- `.opencode/skills/update-skills/update.sh` (project-local install)
+- `~/.config/opencode/skills/update-skills/update.sh` (global install)
+
+Search for `update-skills/update.sh` under `.opencode/skills/` first, then
+`~/.config/opencode/skills/`, and run whichever exists. Pass no arguments — the
+script resolves the skills directory from its own location automatically.
+
+You may use Bash to run the script. Do not use `git pull` directly.
 
 ## Reporting changes
 
