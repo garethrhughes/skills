@@ -340,7 +340,7 @@ Include the settled decisions table populated with any decisions from Phase 8.
 ## Architecture Rules
 
 This project follows the canonical rules in
-[`RULES.md`](https://github.com/anomalyco/skills/blob/main/RULES.md) (TypeScript
+[`RULES.md`](https://github.com/garethrhughes/skills/blob/main/RULES.md) (TypeScript
 conventions, config & secrets, external HTTP clients, frontend, backend,
 observability, IaC, testing, git & PRs).
 

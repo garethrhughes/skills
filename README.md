@@ -39,6 +39,8 @@ defaults above.
 
 ## Setup
 
+### OpenCode (default)
+
 Install the skills into your project with a single command run from your project root:
 
 ```bash
@@ -48,6 +50,30 @@ git clone --depth 1 https://github.com/garethrhughes/skills .opencode/skills && 
 This copies the skills into `.opencode/skills/` inside your project, where OpenCode picks
 them up automatically. The `.git` directory is removed so the skills folder is a plain
 directory tracked by your own repository rather than a nested git repo.
+
+### Claude Code
+
+After cloning the skills repo (anywhere — defaults to `~/.config/opencode/skills`), run
+from your project root:
+
+```bash
+~/.config/opencode/skills/scripts/install-claude-agents.sh
+```
+
+This writes one agent file per skill into `.claude/agents/<skill>.md` with the
+appropriate per-skill tool restrictions, copies `RULES.md` alongside, and is safe to
+re-run after `update-skills` pulls upstream changes.
+
+### GitHub Copilot
+
+```bash
+~/.config/opencode/skills/scripts/install-copilot-agents.sh
+```
+
+Symlinks each `SKILL.md` into `.github/agents/<skill>.md` and copies `RULES.md`
+alongside.
+
+### Configure for your project
 
 Once installed, configure the skills for your project by running either:
 

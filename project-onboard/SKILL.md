@@ -63,8 +63,8 @@ and directories:
 
 - `CLAUDE.md`
 - `AGENTS.md`
-- `.claude/` (Claude Code agents, commands, settings)
-- `.github/agents/` (GitHub Copilot agents)
+- `.claude/` (Claude Code agents, commands, settings — produced by `scripts/install-claude-agents.sh`)
+- `.github/agents/` (GitHub Copilot agents — produced by `scripts/install-copilot-agents.sh`)
 - `.github/copilot-instructions.md`
 - `.opencode/` (OpenCode skills, agents, commands)
 - `cursor/` or `.cursor/` (Cursor rules)
@@ -539,7 +539,7 @@ Generate a complete, filled-in `CLAUDE.md` using the template structure below.
 ## Architecture Rules
 
 This project follows the canonical rules in
-[`RULES.md`](https://github.com/anomalyco/skills/blob/main/RULES.md) (TypeScript,
+[`RULES.md`](https://github.com/garethrhughes/skills/blob/main/RULES.md) (TypeScript,
 config & secrets, external HTTP clients, frontend, backend, observability, IaC,
 testing, git & PRs).
 

@@ -63,3 +63,20 @@ change there has cross-cutting impact. Show:
 - Do not edit any skill files yourself — the script handles everything.
 - Do not run `git pull` directly; always use the bundled script.
 - If the script exits with a non-zero code, report the error output verbatim and stop.
+
+## After updating — re-run installers if applicable
+
+The update script syncs the skills, root files, and `scripts/` directory but does
+**not** re-propagate changes into Claude Code or Copilot agent directories. After
+a successful update, remind the user:
+
+- **Claude Code users** — re-run `scripts/install-claude-agents.sh` from each
+  project root to refresh `.claude/agents/<skill>.md` and pick up any new tool
+  restrictions or RULES.md changes.
+- **GitHub Copilot users** — re-run `scripts/install-copilot-agents.sh` to refresh
+  symlinks in `.github/agents/` and re-copy `RULES.md` alongside.
+- **OpenCode users** — no action needed; OpenCode reads `.opencode/skills/`
+  directly.
+
+If `RULES.md` was updated, also remind the user to compare any overrides in their
+project `CLAUDE.md` against the new rules.
