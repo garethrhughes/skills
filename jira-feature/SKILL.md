@@ -24,10 +24,13 @@ through setting it up before proceeding.
 >
 > - **Jira instance URL** — e.g. `https://your-org.atlassian.net`
 > - **Default project key(s)** — e.g. `PLAT, API, FE`
-> - **Acceptance criteria location** — e.g. custom field 'Acceptance Criteria', or `## Acceptance Criteria` heading in the Description
+> - **Acceptance criteria location** — the search order in Step 3 is: (1) custom field
+>   'Acceptance Criteria', (2) `## Acceptance Criteria` heading in the Description, (3)
+>   bulleted list after "AC:" / "Done when:". Note in your Project Context which of
+>   these your team uses primarily.
 >
 > Example (paste the Jira line from your Project Context block here):
-> `Jira: https://acme.atlassian.net — projects: PLAT, API — AC: ## Acceptance Criteria heading in Description`
+> `Jira: https://acme.atlassian.net — projects: PLAT, API — AC: custom field 'Acceptance Criteria' (fallback to ## heading)`
 
 ---
 

@@ -1,6 +1,24 @@
 # OpenCode Skills
 
-Reusable OpenCode skills for structured software development with AI agents.
+Opinionated OpenCode skills for structured software development with AI agents.
+
+These skills assume — and enforce — a specific stack:
+
+- **Backend:** TypeScript + NestJS 11 + TypeORM + PostgreSQL
+- **Frontend:** TypeScript + Next.js (App Router) + React Server Components by default
+- **Infrastructure:** OpenTofu on AWS with remote state and pinned provider versions
+- **Observability:** structured logging via `pino`
+- **Testing:** Jest (backend) + Vitest (frontend) with TDD (red-green-refactor)
+- **Compliance:** ISO27001-aligned by default
+
+The conventions are deliberately strict (no `any`, no `enum`, no barrel files, no
+`process.env` outside `ConfigService`, no `useEffect` for data fetching, no `*` action on
+`*` resource, 5s default timeouts on external HTTP, standard resource tags, etc.). They
+are codified in [`RULES.md`](RULES.md) and referenced by every skill.
+
+If your project uses a different stack, run `project-bootstrap` or `project-onboard` to
+override the defaults — but expect to do extra work, since the skills are tuned for the
+defaults above.
 
 ## Skills
 
@@ -10,7 +28,7 @@ Reusable OpenCode skills for structured software development with AI agents.
 | [developer](developer/SKILL.md) | Writes production-quality TypeScript following TDD (red-green-refactor) and project conventions |
 | [reviewer](reviewer/SKILL.md) | Reviews staged changes for security, correctness, performance, IaC safety, observability, and convention adherence; returns a PASS / PASS WITH COMMENTS / BLOCK verdict with Acceptance Criteria traceability |
 | [infosec](infosec/SKILL.md) | Read-only security and compliance audit (ISO27001-aligned by default). Audits encryption, access control, audit logging, secrets, IAM, network exposure, and supply chain. Returns APPROVED / REQUIRES CHANGES / APPROVED WITH EXCEPTION |
-| [decision-log](decision-log/SKILL.md) | Captures and maintains architectural decisions (ADRs) in `docs/decisions/` with a running index |
+| [decision-log](decision-log/SKILL.md) | Sole owner of ADR creation. Captures and maintains architectural decisions in `docs/decisions/` with a running index; invoked by `architect` after a proposal is accepted |
 | [create-feature](create-feature/SKILL.md) | Full feature development cycle: proposal → implementation → review → infosec sign-off → decision logging → PR |
 | [jira-feature](jira-feature/SKILL.md) | Loads a Jira ticket by URL or issue key, extracts description and acceptance criteria, and drives the full create-feature cycle with that ticket as the requirement source |
 | [project-bootstrap](project-bootstrap/SKILL.md) | Interactive bootstrap for new projects — asks structured questions covering app stack, IaC, observability, security/compliance, domain, and Jira integration, then produces a complete `CLAUDE.md` and populates the Project Context block in all local skills |

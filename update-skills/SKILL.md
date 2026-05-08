@@ -47,6 +47,17 @@ Then for each **modified** skill, show a concise summary of what changed (not th
 
 If nothing changed, say so clearly: "All skills are already up to date. No changes pulled."
 
+### RULES.md changes (special case)
+
+If `RULES.md` itself was modified in this update, **call it out at the top of the
+report** — RULES.md is the single source of truth that every skill references, so any
+change there has cross-cutting impact. Show:
+
+- The version line if present (e.g. "RULES.md updated from v1.0 → v1.1")
+- A summary of which sections changed (added rules, tightened rules, relaxed rules)
+- Any project-specific overrides in the project's `CLAUDE.md` that may now conflict
+  with the new rules — flag these so the user can review them
+
 ## Rules
 
 - Do not edit any skill files yourself — the script handles everything.
