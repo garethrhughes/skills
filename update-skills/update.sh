@@ -68,17 +68,50 @@ replace_project_context() {
 # emitted below if the installed RULES.md has been locally modified.
 ROOT_FILES="README.md CLAUDE.md.template RULES.md"
 
-CLONE_DIR="$(mktemp -d)"
+if [ -n "${_UPDATE_SKILLS_REUSE_CLONE:-}" ] && [ -d "$_UPDATE_SKILLS_REUSE_CLONE" ]; then
+  CLONE_DIR="$_UPDATE_SKILLS_REUSE_CLONE"
+  REUSED_CLONE=1
+else
+  CLONE_DIR="$(mktemp -d)"
+  REUSED_CLONE=0
+fi
 BEFORE_DIR="$(mktemp -d)"
 AFTER_DIR="$(mktemp -d)"
 CONTEXT_DIR="$(mktemp -d)"
 cleanup() { rm -rf "$CLONE_DIR" "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT" "$AWK_REPLACE"; }
 trap cleanup EXIT
 
-echo "Fetching upstream skills..."
-git clone --depth 1 --quiet "$UPSTREAM" "$CLONE_DIR"
-echo "Done."
-echo ""
+if [ "$REUSED_CLONE" = "0" ]; then
+  echo "Fetching upstream skills..."
+  git clone --depth 1 --quiet "$UPSTREAM" "$CLONE_DIR"
+  echo "Done."
+  echo ""
+fi
+
+# --- Self-update: re-exec from the new update.sh if upstream changed ---
+# Without this, a change to update.sh itself only takes effect on the *next*
+# run, because the current process is still executing the old logic from a
+# tempfile snapshot taken before this script ran. Detect drift, install the
+# new version, and exec into it so a single /update-skills picks up
+# everything (including any new top-level dirs the new logic syncs).
+UPSTREAM_UPDATE="$CLONE_DIR/update-skills/update.sh"
+INSTALLED_UPDATE="$SKILLS_DIR/update-skills/update.sh"
+if [ -z "${_UPDATE_SKILLS_SELF_UPDATED:-}" ] \
+   && [ -f "$UPSTREAM_UPDATE" ] \
+   && [ -f "$INSTALLED_UPDATE" ] \
+   && ! diff -q "$UPSTREAM_UPDATE" "$INSTALLED_UPDATE" >/dev/null 2>&1; then
+  echo "→ update.sh changed upstream — installing new version and re-running."
+  echo ""
+  cp "$UPSTREAM_UPDATE" "$INSTALLED_UPDATE"
+  chmod +x "$INSTALLED_UPDATE"
+  # Hand the existing clone to the next run so we don't pay for a second
+  # `git clone`. The cleanup trap won't fire because exec replaces this
+  # process; the new run will manage CLONE_DIR via its own trap.
+  _UPDATE_SKILLS_SELF_UPDATED=1 \
+  _UPDATE_SKILLS_REUSE_CLONE="$CLONE_DIR" \
+  _UPDATE_SKILLS_ORIG_DIR="${_UPDATE_SKILLS_ORIG_DIR:-$SCRIPT_DIR}" \
+  exec bash "$INSTALLED_UPDATE" "$@"
+fi
 
 for f in "$SKILLS_DIR"/*/SKILL.md; do
   [ -f "$f" ] || continue
