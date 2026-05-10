@@ -166,9 +166,11 @@ Look for unambiguous stack markers:
 - **`typescript`** — any of: root `package.json` containing `next`, `@nestjs/*`,
   `typeorm`, `vite`, `react`, `vue`, `svelte`; root `tsconfig.json`.
 
-If both sets of markers are present (e.g. ASP.NET Core API with a Next.js SPA), the
-backend host language wins for the *primary* profile but record the secondary stack
-so the relevant overlay also applies.
+If both sets of markers are present (e.g. ASP.NET Core API with a Next.js SPA), pick
+**one** profile based on the backend host language — that overlay is the active one,
+since `CLAUDE.md` carries a single `## Active Skillset`. Note any secondary stack in
+the Onboarding Notes so the user knows it exists, but the worker skills will still
+apply only the chosen overlay. Multi-overlay activation is a future enhancement.
 
 ### Present
 

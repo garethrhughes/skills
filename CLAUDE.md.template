@@ -5,7 +5,9 @@
 This project follows the language-agnostic core rules in
 [`.opencode/skills/RULES.md`](.opencode/skills/RULES.md) plus the matching stack
 overlay in
-[`.opencode/skills/rules/[profile].md`](.opencode/skills/rules/typescript.md).
+[`.opencode/skills/rules/[profile].md`](.opencode/skills/rules/[profile].md)
+(replace `[profile]` with the active skillset above — e.g. `typescript.md` or
+`dotnet.md`).
 Skills (`developer`, `reviewer`, `architect`, `infosec`) read both when applying
 conventions to this project.
 
@@ -99,8 +101,9 @@ The project-wide engineering conventions live in two layers:
    external HTTP clients, observability principles, infrastructure as code, testing,
    git & PRs.
 2. **Stack overlay** (matches the active skillset above):
-   [`.opencode/skills/rules/[profile].md`](.opencode/skills/rules/typescript.md) —
-   language conventions, framework rules, ORM, logger, test runner.
+   [`.opencode/skills/rules/[profile].md`](.opencode/skills/rules/[profile].md) —
+   language conventions, framework rules, ORM, logger, test runner. Replace
+   `[profile]` with the active skillset above (e.g. `typescript.md`, `dotnet.md`).
 
 Both are referenced by every skill and form the single source of truth.
 
