@@ -129,16 +129,46 @@ Then begin Phase 1. Do **not** wait for the user to acknowledge — start workin
 
 ### Investigate
 
-- Read `package.json` (root and any workspace packages) for `name` and `description`.
-- Read root `README.md` (and any `docs/README.md`) for the elevator pitch.
-- Note the repo directory name as a fallback.
-- Detect whether this is a monorepo (workspaces field, `pnpm-workspace.yaml`,
-  `turbo.json`, `nx.json`, `lerna.json`).
+The exact files to read depend on the active profile chosen in Phase 1.5;
+since Phase 1 runs first, check both stacks and use whichever signals are
+present.
+
+**Project name** — try in order:
+
+- Root `package.json` `name`
+- In a JS workspaces monorepo with no root `name`, use the workspace root
+  directory name; do not pick an individual workspace package's `name` as
+  the project name (record those as component names in Phase 4 instead)
+- `*.sln` filename at the repo root
+- Root `*.csproj` `<AssemblyName>` (or the `.csproj` filename if absent)
+- `pyproject.toml` `[project].name` or `setup.cfg` `[metadata].name`
+  (future-proofing — not a currently supported profile, but worth checking)
+- Repo directory name as the final fallback
+
+**Description / overview**:
+
+- Root `README.md` (and any `docs/README.md`) is the primary source for the
+  elevator pitch.
+- Also check `package.json` `description` and `*.csproj` `<Description>` /
+  `<PackageDescription>` as secondary signals.
+
+**Monorepo detection** — any of:
+
+- JS/TS: `workspaces` field in `package.json`, `pnpm-workspace.yaml`,
+  `turbo.json`, `nx.json`, `lerna.json`.
+- .NET: a `*.sln` that references **multiple** `*.csproj` files, or multiple
+  top-level app folders each with their own `*.csproj`.
+- Generic: multiple top-level directories that each look like an app root
+  (their own build/manifest file — `package.json`, `*.csproj`,
+  `pyproject.toml`, `go.mod`, etc.).
 
 ### Infer
 
-- Project name (high confidence from `package.json` or repo name).
-- A draft 1–3 sentence overview from the README, if one exists.
+- Project name (high confidence from any of the primary sources above —
+  `package.json`, `*.sln`, root `*.csproj`, `pyproject.toml`/`setup.cfg`;
+  medium confidence when falling back to the repo directory name).
+- A draft 1–3 sentence overview from the README, if one exists; otherwise
+  from a `description` field in `package.json` or `*.csproj`.
 
 ### Ask the user
 
