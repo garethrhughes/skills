@@ -96,3 +96,4 @@ implementation:
 
 - **Backend:** Jest + Supertest for integration tests against `INestApplication`.
 - **Frontend:** Vitest + React Testing Library.
+
