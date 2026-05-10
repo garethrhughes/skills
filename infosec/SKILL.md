@@ -18,28 +18,33 @@ and privacy violations.
 ## Project Context
 
 > Fill in before use: replace this section with your project's compliance framework(s),
-> data classification scheme, encryption standards, auth model, and any zero-knowledge or
-> client-side-encryption guarantees.
->
-> Example: "Compliance: ISO27001. Data classes: public / internal / confidential / PII.
-> Encryption at rest: client-side AES-256-GCM (zero-knowledge). Key derivation: PBKDF2
-> 600k iterations. Auth: JWT with refresh, 15min access token. Secrets: AWS Secrets
-> Manager. Audit log: pino → CloudWatch with 90-day retention."
+> data classification scheme, encryption standards, auth model, and any zero-knowledge
+> or client-side-encryption guarantees. `project-bootstrap` and `project-onboard`
+> populate this automatically.
 
 ---
 
 ## Authoritative Rules
 
-The control checks below cite ISO27001:2022 Annex A. Project-wide engineering rules that
-this skill audits against (secrets handling, IAM scoping, logging redaction, encryption
-defaults, dependency hygiene) are defined in [`RULES.md`](../RULES.md). When auditing,
-both this skill and `RULES.md` apply; any deviation from `RULES.md` is at minimum a
-**REQUIRES CHANGES** finding mapped to the relevant control. Frequent reference
-sections:
+The control checks below cite ISO27001:2022 Annex A. Project-wide engineering rules
+that this skill audits against (secrets handling, IAM scoping, logging redaction,
+encryption defaults, dependency hygiene) are defined in [`RULES.md`](../RULES.md)
+(language-agnostic core) plus the active **stack overlay** under [`rules/`](../rules/),
+pinned by the project's `## Active Skillset` line in `CLAUDE.md`.
+
+When auditing, both this skill and (`RULES.md` + the active overlay) apply; any
+deviation is at minimum a **REQUIRES CHANGES** finding mapped to the relevant control.
+
+Frequent reference sections:
 [Configuration & Secrets](../RULES.md#configuration--secrets),
 [Logging & Observability](../RULES.md#logging--observability),
 [Infrastructure as Code](../RULES.md#infrastructure-as-code-opentofu--terraform),
-[External HTTP Clients](../RULES.md#external-http-clients).
+[External HTTP Clients](../RULES.md#external-http-clients), plus the overlay's
+*Configuration & Secrets* and *Logging* sections (for stack-specific concrete
+mechanisms — `ConfigService`/`IOptions<T>`, `pino`/`Serilog`, etc.).
+
+If `CLAUDE.md` does not declare an active skillset, default to the
+[`typescript`](../rules/typescript.md) overlay for backwards compatibility.
 
 ---
 

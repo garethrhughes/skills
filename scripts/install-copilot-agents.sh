@@ -37,9 +37,10 @@ echo "Skills dir : $SKILLS_DIR"
 echo "Agents dir : $AGENTS_DIR"
 echo ""
 
-# ── Copy RULES.md alongside the agents ──────────────────────────────────────
-# Skill files reference RULES.md by relative path; the installed agents need
-# a local copy so those links resolve.
+# ── Copy RULES.md, rules/ and profiles/ alongside the agents ────────────────
+# Skill files reference RULES.md, rules/<profile>.md, and profiles/<profile>/
+# by relative path; the installed agents need local copies so those links
+# resolve.
 if [[ -f "$SKILLS_DIR/RULES.md" ]]; then
   cp "$SKILLS_DIR/RULES.md" "$AGENTS_DIR/RULES.md"
   rules_version="$(awk -F': *' '/^Version:/{print $2; exit}' "$SKILLS_DIR/RULES.md" | tr -d '[:space:]')"
@@ -49,8 +50,22 @@ if [[ -f "$SKILLS_DIR/RULES.md" ]]; then
   else
     echo "RULES.md copied to .github/agents/RULES.md"
   fi
-  echo ""
 fi
+
+if [[ -d "$SKILLS_DIR/rules" ]]; then
+  rm -rf "$AGENTS_DIR/rules"
+  cp -R "$SKILLS_DIR/rules" "$AGENTS_DIR/rules"
+  overlay_count="$(find "$AGENTS_DIR/rules" -maxdepth 1 -name '*.md' | wc -l | tr -d '[:space:]')"
+  echo "rules/ copied ($overlay_count stack overlay(s)) to .github/agents/rules/"
+fi
+
+if [[ -d "$SKILLS_DIR/profiles" ]]; then
+  rm -rf "$AGENTS_DIR/profiles"
+  cp -R "$SKILLS_DIR/profiles" "$AGENTS_DIR/profiles"
+  profile_count="$(find "$AGENTS_DIR/profiles" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d '[:space:]')"
+  echo "profiles/ copied ($profile_count profile(s)) to .github/agents/profiles/"
+fi
+echo ""
 
 # ── Symlink each skill ───────────────────────────────────────────────────────
 linked=0

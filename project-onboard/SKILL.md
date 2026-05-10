@@ -25,10 +25,20 @@ and correct ambiguous findings.
 ## Authoritative Rules
 
 The standard rules this skill checks the codebase against (and records as gaps in
-the Onboarding Notes section) are defined in [`RULES.md`](../RULES.md) at the root of
-the skills repo. The "gap analysis" performed during each phase is effectively a diff
-between the existing codebase and `RULES.md`. When recording findings, cite the
-relevant `RULES.md` section so the user can see exactly which rule the gap maps to.
+the Onboarding Notes section) are defined in [`RULES.md`](../RULES.md)
+(language-agnostic core) plus the active **stack overlay** in [`rules/`](../rules/).
+The active overlay is determined in Phase 1.5 — typically by auto-detection.
+
+The "gap analysis" performed during each phase is effectively a diff between the
+existing codebase and (`RULES.md` + the active overlay). When recording findings,
+cite the relevant section so the user can see exactly which rule the gap maps to.
+
+Available profiles:
+
+| Identifier | Overlay | Auto-detect signals |
+|---|---|---|
+| `typescript` | [`rules/typescript.md`](../rules/typescript.md) | `package.json` with `next`/`@nestjs/*`/`typeorm`, root `tsconfig.json` |
+| `dotnet` | [`rules/dotnet.md`](../rules/dotnet.md) | `*.sln`, `*.csproj`, `global.json`, `Directory.Build.props`, `appsettings.json` |
 
 ---
 
@@ -144,11 +154,53 @@ Reflect back: "Got it — *[name]: [one-line summary]*. Moving on."
 
 ---
 
+## Phase 1.5 — Skillset Profile
+
+### Investigate
+
+Look for unambiguous stack markers:
+
+- **`dotnet`** — any of: `*.sln` at root, `**/*.csproj`, `global.json`,
+  `Directory.Build.props`, `Directory.Packages.props`, `appsettings.json` adjacent
+  to a `*.csproj`.
+- **`typescript`** — any of: root `package.json` containing `next`, `@nestjs/*`,
+  `typeorm`, `vite`, `react`, `vue`, `svelte`; root `tsconfig.json`.
+
+If both sets of markers are present (e.g. ASP.NET Core API with a Next.js SPA), the
+backend host language wins for the *primary* profile but record the secondary stack
+so the relevant overlay also applies.
+
+### Present
+
+> "Detected stack: **`{profile}`** (evidence: *{file paths}*).
+>
+> The skills will use:
+> - `RULES.md` (language-agnostic core)
+> - `rules/{profile}.md` (stack overlay)
+>
+> Override with another identifier if you want to use a different profile."
+
+If detection is ambiguous (no markers, or many languages), ask the user to pick.
+
+### Record
+
+Capture `{profile}` for use in every subsequent phase. Each phase compares the
+existing code against `rules/{profile}.md` (not just `RULES.md`).
+
+---
+
 ## Phase 2 — Application Tech Stack
 
 ### Investigate
 
-**Backend:**
+The exact things to investigate depend on the active profile from Phase 1.5. If
+the profile is `dotnet`, swap the backend investigation to: `*.csproj`
+`PackageReference` lines (ASP.NET Core, EF Core, FluentValidation, Serilog, xUnit),
+`Program.cs` for host setup, `appsettings*.json` for config shape, `Directory.Packages.props`
+for centrally-pinned versions, EF Core migrations under `Migrations/`. The list below
+covers the `typescript` profile.
+
+**Backend (`typescript`):**
 - `package.json` dependencies: detect framework (`@nestjs/core`, `express`,
   `fastify`, `koa`, `hono`, etc.) and language (presence of `typescript`,
   `tsconfig.json`).
@@ -472,6 +524,17 @@ Generate a complete, filled-in `CLAUDE.md` using the template structure below.
 ```markdown
 # CLAUDE.md — {project name}
 
+## Active Skillset: {profile}
+
+This project follows the language-agnostic core rules in
+[`RULES.md`](https://github.com/garethrhughes/skills/blob/main/RULES.md) plus the
+**`{profile}`** stack overlay in
+[`rules/{profile}.md`](https://github.com/garethrhughes/skills/blob/main/rules/{profile}.md).
+Skills (`developer`, `reviewer`, `architect`, `infosec`) read both when applying
+conventions to this project.
+
+---
+
 ## Project Overview
 
 {project overview from Phase 1}
@@ -538,19 +601,19 @@ Generate a complete, filled-in `CLAUDE.md` using the template structure below.
 
 ## Architecture Rules
 
-This project follows the canonical rules in
-[`RULES.md`](https://github.com/garethrhughes/skills/blob/main/RULES.md) (TypeScript,
-config & secrets, external HTTP clients, frontend, backend, observability, IaC,
-testing, git & PRs).
+This project follows:
+
+- The language-agnostic rules in
+  [`RULES.md`](https://github.com/garethrhughes/skills/blob/main/RULES.md).
+- The **`{profile}`** stack overlay in
+  [`rules/{profile}.md`](https://github.com/garethrhughes/skills/blob/main/rules/{profile}.md).
 
 **Project-specific additions / overrides** (observed in code or supplied by user
 in Phase 5):
 {additions; write "_(none)_" if empty}
 
-**Known divergences from `RULES.md`** (recorded as gaps in Onboarding Notes
-below):
-{list of items where current code does not match RULES.md, e.g. "useEffect data
-fetching in 4 components", "process.env outside config in 12 files"; or "_(none)_"}
+**Known divergences from rules** (recorded as gaps in Onboarding Notes below):
+{list of items where current code does not match RULES.md or the active overlay; or "_(none)_"}
 
 ---
 
@@ -661,6 +724,7 @@ to delete it once the gaps are addressed or explicitly accepted.*
 ## Project Context
 
 **Project:** {project name} — {one-line description}
+**Skillset profile:** `{profile}` (rules: `RULES.md` + `rules/{profile}.md`)
 
 **Backend:** {framework} / {language} / {database + ORM}
 **Frontend:** {framework} / {styling} / {state management} *(or: backend-only)*
@@ -679,9 +743,9 @@ to delete it once the gaps are addressed or explicitly accepted.*
 **Repo structure:** {top-level directories, one line}
 **Module structure:** {brief description of how code is organised, 1–2 sentences}
 
-**Key rules:** Standard rules from `RULES.md`. Project-specific additions / overrides:
+**Key rules:** `RULES.md` + `rules/{profile}.md`. Project-specific additions / overrides:
 - {additions or "_(none)_"}
-**Known divergences from `RULES.md`:** {one-line summary or "_(none)_"}
+**Known divergences from rules:** {one-line summary or "_(none)_"}
 
 **External integrations:** {list or "none"}
 **Key entities:** {list with data classes, or "TBD"}

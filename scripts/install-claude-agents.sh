@@ -74,7 +74,7 @@ skill_description() {
       echo "Use when designing modules, defining API contracts, planning schema changes, evaluating infrastructure topology, or writing a proposal before a significant change."
       ;;
     developer)
-      echo "Use when implementing features or bug fixes. Follows TDD (red-green-refactor), strict TypeScript, IaC conventions, and project observability/supply-chain rules."
+      echo "Use when implementing features or bug fixes. Follows TDD (red-green-refactor), the active stack overlay's language conventions, IaC conventions, and project observability/supply-chain rules."
       ;;
     reviewer)
       echo "Use to review staged changes or a pull request. Checks security, IaC safety, correctness, observability, performance, and convention adherence. Returns a PASS / PASS WITH COMMENTS / BLOCK verdict with Acceptance Criteria traceability."
@@ -97,9 +97,10 @@ skill_description() {
   esac
 }
 
-# ── Copy RULES.md alongside the agents ──────────────────────────────────────
-# Skill files reference RULES.md by relative path; the installed agents need
-# a local copy so those links resolve.
+# ── Copy RULES.md, rules/ and profiles/ alongside the agents ────────────────
+# Skill files reference RULES.md, rules/<profile>.md, and profiles/<profile>/
+# by relative path; the installed agents need local copies so those links
+# resolve.
 if [[ -f "$SKILLS_DIR/RULES.md" ]]; then
   cp "$SKILLS_DIR/RULES.md" "$AGENTS_DIR/RULES.md"
   # Sidecar: pin the RULES.md version so update-skills can detect drift.
@@ -110,8 +111,22 @@ if [[ -f "$SKILLS_DIR/RULES.md" ]]; then
   else
     echo "  RULES.md copied to .claude/agents/RULES.md"
   fi
-  echo ""
 fi
+
+if [[ -d "$SKILLS_DIR/rules" ]]; then
+  rm -rf "$AGENTS_DIR/rules"
+  cp -R "$SKILLS_DIR/rules" "$AGENTS_DIR/rules"
+  overlay_count="$(find "$AGENTS_DIR/rules" -maxdepth 1 -name '*.md' | wc -l | tr -d '[:space:]')"
+  echo "  rules/ copied ($overlay_count stack overlay(s)) to .claude/agents/rules/"
+fi
+
+if [[ -d "$SKILLS_DIR/profiles" ]]; then
+  rm -rf "$AGENTS_DIR/profiles"
+  cp -R "$SKILLS_DIR/profiles" "$AGENTS_DIR/profiles"
+  profile_count="$(find "$AGENTS_DIR/profiles" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d '[:space:]')"
+  echo "  profiles/ copied ($profile_count profile(s)) to .claude/agents/profiles/"
+fi
+echo ""
 
 # ── Process each skill ───────────────────────────────────────────────────────
 written=0
