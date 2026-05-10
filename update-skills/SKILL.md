@@ -103,3 +103,23 @@ a successful update, remind the user:
 If the rule files were updated, remind the user to compare any overrides in their
 project `CLAUDE.md` against the new rules — paying particular attention to the active
 overlay declared by the `## Active Skillset` line.
+
+### One-time migration: `rules/` and `profiles/` directories
+
+The skills repo grew two new top-level directories — `rules/` (stack overlays) and
+`profiles/` (bootstrap defaults per skillset) — referenced by the worker skills via
+`../rules/<profile>.md` and `profiles/<profile>/bootstrap.md`.
+
+Because `update.sh` self-execs from a snapshot of itself made before the new version
+is on disk, **the first `/update-skills` run on a project that pre-dates these
+directories will install the new `update.sh` and the new SKILL.md files but will
+not yet sync `rules/` and `profiles/`**. The links inside the updated SKILL.md files
+will be broken until you run `/update-skills` a second time, which uses the new
+script and pulls the missing directories.
+
+After detecting that the upstream contains `rules/` or `profiles/` but the installed
+copy does not, prompt the user:
+
+> "This update added new top-level `rules/` and `profiles/` directories that the
+> updated skills reference. The currently installed update script can't sync them on
+> this run — please run `/update-skills` once more to pull them in."
