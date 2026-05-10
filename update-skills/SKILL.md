@@ -104,22 +104,29 @@ If the rule files were updated, remind the user to compare any overrides in thei
 project `CLAUDE.md` against the new rules — paying particular attention to the active
 overlay declared by the `## Active Skillset` line.
 
+### Self-updating script
+
+The `update.sh` script self-updates: after the initial clone it compares the upstream
+copy of `update.sh` against the installed copy, and if they differ it installs the
+new version and re-execs from it. That means a single `/update-skills` run picks up
+both new logic in the script *and* whatever data the new logic syncs (e.g. new
+top-level directories). The existing clone is reused so there's no second `git clone`.
+
 ### One-time migration: `rules/` and `profiles/` directories
 
 The skills repo grew two new top-level directories — `rules/` (stack overlays) and
 `profiles/` (bootstrap defaults per skillset) — referenced by the worker skills via
 `../rules/<profile>.md` and `profiles/<profile>/bootstrap.md`.
 
-Because `update.sh` self-execs from a snapshot of itself made before the new version
-is on disk, **the first `/update-skills` run on a project that pre-dates these
-directories will install the new `update.sh` and the new SKILL.md files but will
-not yet sync `rules/` and `profiles/`**. The links inside the updated SKILL.md files
-will be broken until you run `/update-skills` a second time, which uses the new
-script and pulls the missing directories.
+Self-update was introduced *in the same release* as these directories, so projects
+upgrading **from a pre-self-update version** still need two `/update-skills` runs
+(the first installs the self-updating `update.sh`; the second uses it to sync the
+new dirs). Re-cloning per the README install path is a 1-step alternative.
 
 After detecting that the upstream contains `rules/` or `profiles/` but the installed
 copy does not, prompt the user:
 
 > "This update added new top-level `rules/` and `profiles/` directories that the
 > updated skills reference. The currently installed update script can't sync them on
-> this run — please run `/update-skills` once more to pull them in."
+> this run — please run `/update-skills` once more to pull them in. Future updates
+> will be single-step."
