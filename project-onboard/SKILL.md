@@ -135,7 +135,10 @@ present.
 
 **Project name** — try in order:
 
-- `package.json` `name` (root and any workspace packages)
+- Root `package.json` `name`
+- In a JS workspaces monorepo with no root `name`, use the workspace root
+  directory name; do not pick an individual workspace package's `name` as
+  the project name (record those as component names in Phase 4 instead)
 - `*.sln` filename at the repo root
 - Root `*.csproj` `<AssemblyName>` (or the `.csproj` filename if absent)
 - `pyproject.toml` `[project].name` or `setup.cfg` `[metadata].name`
@@ -161,8 +164,11 @@ present.
 
 ### Infer
 
-- Project name (high confidence from `package.json` or repo name).
-- A draft 1–3 sentence overview from the README, if one exists.
+- Project name (high confidence from any of the primary sources above —
+  `package.json`, `*.sln`, root `*.csproj`, `pyproject.toml`/`setup.cfg`;
+  medium confidence when falling back to the repo directory name).
+- A draft 1–3 sentence overview from the README, if one exists; otherwise
+  from a `description` field in `package.json` or `*.csproj`.
 
 ### Ask the user
 
