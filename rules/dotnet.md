@@ -98,8 +98,11 @@ If the frontend is **Blazor**:
 
 If the frontend is a **SPA (React/Vue/Svelte) backed by an ASP.NET Core API**:
 
-- The SPA half follows [`rules/typescript.md`](typescript.md) (Frontend Rules section).
-  Both overlays apply.
+- `dotnet` remains the **active overlay** for the project (a single overlay is active
+  per project today). When working on the SPA half, additionally consult
+  [`rules/typescript.md`](typescript.md) — *Frontend Rules* and *TypeScript
+  Conventions* — as a secondary reference. Multi-overlay activation is a future
+  enhancement.
 
 ---
 

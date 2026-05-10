@@ -71,14 +71,24 @@ ROOT_FILES="README.md CLAUDE.md.template RULES.md"
 if [ -n "${_UPDATE_SKILLS_REUSE_CLONE:-}" ] && [ -d "$_UPDATE_SKILLS_REUSE_CLONE" ]; then
   CLONE_DIR="$_UPDATE_SKILLS_REUSE_CLONE"
   REUSED_CLONE=1
+  # Only delete the inherited clone dir if the previous run explicitly handed
+  # ownership over (it does this when self-updating via exec, since the
+  # previous process can't clean up after exec). External callers that pass
+  # _UPDATE_SKILLS_REUSE_CLONE without _UPDATE_SKILLS_OWN_CLONE keep their
+  # directory intact.
+  OWN_CLONE_DIR="${_UPDATE_SKILLS_OWN_CLONE:-0}"
 else
   CLONE_DIR="$(mktemp -d)"
   REUSED_CLONE=0
+  OWN_CLONE_DIR=1
 fi
 BEFORE_DIR="$(mktemp -d)"
 AFTER_DIR="$(mktemp -d)"
 CONTEXT_DIR="$(mktemp -d)"
-cleanup() { rm -rf "$CLONE_DIR" "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT" "$AWK_REPLACE"; }
+cleanup() {
+  [ "$OWN_CLONE_DIR" = "1" ] && rm -rf "$CLONE_DIR"
+  rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT" "$AWK_REPLACE"
+}
 trap cleanup EXIT
 
 if [ "$REUSED_CLONE" = "0" ]; then
@@ -109,6 +119,7 @@ if [ -z "${_UPDATE_SKILLS_SELF_UPDATED:-}" ] \
   # process; the new run will manage CLONE_DIR via its own trap.
   _UPDATE_SKILLS_SELF_UPDATED=1 \
   _UPDATE_SKILLS_REUSE_CLONE="$CLONE_DIR" \
+  _UPDATE_SKILLS_OWN_CLONE=1 \
   _UPDATE_SKILLS_ORIG_DIR="${_UPDATE_SKILLS_ORIG_DIR:-$SCRIPT_DIR}" \
   exec bash "$INSTALLED_UPDATE" "$@"
 fi
