@@ -50,6 +50,7 @@ async-all-the-way, no `dynamic` for `dotnet`).
 | [create-skill](create-skill/SKILL.md) | Interactively creates or updates OpenCode skills — asks structured questions about purpose, workflow, MCP tools, and output format, then produces a complete SKILL.md and updates the README |
 | [update-skills](update-skills/SKILL.md) | Pulls the latest skills from the upstream repository and reports what changed (added, removed, modified) with a unified diff per skill |
 | [upgrade-rules-v2](upgrade-rules-v2/SKILL.md) | One-shot, idempotent migration of an existing project from rules v1 (monolithic `RULES.md`) to v2 (language-agnostic core + per-stack overlay). Detects the active stack, patches `CLAUDE.md` (Active Skillset line, rule links), flags pasted-in v1 rule sections, and re-runs the relevant installer scripts |
+| [grill-me](grill-me/SKILL.md) | A relentless interview to sharpen a plan or design. Analyzes architectures, designs, and plans by asking tough probing questions to identify weak spots, risks, and blind spots. Use when a plan, design, architecture, or technical approach needs critical review, stress-testing, or risk identification before a review gate |
 
 ## Setup
 
@@ -147,6 +148,10 @@ Use the create-skill skill to create a new skill called my-skill.
 
 ```
 Use the update-skills skill to update all skills to the latest version.
+```
+
+```
+Use the grill-me skill to stress-test this architecture before the review gate.
 ```
 
 ### jira-feature
