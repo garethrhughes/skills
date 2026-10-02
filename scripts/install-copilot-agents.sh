@@ -18,8 +18,11 @@
 
 set -euo pipefail
 
+# ── Resolve project root (cwd) ──────────────────────────────────────────────
+PROJECT_ROOT="$(pwd)"
+
 # ── Resolve skills directory ────────────────────────────────────────────────
-SKILLS_DIR="${1:-${HOME}/.config/opencode/skills}"
+SKILLS_DIR="${1:-${PROJECT_ROOT}/.opencode/skills}"
 
 if [[ ! -d "$SKILLS_DIR" ]]; then
   echo "Error: skills directory not found: $SKILLS_DIR" >&2
@@ -27,8 +30,7 @@ if [[ ! -d "$SKILLS_DIR" ]]; then
   exit 1
 fi
 
-# ── Resolve project root (cwd) ──────────────────────────────────────────────
-PROJECT_ROOT="$(pwd)"
+# ── Resolve agents directory ────────────────────────────────────────────────
 AGENTS_DIR="${PROJECT_ROOT}/.github/agents"
 
 mkdir -p "$AGENTS_DIR"
