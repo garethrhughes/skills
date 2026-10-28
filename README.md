@@ -13,7 +13,8 @@ The skills are organised in two layers so they can target multiple stacks:
 
 The core rules also carry the **process** the skills follow on every project: the
 evidence checks every agent runs before claiming something (`RULES.md` *Evidence,
-Corrections & Decisions*), local CI before every PR where a SKIPPED job is NOT VERIFIED,
+Corrections & Decisions*), CI evidence on every PR (a local CI report where CI does not
+run on pull requests, in which a SKIPPED job is NOT VERIFIED),
 review briefs that carry only the original request and the diff, changelog discipline,
 a risk register for anything left open on purpose, evaluation-gate methodology, and a
 five-question **privacy screening** with a privacy impact assessment (PIA) before any

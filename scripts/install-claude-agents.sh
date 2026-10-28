@@ -155,7 +155,7 @@ if [[ -d "$SKILLS_DIR/templates" ]]; then
   else
     rm -rf "$RULES_PARENT_DIR/templates"
     cp -R "$SKILLS_DIR/templates" "$RULES_PARENT_DIR/templates"
-    printf 'Installed by %s from %s. Re-running the installer replaces this directory.\n' "$(basename "$0")" "$SKILLS_DIR" > "$RULES_PARENT_DIR/templates/.from-skills"
+    # templates/.from-skills ships in the skills repo (a fixed text, no local paths).
     template_count="$(find "$RULES_PARENT_DIR/templates" -type f ! -name .from-skills | wc -l | tr -d '[:space:]')"
     echo "  templates/ copied ($template_count file(s)) to ${RULES_PARENT_DIR#$PROJECT_ROOT/}/templates/"
   fi

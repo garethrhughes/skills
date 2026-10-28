@@ -338,8 +338,11 @@ Flag any code that:
 Audits against [`RULES.md#privacy`](../RULES.md#privacy). Infosec sign-off is
 **required on every PR that has a PIA**, whatever else it touches.
 
-- The feature doc or proposal (or, for a fix PR, the PR description) has the
-  five-question `## Privacy screening`, each answered Yes or No with a reason.
+- The feature doc or proposal has the five-question `## Privacy screening`, each answered
+  Yes or No with a reason; a PR with no feature doc (a fix, dependency, configuration,
+  infrastructure or CI change) has it in the PR description. Docs-only and tests-only PRs,
+  and documents numbered before the adoption point recorded in `CLAUDE.md` (unless
+  reopened), are exempt.
 - Answers are literal. A new identifier, audit field, log line with a route or count,
   existing value on a new screen, or new processor call answered "No" is a finding.
 - Any Yes has a PIA in `docs/privacy/`, written before implementation.
@@ -503,15 +506,19 @@ rules run, files scanned) and the JSON from
 ```sh
 git -C <repo> diff -z --name-only --diff-filter=d origin/main...HEAD | sed -z 's|^|<repo>/|' \
   | xargs -0 -r semgrep scan --metrics=off --json-output=<scratch>/semgrep.json \
-      --config p/owasp-top-ten --config p/secrets <stack packs> [--config p/github-actions]
+      --max-target-bytes=0 --config p/owasp-top-ten --config p/secrets <stack packs> \
+      [--config p/github-actions]
 ```
 
 (stack packs from the active overlay; `p/github-actions` when workflows change; GNU
 `sed`/`xargs`, `gsed`/`gxargs` on macOS). A pack the registry cannot serve can make the
-scan run nothing, which the `paths.scanned` check below catches.
+scan run nothing, and without `--max-target-bytes=0` files over 1 MB are dropped
+silently; the `paths.scanned` check below catches both.
 
 - Check that the JSON's `paths.scanned` equals the diff's file list, with no file missing
-  and none extra. A mismatch means the scan is not of this change.
+  and none extra. A file missing from it must appear under `paths.skipped` with a reason
+  (for example a size limit, if the caller left the default on); anything else means the
+  scan is not of this change.
 - CRITICAL / HIGH / ERROR → **REQUIRES CHANGES**, with the rule ID and `file:line`
 - MEDIUM / WARNING → an issue in your findings, evaluated in context
 - LOW / INFO → a Low finding, or noted

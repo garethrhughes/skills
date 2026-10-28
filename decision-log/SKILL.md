@@ -86,7 +86,7 @@ Increment NNNN sequentially from the highest existing number. Start at 0001.
 
 **Date:** YYYY-MM-DD
 **Status:** Proposed | Accepted | Deprecated | Superseded by [NNNN]
-**Deciders:** who decided, with the product owner's words quoted and dated; name the parts
+**Decided by:** who decided, with the product owner's words quoted and dated; name the parts
 an agent chose on their behalf as "pending their review"
 **Proposal:** link to docs/proposals/ file if this decision originated from a proposal
 **Amends / Supersedes:** links to the ADRs this one changes, and what it changes in each

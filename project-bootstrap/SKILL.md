@@ -250,7 +250,8 @@ Phase 7.
   basis*, and accepts or defers residual risks? [**No default — ask for a name** (usually
   the product owner)]
 - Install the optional privacy-screening guard script
-  (`templates/scripts/privacy-screening.test.mjs`, needs Node 18+)? [**Default:** no]
+  (`templates/scripts/privacy-screening.guard.mjs.template`, installed as
+  `scripts/__tests__/privacy-screening.test.mjs`, needs Node 18+)? [**Default:** no]
 - Does the project keep a user-facing changelog? If so, where, and what entry limit?
   [**Default:** `CHANGELOG.md`, 300 characters an entry (`RULES.md#changelog`)]
 
@@ -496,12 +497,17 @@ See [`RULES.md#testing`](https://github.com/garethrhughes/skills/blob/main/RULES
 for the canonical testing rules (behaviour-focused names, no real network, services tested
 not controllers, IaC modules tested, plan summary in PR description).
 
-- **Run CI locally before every PR** with `{local CI command from Phase 3}`, against the
-  committed branch, for every CI job the change touches (all of them for a dependency,
-  workflow or config change). The report names the jobs that ran and those SKIPPED; a
-  SKIPPED job is **NOT VERIFIED**, never "passing", and the reviewer blocks a report
-  that does not say so.
-{if CI does not run on pull requests: "- CI does not run on pull requests: the local run is the only check before merge."}
+{write ONE of these two bullets, from the Phase 3 answer "CI on PRs":}
+{CI runs on PRs:} - **CI runs on pull requests.** Its result on the PR head is the CI
+  evidence; quote it, failures included. Before pushing, run `{local CI command from
+  Phase 3}` for the jobs the change touches if you want an earlier answer; a local
+  report is not required.
+{CI does not run on PRs:} - **CI does not run on pull requests, so run CI locally before
+  every PR** with `{local CI command from Phase 3}`, against the committed branch, for
+  every CI job the change touches (all of them for a dependency, workflow or config
+  change). The report names the jobs that ran and those SKIPPED; a SKIPPED job is **NOT
+  VERIFIED**, never "passing", and the reviewer blocks a missing or non-compliant
+  report. The local run is the only check before merge.
 
 **Project-specific additions:**
 {additions captured in Phase 5/8, or "_(none)_"}
@@ -531,13 +537,17 @@ plan, and ADR formats.
 
 **Privacy screening** ([`RULES.md#privacy`](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy)).
 Every feature doc and proposal answers the five-question `## Privacy screening` in
-[`docs/privacy/README.md`](docs/privacy/README.md). A fix PR with no feature doc puts it
-in the PR description. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
+[`docs/privacy/README.md`](docs/privacy/README.md). A PR with no feature doc (a fix,
+dependency, configuration, infrastructure or CI change) puts it in the PR description;
+a docs-only or tests-only PR needs none. **Adoption point:** feature docs from
+`{first screened feature number}` and proposals from `{first screened proposal number}`
+({bootstrap: 0001 and 0001; onboard: the numbers after the newest existing ones}); older
+documents are not checked unless reopened. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
 written before implementation and built only as it lists. Infosec is then required, and
 the reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
 engineering assessment, not legal advice: *Applicable regimes and lawful basis* is
 {privacy decision owner from Phase 7}'s field.
-{if the guard script was installed: "Run `node --test scripts/__tests__/privacy-screening.test.mjs` before a PR."}
+{if the guard script was installed: "Run `node --test scripts/__tests__/privacy-screening.test.mjs` before a PR; its `FIRST_SCREENED_*` match the adoption point above."}
 
 ---
 
@@ -825,12 +835,16 @@ or `.claude/templates/` / `.github/templates/` after the agent installers have r
 | `templates/docs/corrections-log.md` | `docs/corrections-log.md` |
 | `templates/docs/risk-register.md` | `docs/risk-register.md` |
 | `templates/docs/privacy/README.md`, `TEMPLATE-pia.md`, `data-inventory.md` | `docs/privacy/` |
-| `templates/scripts/privacy-screening.test.mjs` | `scripts/__tests__/privacy-screening.test.mjs`, **only if the user said yes in Phase 7** |
+| `templates/scripts/privacy-screening.guard.mjs.template` | `scripts/__tests__/privacy-screening.test.mjs` (renamed), **only if the user said yes in Phase 7**; `FIRST_SCREENED_*` stay `1` for a new project |
 
-Replace `{product owner}` with the privacy decision owner from Phase 7. Never overwrite a
-file that already exists. If the guard was installed, run it once and confirm it
-passes. Then write a minimal feature doc without a screening in a scratch directory, run
-the guard with `PRIVACY_FEATURES_DIR` pointing at it, and confirm it fails.
+Replace `{product owner}` with the privacy decision owner from Phase 7, and the README's
+adoption-point placeholders with `0001` (a new project screens from its first document).
+Never overwrite a file that already exists. If the guard was installed, run it once and
+confirm it passes. Then write `9999-no-screening.md` (a heading and one line of text, no
+screening; the number must be at or after `FIRST_SCREENED_FEATURE`) in a scratch
+directory, run the guard with `PRIVACY_FEATURES_DIR` pointing at that directory, and
+confirm the test for `9999-no-screening.md` fails. If the project's own test runner
+would also collect `scripts/__tests__/*.test.mjs`, add it to that runner's exclude list.
 
 #### 3.9 Install / restore dependencies
 

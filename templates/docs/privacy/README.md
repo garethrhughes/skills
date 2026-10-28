@@ -18,8 +18,14 @@ and it reads `legal review needed` until {product owner} fills it.
 ## The screening
 
 Every feature document (`docs/features/`) and every proposal (`docs/proposals/`)
-carries this section, filled in. A change with no feature document (a fix PR) carries
-the same table in its PR description. A "yes" to any question means a PIA. All "no":
+carries this section, filled in. A PR with no feature document (a fix, dependency,
+configuration, infrastructure or CI change) carries the same table in its PR
+description. A PR that changes only documentation or tests, with no runtime effect,
+needs none and says "Privacy screening: not applicable (docs/tests only)".
+
+**Adoption point:** feature documents from {first screened feature number} and proposals
+from {first screened proposal number} (also recorded in `CLAUDE.md`). Older documents
+are not checked unless they are reopened. A "yes" to any question means a PIA. All "no":
 one sentence saying why, and the screening is still recorded.
 
 ```markdown
@@ -57,8 +63,8 @@ count, an existing value shown on a new screen, or a new call to a processor is 
 | Infosec | `infosec` | Required whenever a PIA exists. Reads the PIA against the diff; a missing PIA or a data table that does not match the diff is REQUIRES CHANGES. |
 | Decision | {product owner} | Fills *Applicable regimes and lawful basis*; confirms or overrides a decision taken on their behalf. |
 
-<!-- Optional: if you installed scripts/__tests__/privacy-screening.test.mjs from the skills
-templates, say so here: it checks the mechanics (every screened document has five answers,
+<!-- Optional: if you installed scripts/__tests__/privacy-screening.test.mjs (from the skills'
+templates/scripts/privacy-screening.guard.mjs.template), say so here: it checks the mechanics (every screened document has five answers,
 a "yes" links a PIA that exists and links back, every PIA has the template's headings and a
 decision, and this index lists every PIA). It cannot check that an answer is true. -->
 

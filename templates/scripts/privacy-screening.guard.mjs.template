@@ -1,13 +1,16 @@
 // OPTIONAL TEMPLATE: a guard for the privacy screening and PIA process
 // (RULES.md#privacy in github.com/garethrhughes/skills).
 //
-// Install it only if the project wants a mechanical check. Copy it to
-// scripts/__tests__/privacy-screening.test.mjs and run it with
+// It ships as privacy-screening.guard.mjs.template so that no test runner collects it
+// where the skills are installed (Vitest's default include matches *.test.mjs even under
+// .claude/, .github/ and .opencode/). Install it only if the project wants a mechanical
+// check, by copying it to scripts/__tests__/privacy-screening.test.mjs, and run it with
 //   node --test scripts/__tests__/privacy-screening.test.mjs
-// It needs Node 18+ and no dependencies. Set the numbers below so documents written
-// before the project adopted the screening are not checked, then break it once (delete a
-// screening from a copy of a feature doc, point PRIVACY_FEATURES_DIR at the copy) and
-// watch it fail before you rely on it.
+// If the project's own runner (Vitest/Jest) would also collect that path, exclude it there.
+// It needs Node 18+ and no dependencies. Set FIRST_SCREENED_* below to the adoption point
+// recorded in CLAUDE.md, so documents written before the project adopted the screening
+// are not checked. Then break it once (write a feature doc with no screening in a scratch
+// directory, point PRIVACY_FEATURES_DIR at it) and watch it fail before you rely on it.
 //
 // What it checks: every screened feature doc and proposal has a "## Privacy screening"
 // with the five standard questions answered Yes/No with a reason and a result line; a

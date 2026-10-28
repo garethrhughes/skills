@@ -15,9 +15,10 @@ Referenced by the `developer`, `reviewer` and `infosec` skills, and by `CLAUDE.m
 
 ## Patterns
 
-These are the seed patterns from the skills' upstream. Each one recurred across several
-projects. Add this project's evidence under the matching pattern as it happens, and add
-a new pattern only when no existing one fits.
+These seed patterns are generalised from one project's corrections log, where each one
+recurred. They are starting points, not evidence about this project. Replace them with
+this project's own as its ledger grows: add its cases under the matching pattern, drop
+a pattern that never applies here, and add a new pattern only when no existing one fits.
 
 ### 1. Do not assert scope, status or state without checking it
 
@@ -130,8 +131,13 @@ followed, and acknowledging it is worth nothing on its own.
 
 ### 12. Do not act outward without asking
 
-Pushing, opening a PR, triggering a workflow and deploying are the product owner's
-calls. Ask, and offer the lighter option.
+Pushing, opening PRs, triggering workflows and deploying are the product owner's calls.
+Do them only when asked (a feature cycle the owner started that ends in a PR counts),
+and offer the lighter option.
+
+**The check:** before a push, PR, workflow run or deploy, name the request that asked
+for it. If there is none, ask, and offer the lighter option first (commit locally,
+draft the PR text).
 
 ### 13. Local CI tests what you point it at
 
@@ -140,8 +146,9 @@ the main checkout, not the branch. A test passed every time on an idle machine a
 on a loaded CI runner.
 
 **The check:** pass the commit explicitly (`--ref <sha>`) and read the line that names
-the commit before trusting the summary. A SKIPPED job is NOT VERIFIED. After an action
-that settles asynchronously, assert that it settled before driving the next input.
+the commit before trusting the summary. A SKIPPED job is NOT VERIFIED. Where hosted CI
+runs on the PR, its result on the head is the evidence. After an action that settles
+asynchronously, assert that it settled before driving the next input.
 
 ### 14. Gates are fixed before they are run
 
@@ -152,6 +159,19 @@ calibration half that other measurements still used.
 before any score is seen. Calibrate on the held-out half only, and measure the same
 statistic the bar gates. A bar that fails its first run goes to the product owner, not
 to a re-tune.
+
+### 15. Tools have defaults that silently change what they check
+
+A test runner collected a file it was never meant to run: Vitest's default include
+matches `*.test.*` files under dot-directories such as `.claude/`, `.github/` and
+`.opencode/`, so a `node:test` template copied there failed `vitest run`. Semgrep drops
+files over 1 MB from a scan without an error (its default `--max-target-bytes`), and a
+rule pack the registry cannot serve can leave a scan running zero files.
+
+**The check:** ship files that a runner must not collect under a name no runner matches
+(for example `*.template`), and rename them on install. For a scanner, compare the
+files it says it scanned (`paths.scanned`) with the files you meant to scan, and lift
+size limits you did not choose (`--max-target-bytes=0`).
 
 ---
 

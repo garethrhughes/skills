@@ -222,24 +222,31 @@ fi
 # RULES.md is the single source of truth — overrides belong in per-project
 # ADRs, never in RULES.md itself. If the installed copy diverges from the
 # upstream copy that was previously installed, surface that loudly.
+# Detect local RULES.md edits (forbidden: overrides go in ADRs). An upstream
+# change alone is not a local edit, so compare the installed file with a record
+# of the upstream copy the last update installed (.rules-upstream.cksum), not
+# with the new upstream copy. cksum is POSIX, so this works on macOS too.
 RULES_LOCAL_MODIFIED=0
-if [ -f "$BEFORE_DIR/__root__RULES.md" ] && [ -f "$CLONE_DIR/RULES.md" ]; then
-  if ! diff -q "$BEFORE_DIR/__root__RULES.md" "$CLONE_DIR/RULES.md" >/dev/null 2>&1; then
-    # Upstream changed RULES.md — that's expected. Only warn if the local
-    # copy diverges from BOTH the previous install AND the new upstream.
-    :
-  fi
-fi
-# Compare installed RULES.md against upstream RULES.md directly to detect
-# local edits (which are forbidden — overrides go in ADRs).
+RULES_RECORD="$SKILLS_DIR/.rules-upstream.cksum"
 if [ -f "$SKILLS_DIR/RULES.md" ] && [ -f "$CLONE_DIR/RULES.md" ]; then
-  if ! diff -q "$SKILLS_DIR/RULES.md" "$CLONE_DIR/RULES.md" >/dev/null 2>&1; then
-    RULES_LOCAL_MODIFIED=1
+  installed_sum="$(cksum < "$SKILLS_DIR/RULES.md")"
+  if [ -f "$RULES_RECORD" ]; then
+    if [ "$installed_sum" != "$(cat "$RULES_RECORD")" ]; then
+      RULES_LOCAL_MODIFIED=1
+    fi
+  elif ! diff -q "$SKILLS_DIR/RULES.md" "$CLONE_DIR/RULES.md" >/dev/null 2>&1; then
     echo ""
-    echo "⚠  WARNING: installed RULES.md differs from upstream RULES.md."
+    echo "Note: RULES.md changed upstream. There is no record of the last upstream copy"
+    echo "      (.rules-upstream.cksum is written from this run on), so local edits cannot"
+    echo "      be told apart from the upstream change. Check the ROOT FILES diff below;"
+    echo "      overrides belong in ADRs, never in RULES.md."
+  fi
+  if [ "$RULES_LOCAL_MODIFIED" = "1" ]; then
+    echo ""
+    echo "⚠  WARNING: installed RULES.md was edited locally since the last update."
     echo "   RULES.md is the single source of truth and must not be edited"
     echo "   locally — per-project overrides belong in ADRs (decision-log)."
-    echo "   The local file will be overwritten. Diff:"
+    echo "   The local file will be overwritten. Diff (local → new upstream):"
     echo ""
     diff -u "$SKILLS_DIR/RULES.md" "$CLONE_DIR/RULES.md" || true
     echo ""
@@ -250,6 +257,10 @@ fi
 for rf in $ROOT_FILES; do
   [ -f "$CLONE_DIR/$rf" ] && cp "$CLONE_DIR/$rf" "$SKILLS_DIR/$rf"
 done
+# Record the upstream RULES.md just installed, for the next run's local-edit check
+if [ -f "$CLONE_DIR/RULES.md" ]; then
+  cksum < "$CLONE_DIR/RULES.md" > "$RULES_RECORD"
+fi
 
 # Sync scripts/ from upstream
 if [ -d "$CLONE_DIR/scripts" ]; then
@@ -298,9 +309,20 @@ fi
 # Sync templates/ from upstream (process-document starters that
 # project-bootstrap / project-onboard copy into a project's docs/). The
 # installed copy is upstream-owned: a project edits its own docs/ copies.
+# Only a templates/ carrying the skills' .from-skills marker is replaced or
+# removed (same rule as the agent installers); anything else is left alone.
 if [ -d "$CLONE_DIR/templates" ]; then
+  if [ -e "$SKILLS_DIR/templates" ] && [ ! -f "$SKILLS_DIR/templates/.from-skills" ]; then
+    echo ""
+    echo "⚠  templates/ in the skills dir has no .from-skills marker, so it is not the"
+    echo "   skills' copy; left alone. Move it aside and re-run to install the templates."
+  else
+    rm -rf "$SKILLS_DIR/templates"
+    cp -R "$CLONE_DIR/templates" "$SKILLS_DIR/templates"
+  fi
+elif [ -f "$SKILLS_DIR/templates/.from-skills" ]; then
+  # Removed upstream: mirror the removal (reported below as REMOVED upstream)
   rm -rf "$SKILLS_DIR/templates"
-  cp -R "$CLONE_DIR/templates" "$SKILLS_DIR/templates"
 fi
 
 for f in "$SKILLS_DIR"/*/SKILL.md; do

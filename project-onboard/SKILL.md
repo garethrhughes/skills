@@ -762,12 +762,17 @@ etc.).
 See [`RULES.md#testing`](https://github.com/garethrhughes/skills/blob/main/RULES.md#testing)
 for the canonical testing rules.
 
-- **Run CI locally before every PR** with `{local CI command from Phase 3}`, against the
-  committed branch, for every CI job the change touches (all of them for a dependency,
-  workflow or config change). The report names the jobs that ran and those SKIPPED; a
-  SKIPPED job is **NOT VERIFIED**, never "passing", and the reviewer blocks a report
-  that does not say so.
-{if CI does not run on pull requests: "- CI does not run on pull requests: the local run is the only check before merge."}
+{write ONE of these two bullets, from the Phase 3 answer "CI on PRs":}
+{CI runs on PRs:} - **CI runs on pull requests.** Its result on the PR head is the CI
+  evidence; quote it, failures included. Before pushing, run `{local CI command from
+  Phase 3}` for the jobs the change touches if you want an earlier answer; a local
+  report is not required.
+{CI does not run on PRs:} - **CI does not run on pull requests, so run CI locally before
+  every PR** with `{local CI command from Phase 3}`, against the committed branch, for
+  every CI job the change touches (all of them for a dependency, workflow or config
+  change). The report names the jobs that ran and those SKIPPED; a SKIPPED job is **NOT
+  VERIFIED**, never "passing", and the reviewer blocks a missing or non-compliant
+  report. The local run is the only check before merge.
 
 **Project-specific additions** (observed or supplied):
 {additions, or "_(none)_"}
@@ -797,13 +802,17 @@ plan, and ADR formats.
 
 **Privacy screening** ([`RULES.md#privacy`](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy)).
 Every feature doc and proposal answers the five-question `## Privacy screening` in
-[`docs/privacy/README.md`](docs/privacy/README.md). A fix PR with no feature doc puts it
-in the PR description. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
+[`docs/privacy/README.md`](docs/privacy/README.md). A PR with no feature doc (a fix,
+dependency, configuration, infrastructure or CI change) puts it in the PR description;
+a docs-only or tests-only PR needs none. **Adoption point:** feature docs from
+`{first screened feature number}` and proposals from `{first screened proposal number}`
+({bootstrap: 0001 and 0001; onboard: the numbers after the newest existing ones}); older
+documents are not checked unless reopened. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
 written before implementation and built only as it lists. Infosec is then required, and
 the reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
 engineering assessment, not legal advice: *Applicable regimes and lawful basis* is
 {privacy decision owner from Phase 7}'s field.
-{if the guard script was installed: "Run `node --test scripts/__tests__/privacy-screening.test.mjs` before a PR."}
+{if the guard script was installed: "Run `node --test scripts/__tests__/privacy-screening.test.mjs` before a PR; its `FIRST_SCREENED_*` match the adoption point above."}
 
 ---
 
@@ -952,10 +961,13 @@ replacing it.
 | `templates/docs/risk-register.md` | `docs/risk-register.md` (seed it with the risky findings from Phase 7 that the user chooses to accept or defer) |
 | `templates/docs/privacy/README.md`, `TEMPLATE-pia.md` | `docs/privacy/` |
 | `templates/docs/privacy/data-inventory.md` | `docs/privacy/data-inventory.md`, filled with the rows from Phase 7's privacy investigation |
-| `templates/scripts/privacy-screening.test.mjs` | `scripts/__tests__/privacy-screening.test.mjs`, **only if the user said yes**; set `FIRST_SCREENED_FEATURE` / `FIRST_SCREENED_PROPOSAL` to the next numbers so existing documents are not checked |
+| `templates/scripts/privacy-screening.guard.mjs.template` | `scripts/__tests__/privacy-screening.test.mjs` (renamed), **only if the user said yes**; set `FIRST_SCREENED_FEATURE` / `FIRST_SCREENED_PROPOSAL` to the adoption point recorded in CLAUDE.md (the numbers after the newest existing documents) |
 
-Replace `{product owner}` with the privacy decision owner from Phase 7. If the guard
-was installed, run it and confirm it passes.
+Replace `{product owner}` with the privacy decision owner from Phase 7, and the
+README's adoption-point placeholders with the numbers after the newest existing feature
+doc and proposal (the same numbers go in CLAUDE.md). If the guard was installed, run it
+and confirm it passes. If the project's own test runner would also collect
+`scripts/__tests__/*.test.mjs`, add it to that runner's exclude list.
 
 ### Step 4 — MCP Setup
 

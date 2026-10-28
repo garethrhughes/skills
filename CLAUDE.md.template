@@ -200,13 +200,18 @@ plan, and ADR formats.
 
 **Privacy screening** ([`RULES.md#privacy`](.opencode/skills/RULES.md#privacy)). Every
 feature doc and proposal answers the five-question `## Privacy screening` in
-[`docs/privacy/README.md`](docs/privacy/README.md). A fix PR with no feature doc puts it
-in the PR description. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
+[`docs/privacy/README.md`](docs/privacy/README.md). A PR with no feature doc (a fix,
+dependency, configuration, infrastructure or CI change) puts it in the PR description;
+a docs-only or tests-only PR needs none. **Adoption point:** feature docs from
+`[NNNN]` and proposals from `[NNNN]` (`0001` for a new project; the numbers after the
+newest existing ones when adopting the rule). Older documents are not checked unless
+reopened. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
 written before implementation and built only as it lists. Infosec is then required, and
 the reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
 engineering assessment, not legal advice: *Applicable regimes and lawful basis* is
 [product owner]'s field. [If installed: run `node --test
-scripts/__tests__/privacy-screening.test.mjs` before a PR.]
+scripts/__tests__/privacy-screening.test.mjs` before a PR; its `FIRST_SCREENED_*` match
+the adoption point.]
 
 ---
 
@@ -214,15 +219,16 @@ scripts/__tests__/privacy-screening.test.mjs` before a PR.]
 
 See [`RULES.md#testing`](.opencode/skills/RULES.md#testing). Plus:
 
-- **Run CI locally before every PR** with `[local CI command, e.g. a runner script that
-  reads the workflow file]`, against the **committed** branch (pass the commit, e.g.
-  `--ref <sha>`, when running from a worktree). Run every CI job the change touches, and
-  all of them for a dependency, workflow or config change. The report names the jobs
-  that ran and those **SKIPPED**. A SKIPPED job is **NOT VERIFIED**, never "passing",
-  and the reviewer blocks a report that does not say so. Never use a hosted CI run to
-  find out.
-- [Does CI run on pull requests? If not, say so here: the local run is the only check
-  before merge.]
+- **CI on pull requests: [yes | no].** Keep the one bullet that applies:
+  - *yes:* hosted CI's result on the PR head is the CI evidence; quote it, failures
+    included. A local report is not required.
+  - *no:* run CI locally before every PR with `[local CI command, e.g. a runner script
+    that reads the workflow file]`, against the **committed** branch (pass the commit,
+    e.g. `--ref <sha>`, when running from a worktree). Run every CI job the change
+    touches, and all of them for a dependency, workflow or config change. The report
+    names the jobs that ran and those **SKIPPED**. A SKIPPED job is **NOT VERIFIED**,
+    never "passing", and the reviewer blocks a missing or non-compliant report. It is
+    the only check before merge; never push to the default branch to find out.
 
 ---
 

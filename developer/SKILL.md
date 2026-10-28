@@ -175,7 +175,9 @@ Read the feature doc's (or proposal's) `## Privacy screening` before coding
   same branch before review, and say so in the PR.
 - If the screening said No and the build now touches personal data, change the answer
   and write the PIA before continuing.
-- A fix PR with no feature doc carries the screening in its PR description.
+- A PR with no feature doc (a fix, dependency, configuration, infrastructure or CI
+  change) carries the screening in its PR description. A docs-only or tests-only PR
+  says "Privacy screening: not applicable (docs/tests only)".
 - If `docs/privacy/` does not exist yet (a project set up before these rules), copy the templates from the skills' `../templates/docs/privacy/` first and say so in the PR.
 
 ## Language, Backend, Frontend, IaC, and Observability Conventions
@@ -272,8 +274,8 @@ Use the GitHub MCP server to:
 
 - Create and push branches when starting a new feature (`feature/NNNN-short-title`)
 - Open pull requests targeting the project's default branch
-- Check CI status on a branch where CI runs on it, after the local CI run, never instead
-  of it
+- Check the hosted CI result on the PR head where CI runs on pull requests; quote it,
+  failures included
 - Read existing PRs to understand what is already in flight before starting work
 
 ### filesystem — Source File Operations
@@ -365,19 +367,25 @@ problems you could have caught yourself.
 - After removing a dependency, file or name, search the docs, `CLAUDE.md` and the
   agent/skill files for it
 
-### Run CI locally before handing off
+### CI evidence before handing off
 
-Run the project's local CI (whatever reproduces the CI workflow: a runner script that
-reads the workflow file, `act`, or the documented list of CI commands) **on the
-committed branch**, for every job the change touches, and all of them for a dependency,
-workflow or config change ([`RULES.md#git--prs`](../RULES.md#git--prs)):
+`CLAUDE.md` says whether CI runs on pull requests
+([`RULES.md#git--prs`](../RULES.md#git--prs)):
+
+- **CI runs on PRs:** its result on the PR head is the evidence. Quote it, failures
+  included. A local run first is optional.
+- **CI does not run on PRs** (or `CLAUDE.md` requires a local report): run the project's
+  local CI (whatever reproduces the CI workflow: a runner script that reads the workflow
+  file, `act`, or the documented list of CI commands) **on the committed branch**, for
+  every job the change touches, and all of them for a dependency, workflow or config
+  change. Then:
 
 - Pass the commit explicitly (`--ref <sha>` or equivalent) when the runner resolves the
   repository from the working directory. Read the line that names the commit before you
   trust the summary.
 - Report the jobs that ran, their results with failures quoted, and the jobs SKIPPED. A
   SKIPPED job is **NOT VERIFIED**, never "passing".
-- Never use a hosted CI run to find out whether the change passes.
+- Never push to the default branch to find out whether the change passes.
 - The runner executes the branch's code and install scripts as you. Run a ref you do not
   trust only as a separate user or in a VM.
 

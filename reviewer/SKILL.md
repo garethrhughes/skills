@@ -114,7 +114,8 @@ Read the full feature document and check the following.
 
 **Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy))
 - The `## Privacy screening` section is present, with all five questions answered Yes or
-  No with a reason. A fix PR with no feature doc carries it in the PR description.
+  No with a reason. Skip a feature doc numbered before the project's **adoption point**
+  (recorded in `CLAUDE.md`) unless it was reopened in this PR.
 - Any Yes links a PIA in `docs/privacy/` that exists.
 - The diff logs, stores, exposes or sends nothing the PIA's data table does not list,
   and each deletion path the PIA names is built and tested.
@@ -165,7 +166,8 @@ using the standard severity levels before touching the code.
 
 **Security & privacy considerations**
 - Does the proposal carry a `## Privacy screening`, and does any Yes link a PIA written
-  with the proposal? Missing → **Blocker**.
+  with the proposal? Missing → **Blocker**, unless the proposal is numbered before the
+  project's adoption point (recorded in `CLAUDE.md`) and was not reopened.
 - Does the proposal identify any new data being collected, stored, or transmitted?
 - Are auth/authorisation implications called out?
 - If the proposal introduces new external integrations or public surface area, are the
@@ -233,12 +235,14 @@ Read the diff and flag any deviation. Severity is determined as follows:
 
 ### Process Checks — each → **BLOCK**
 
-- **Local CI report** ([`RULES.md#git--prs`](../RULES.md#git--prs)). The author's
-  report names the jobs that ran, with failures quoted, and the jobs SKIPPED. It covers
-  every CI job the change touches (all of them for a dependency, workflow or config
-  change), says it ran against the committed head, and calls a SKIPPED job **NOT
-  VERIFIED**, never passing. A missing or non-compliant report blocks. Required whatever
-  hosted CI does, and essential where CI does not run on pull requests.
+- **CI evidence** ([`RULES.md#git--prs`](../RULES.md#git--prs)). Where hosted CI runs on
+  the pull request, its result on the PR head is enough: a red or missing run on the
+  head blocks. Where CI does **not** run on pull requests, or the project's `CLAUDE.md`
+  requires a local report, the author's local CI report is required. It names the jobs
+  that ran, with failures quoted, and the jobs SKIPPED; covers every CI job the change
+  touches (all of them for a dependency, workflow or config change); says it ran against
+  the committed head; and calls a SKIPPED job **NOT VERIFIED**, never passing. A missing
+  or non-compliant report then blocks. `CLAUDE.md` says which case the project is in.
 - **Changelog** ([`RULES.md#changelog`](../RULES.md#changelog), projects with a
   changelog). A fix to, or change in, work merged after the last release tag amends
   that work's entry. A separate entry for unreleased work blocks, and so does a missing
@@ -246,10 +250,13 @@ Read the diff and flag any deviation. Severity is determined as follows:
   if it is over the project's limit (default 300 characters), has no opening bold
   headline, has a second paragraph or nested list, or carries implementation detail.
   Internal-only work needs no entry.
-- **Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy)), for every PR,
-  including a fix PR with no feature doc (Phase 1 is skipped then). The screening is in
-  the feature doc, the proposal or the PR description. Any Yes links an existing PIA, and
-  the diff logs, stores, exposes or sends nothing its data table does not list.
+- **Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy)). Every PR the rule
+  covers has one: in the feature doc or proposal, or, for a PR with no feature doc (a
+  fix, dependency, configuration, infrastructure or CI change; Phase 1 is skipped then),
+  in the PR description. A docs-only or tests-only PR needs none and says so. Documents
+  numbered before the adoption point in `CLAUDE.md` are exempt unless reopened. Any Yes
+  links an existing PIA, and the diff logs, stores, exposes or sends nothing its data
+  table does not list.
 - **Risk register** ([`RULES.md#risk-register`](../RULES.md#risk-register)). A residual
   left open on purpose (an accepted exception, a deferred fix, a gap the PIA leaves) has
   a row in `docs/risk-register.md`.
@@ -470,10 +477,12 @@ from GNU coreutils/findutils):
 ```sh
 git -C <repo> diff -z --name-only --diff-filter=d origin/main...HEAD | sed -z 's|^|<repo>/|' \
   | xargs -0 -r semgrep scan --metrics=off --json-output=<scratch>/semgrep.json \
-      --config p/owasp-top-ten --config p/secrets <stack packs> [--config p/github-actions]
+      --max-target-bytes=0 --config p/owasp-top-ten --config p/secrets <stack packs> \
+      [--config p/github-actions]
 ```
 
-The stack packs are in the active overlay (for example `p/typescript p/javascript`, or
+`--max-target-bytes=0` lifts Semgrep's 1 MB default, which otherwise drops large files
+from the scan without an error. The stack packs are in the active overlay (for example `p/typescript p/javascript`, or
 `p/csharp`). Add `p/github-actions` when workflows change. Replace `origin/main` with
 the project's default branch.
 
@@ -583,7 +592,8 @@ Phase 3.
 ```
 
 Below the verdict line, state the Semgrep summary (or `Semgrep: NOT RUN` and why) and
-whether the local CI report was present and compliant.
+the CI evidence (the PR's hosted CI result, or the local report where one is required)
+and whether it was present and compliant.
 
 - **PASS** — no issues found
 - **PASS WITH COMMENTS** — Minor/Suggestion items only; can merge after author acknowledges

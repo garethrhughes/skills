@@ -260,10 +260,12 @@ Use the **developer** skill to:
    the branch if the build differs
 8. **Changelog** (if the project keeps one) per [`RULES.md#changelog`](../RULES.md#changelog):
    amend the entry of unreleased work rather than adding one; short, one line
-9. Run the full test suite, Semgrep on the changed files, and then **CI locally** on the
-   committed branch for every job the change touches
-   ([`RULES.md#git--prs`](../RULES.md#git--prs)). Record the jobs that ran, with
-   failures quoted, and those SKIPPED (**NOT VERIFIED**)
+9. Run the full test suite and Semgrep on the changed files. **CI evidence**
+   ([`RULES.md#git--prs`](../RULES.md#git--prs)): where CI runs on pull requests, its
+   result on the PR head (after Step 6's push) is the evidence. Where it does not (or
+   `CLAUDE.md` requires a local report), run **CI locally** on the committed branch for
+   every job the change touches, and record the jobs that ran, with failures quoted, and
+   those SKIPPED (**NOT VERIFIED**)
 
 **Handoff to Step 3 when:** all tests pass and the branch is ready for review.
 
@@ -373,14 +375,17 @@ append it to `docs/corrections-log.md`.
    - Link to the accepted design plan and the Phase 5 screenshots (for UI changes)
    - Link to any new ADRs created
    - Test coverage summary (new tests added, the full result line with failures)
-   - The local CI report: jobs run and their results, jobs SKIPPED (NOT VERIFIED)
+   - The CI evidence: the hosted CI result on the head, or, where CI does not run on
+     pull requests, the local CI report (jobs run and results, jobs SKIPPED = NOT VERIFIED)
    - The Semgrep summary, or `Semgrep: NOT RUN` and why
    - For infra changes: the `terraform plan` (or equivalent) summary
-   - For a fix PR with no feature doc: the privacy screening
+   - For a PR with no feature doc (fix, dependency, config, infra or CI change): the
+     privacy screening; for a docs-only or tests-only PR, "not applicable"
    - Reviewer verdict, and the infosec verdict (APPROVED / APPROVED WITH EXCEPTION + ADR
      link + risk-register row)
 4. Ensure CI passes (including infra `plan` and any IaC tests). Where CI does not run on
-   pull requests, the local CI report is the only check before merge. Never trigger a
+   pull requests, the local CI report is the only check before merge; never push to the
+   default branch to find out. Never trigger a
    workflow or deploy without asking
 5. After every fix round, re-read the PR description against the files as they now are
 
@@ -418,7 +423,7 @@ step-specific instructions.
 | Accessibility floor conflicts with the design | Change the design, not the floor (Step 1.5 → Step 2) |
 | New dependency needed | Call it out explicitly in Step 2; reviewer checks supply-chain in Step 3; infosec checks crypto/secrets handling in Step 4 |
 | Infra-only change | Same flow — proposal must include Infrastructure Addendum; PR must include `plan` output |
-| Trivial fix (no design impact, no infra, no security) | Start at Step 2; skip Steps 1 and 4; the privacy screening goes in the PR description |
+| Trivial fix (no design impact, no infra, no security) | Start at Step 2; skip Steps 1 and 4; the privacy screening goes in the PR description (none for a docs-only or tests-only change) |
 | A step is refused (e.g. a write is not permitted) | The requirement is **not met**: say so in every status line. Narrowing scope is the product owner's call |
 | A question needs the product owner | Give the options with their consequences and a recommendation; quote the answer and date in the feature doc's Decisions |
 | An evaluation bar fails its first run | Stop and take it to the product owner; never re-tune the bar ([`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates)) |
@@ -431,9 +436,9 @@ step-specific instructions.
 Feature doc → docs/features/NNNN-short-title.md (written before Step 1; privacy screening, PIA if any Yes)
 Step 1   → architect skill     (propose; include Infra Addendum if relevant; back-link feature doc)
 Step 1.5 → design skill        (UI-bearing work only: token plan in docs/design/, sign-off)
-Step 2   → developer skill     (TDD; changelog; Semgrep; local CI report, SKIPPED = NOT VERIFIED; plan output for infra)
+Step 2   → developer skill     (TDD; changelog; Semgrep; CI evidence — local report only without PR CI; plan output for infra)
 Step 3   → reviewer skill      (brief = requirement + diff only; loop back to Step 2 if blocked)
 Step 4   → infosec skill       (security/compliance sign-off; required with a PIA; exceptions → risk register)
 Step 5   → decision-log skill  (log ADRs, update proposal statuses, log any exceptions)
-Step 6   → open PR             (feature doc, proposal, design plan + screenshots, ADRs, local CI report, plan output, verdicts)
+Step 6   → open PR             (feature doc, proposal, design plan + screenshots, ADRs, CI evidence, plan output, verdicts)
 ```

@@ -13,8 +13,14 @@ directory, never the project's copies.
 | [`docs/privacy/README.md`](docs/privacy/README.md) | `docs/privacy/README.md` | the five-question privacy screening, who does what, and the PIA index ([`RULES.md#privacy`](../RULES.md#privacy)) |
 | [`docs/privacy/TEMPLATE-pia.md`](docs/privacy/TEMPLATE-pia.md) | `docs/privacy/TEMPLATE-pia.md` | copied by `architect` / `create-feature` to `docs/privacy/NNNN-title.md` for any screening with a Yes |
 | [`docs/privacy/data-inventory.md`](docs/privacy/data-inventory.md) | `docs/privacy/data-inventory.md` | the standing list of personal data, seeded from the code at onboarding |
-| [`scripts/privacy-screening.test.mjs`](scripts/privacy-screening.test.mjs) | `scripts/__tests__/privacy-screening.test.mjs` | **optional**: a dependency-free `node --test` guard for the screening and PIA mechanics. Installed only when the user asks for it |
+| [`scripts/privacy-screening.guard.mjs.template`](scripts/privacy-screening.guard.mjs.template) | `scripts/__tests__/privacy-screening.test.mjs` (renamed on install) | **optional**: a dependency-free `node --test` guard for the screening and PIA mechanics. Installed only when the user asks for it. It ships under a name no test runner collects, because the skills' install directories sit inside projects whose runners would otherwise pick it up |
 
 When installing, replace `{product owner}` with the name the user gives in the
-bootstrap/onboard security phase. The corrections log's Patterns come from many
-projects and are a starting point: the project's own ledger is what makes them its own.
+bootstrap/onboard security phase, and the privacy README's adoption-point placeholders
+with the numbers recorded in `CLAUDE.md`. The corrections log's Patterns are generalised
+from one project's log and are starting points: the project's own ledger is what makes
+them its own.
+
+`.from-skills` marks this directory as the skills' copy. The installers and
+`update-skills` replace or remove a `templates/` directory only when it carries the
+marker, so a project's own `templates/` is never deleted.

@@ -1,0 +1,2 @@
+This directory is the skills repository's templates/ (github.com/garethrhughes/skills).
+The installers and update-skills replace a templates/ directory only when this marker is present.
