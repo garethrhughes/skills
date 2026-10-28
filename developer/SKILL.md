@@ -44,6 +44,54 @@ If `CLAUDE.md` does not declare an active skillset, default to the
 
 ---
 
+## Corrections Log — Check at These Moments
+
+If the project keeps `docs/corrections-log.md`, read its **Patterns** section before
+starting. These checks apply whether or not it exists
+([`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions)):
+
+1. **Before writing "already done / out of scope / resolved / unaffected /
+   pre-existing"**, run the command that proves it and cite the output. Narrowing scope
+   is the product owner's call.
+2. **Before keeping a new test**, break what it guards and watch it fail. Break every
+   line that enforces the control, not one per control.
+3. **Before claiming you changed something**, `git diff` the passage. A refused write is
+   a requirement **not met**: say so everywhere, and never claim a substitute.
+4. **Before reporting a result**, quote the whole line, failures included, and say
+   whether you caused them and how you know.
+
+Standing rules:
+
+- If a probe, browser or command settles a question in under a minute, run it instead
+  of reasoning.
+- **Fix at the source.** When a shared function returns a wrong answer, reproduce it at
+  that function and fix it there, not at the caller that noticed. After fixing a write,
+  find every other writer of the same state and fix or rule out each one.
+- **Guard the twins.** A guard added to one input path (keys) goes on every other path
+  that writes the same state (pointer, paste, API, import), each with its own test. A
+  guard that skips a write also restores what the operation already changed.
+- **Reconcile every copy.** After changing a rule, claim or name, grep the branch's
+  added and changed files for the old wording and the names it travels with, and fix or
+  rule out each hit. After removing a name, search the docs, `CLAUDE.md` and the
+  agent/skill files.
+- **After each review round**, re-run every earlier round's mutations on the new head.
+
+Append an entry to the log when you get something wrong.
+
+---
+
+## Running Commands
+
+**Never `cd`, not even in a chain.** Use the shell tool's working-directory parameter
+where it has one. Otherwise name the directory in the command: absolute paths, `git -C
+<dir>`, `npm --prefix <dir>`, `dotnet test <path>`. A `cd` can raise a permission prompt
+that halts an unattended run. If a command needs two directories, it needs two calls.
+Push, open a PR, trigger a workflow or deploy only when the product owner asked for it
+(a feature cycle they started that ends in a PR counts). Never deploy on your own
+initiative.
+
+---
+
 ## Test-Driven Development (TDD)
 
 **All implementation work must follow the red-green-refactor cycle. Do not write production
@@ -76,6 +124,15 @@ write the implementation, the test is wrong.
 - **No shared mutable state between tests.** Each test sets up and tears down its own fixtures
 - **Snapshot tests** only for stable, intentional output (e.g. generated SQL, generated
   Terraform plan). Never for UI components — use semantic queries instead
+- **No races with the machine.** After an action that settles asynchronously (a frame, a
+  timer, an effect, a focus hand-off), assert that it settled before you drive the next
+  input. Pin the clock in any test file whose code reads it. A test that passes only on
+  an idle machine fails on CI
+- **Evaluation and recall gates** follow
+  [`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates):
+  fixed committed question sets, a written deterministic calibration/gate split,
+  calibration on the held-out half only, and bars fixed before the first run. A bar that
+  fails its first run goes to the product owner, never to a re-tune
 
 ## Design-Heavy Work — Delegate to the `design` Skill
 
@@ -105,6 +162,20 @@ Two hard rules that apply to you even when `design` is not involved:
 
 Routine UI work that consumes existing tokens and components — adding a field to a form,
 wiring a new endpoint into an existing table — does **not** need the `design` skill.
+
+## Privacy — the PIA Is Your Specification
+
+Read the feature doc's (or proposal's) `## Privacy screening` before coding
+([`RULES.md#privacy`](../RULES.md#privacy)):
+
+- If any answer is Yes, the PIA in `docs/privacy/` is your specification for personal
+  data. Record, log, store, expose and send only what its data table lists. Keep it
+  where and as long as it says. Make, and test, each deletion path it names.
+- If the build has to differ, update the PIA and `docs/privacy/data-inventory.md` in the
+  same branch before review, and say so in the PR.
+- If the screening said No and the build now touches personal data, change the answer
+  and write the PIA before continuing.
+- A fix PR with no feature doc carries the screening in its PR description.
 
 ## Language, Backend, Frontend, IaC, and Observability Conventions
 
@@ -200,7 +271,8 @@ Use the GitHub MCP server to:
 
 - Create and push branches when starting a new feature (`feature/NNNN-short-title`)
 - Open pull requests targeting the project's default branch
-- Check CI status on a branch before considering implementation complete
+- Check CI status on a branch where CI runs on it, after the local CI run, never instead
+  of it
 - Read existing PRs to understand what is already in flight before starting work
 
 ### filesystem — Source File Operations
@@ -213,13 +285,16 @@ tools are insufficient — for example:
   of the active editor session
 
 ### semgrep — Static Analysis
-Use the Semgrep MCP server to run static analysis scans before marking implementation
-complete. This catches common security and quality issues early — before the reviewer and
-infosec steps:
+Run Semgrep on the changed files before marking an implementation complete. This
+catches common security and quality issues before the reviewer and infosec steps. Use
+the Semgrep MCP server if it is available, otherwise the CLI command in the `reviewer`
+skill (changed files from `git diff --name-only --diff-filter=d origin/main...HEAD`,
+documentation included, absolute paths, no `cd`):
 
-- Run a scan on any new service or controller file before committing
 - Pay particular attention to injection risks, secrets in code, and missing validation
-- Address any High or Critical findings before handoff to the reviewer skill
+- Fix CRITICAL / HIGH / ERROR findings before handoff to the reviewer skill
+- Report the summary (version, rules run, files scanned) and the findings, or
+  `Semgrep: NOT RUN` and why
 
 ---
 
@@ -278,7 +353,32 @@ problems you could have caught yourself.
 - Update API reference docs (Swagger, Redoc, or equivalent) for any new or changed endpoint
   or field — regenerate if the project auto-generates them
 - Update the relevant runbook (`infra/README.md` or equivalent) for any infra change
-- Add a changelog entry if the project maintains a `CHANGELOG.md` or equivalent
+- Changelog (if the project keeps one), per [`RULES.md#changelog`](../RULES.md#changelog).
+  A fix to, or change in, work merged after the last release tag **amends that work's
+  entry** (`git log <last tag>..HEAD` tells you). Only shipped behaviour gets
+  `Changed` / `Fixed`. Internal-only work gets no entry. An entry is a bold one-sentence
+  headline plus at most two short sentences, on one line, within the project's limit
+  (default 300 characters), written for a user. Run the project's changelog check if it
+  has one
+- Add a row to `docs/risk-register.md` for anything left open on purpose
+- After removing a dependency, file or name, search the docs, `CLAUDE.md` and the
+  agent/skill files for it
+
+### Run CI locally before handing off
+
+Run the project's local CI (whatever reproduces the CI workflow: a runner script that
+reads the workflow file, `act`, or the documented list of CI commands) **on the
+committed branch**, for every job the change touches, and all of them for a dependency,
+workflow or config change ([`RULES.md#git--prs`](../RULES.md#git--prs)):
+
+- Pass the commit explicitly (`--ref <sha>` or equivalent) when the runner resolves the
+  repository from the working directory. Read the line that names the commit before you
+  trust the summary.
+- Report the jobs that ran, their results with failures quoted, and the jobs SKIPPED. A
+  SKIPPED job is **NOT VERIFIED**, never "passing".
+- Never use a hosted CI run to find out whether the change passes.
+- The runner executes the branch's code and install scripts as you. Run a ref you do not
+  trust only as a separate user or in a VM.
 
 ---
 

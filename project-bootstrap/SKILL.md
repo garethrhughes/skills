@@ -156,6 +156,9 @@ corresponding row at runtime.
 - Standard resource tags? [**from profile 3.8** — defaults from `RULES.md#infrastructure-as-code`]
 - How is config/env managed? [**from profile 3.9**]
 - Is there a task runner? [**from profile 3.10**]
+- Does CI run on pull requests, and how is it run locally before a PR? [**Default:** CI
+  runs on every PR; locally, a runner that reproduces the CI workflow, or the exact
+  commands CI runs, listed in the README. See `RULES.md#git--prs`]
 
 After this round, confirm:
 
@@ -165,6 +168,7 @@ Cloud:     [cloud provider + key services]
 IaC:       [tool] / state in [backend]
 Secrets:   [secrets manager]
 CI/CD:     [pipeline]
+Local CI:  [command] (CI on PRs: yes/no)
 ```
 
 Ask: "Does this look right?"
@@ -242,6 +246,13 @@ Phase 7.
 - Network exposure rules? [**from profile 7.7**]
 - Vulnerability scanning? [**from profile 7.8**]
 - Audit logging requirements? [**from profile 7.9**]
+- Who makes privacy and risk decisions: fills a PIA's *Applicable regimes and lawful
+  basis*, and accepts or defers residual risks? [**No default — ask for a name** (usually
+  the product owner)]
+- Install the optional privacy-screening guard script
+  (`templates/scripts/privacy-screening.test.mjs`, needs Node 18+)? [**Default:** no]
+- Does the project keep a user-facing changelog? If so, where, and what entry limit?
+  [**Default:** `CHANGELOG.md`, 300 characters an entry (`RULES.md#changelog`)]
 
 After this round, confirm:
 
@@ -251,6 +262,8 @@ Data classes: [scheme]
 Encryption:   at rest [approach] / in transit [TLS version]
 Secrets:      [secrets manager]
 Scanning:     [tools]
+Privacy:      decisions by [name]; screening guard [installed / not installed]
+Changelog:    [path, limit / none]
 ```
 
 ---
@@ -322,6 +335,39 @@ This project follows the language-agnostic core rules in
 [`rules/{profile}.md`](https://github.com/garethrhughes/skills/blob/main/rules/{profile}.md).
 Skills (`architect`, `design`, `developer`, `reviewer`, `infosec`) read both when applying
 conventions to this project.
+
+---
+
+## Running Commands — never `cd`
+
+Name the directory in the command instead of changing into it: the shell tool's
+working-directory parameter where it has one, otherwise absolute paths, `git -C <dir>`,
+`npm --prefix <dir>` (or the stack's equivalent). A `cd`, even in a chain, raises a
+permission prompt that halts an unattended run. Two directories means two calls.
+
+---
+
+## Corrections Log — read before deciding
+
+[`docs/corrections-log.md`](docs/corrections-log.md) records every time an agent was wrong
+on this project and every time a decision had to be pushed back. Read its **Patterns**
+before acting. The checks for every agent, at every step
+([`RULES.md#evidence-corrections--decisions`](https://github.com/garethrhughes/skills/blob/main/RULES.md#evidence-corrections--decisions)):
+verify a "done / out of scope / pre-existing" claim with a command before writing it;
+break what a test guards and watch it fail; `git diff` a passage before claiming it
+changed; quote failures, not only the passing count; brief a review with the original
+request and the diff only; fix a shared function at the source and find every other
+writer of the same state; reconcile every copy of a changed rule or name. Append an
+entry when you get something wrong.
+
+---
+
+## Keeping This File Small
+
+This file is loaded into every session, so it holds rules and pointers, not history.
+Detail lives in the ADR, feature doc, README or risk-register row it came from. A new
+Settled Decision gets **one line**: the rule as it stands, plus which ADRs it amends or
+supersedes.
 
 ---
 
@@ -450,6 +496,13 @@ See [`RULES.md#testing`](https://github.com/garethrhughes/skills/blob/main/RULES
 for the canonical testing rules (behaviour-focused names, no real network, services tested
 not controllers, IaC modules tested, plan summary in PR description).
 
+- **Run CI locally before every PR** with `{local CI command from Phase 3}`, against the
+  committed branch, for every CI job the change touches (all of them for a dependency,
+  workflow or config change). The report names the jobs that ran and those SKIPPED; a
+  SKIPPED job is **NOT VERIFIED**, never "passing", and the reviewer blocks a report
+  that does not say so.
+{if CI does not run on pull requests: "- CI does not run on pull requests: the local run is the only check before merge."}
+
 **Project-specific additions:**
 {additions captured in Phase 5/8, or "_(none)_"}
 
@@ -476,9 +529,40 @@ UI work that only consumes existing tokens and components does not need one.
 See the `architect`, `design`, and `decision-log` skills for the exact proposal, design
 plan, and ADR formats.
 
+**Privacy screening** ([`RULES.md#privacy`](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy)).
+Every feature doc and proposal answers the five-question `## Privacy screening` in
+[`docs/privacy/README.md`](docs/privacy/README.md). A fix PR with no feature doc puts it
+in the PR description. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
+written before implementation and built only as it lists. Infosec is then required, and
+the reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
+engineering assessment, not legal advice: *Applicable regimes and lawful basis* is
+{privacy decision owner from Phase 7}'s field.
+{if the guard script was installed: "Run `node --test scripts/__tests__/privacy-screening.test.mjs` before a PR."}
+
+---
+
+## Changelog
+
+*(omit if the project keeps no user-facing changelog)*
+`{changelog path}`, per [`RULES.md#changelog`](https://github.com/garethrhughes/skills/blob/main/RULES.md#changelog):
+it says what changed since the last release, a fix to unreleased work amends the entry
+that introduced it, and an entry is a bold headline plus at most two short sentences,
+≤{limit, default 300} characters, on one line.
+
+---
+
+## Risk Register
+
+[`docs/risk-register.md`](docs/risk-register.md) lists every risk {privacy decision owner
+from Phase 7} has accepted, deferred or not yet treated. When you leave something open on
+purpose (a residual an infosec review accepts, a fix deferred to a later release), add a
+row there rather than only mentioning it in a PR or a report.
+
 ---
 
 ## Settled Decisions (do not revisit without a superseding ADR)
+
+One line each: the rule as it stands. The ADR holds the detail.
 
 | # | Decision |
 |---|---|
@@ -732,6 +816,22 @@ Also create `docs/features/` (written by `create-feature` / `jira-feature`) and,
 project has a frontend, `docs/design/` (written by the `design` skill) — same `.gitkeep`
 treatment.
 
+Then install the process documents from the skills' [`templates/`](../templates/)
+directory (see its README). They are found next to `rules/`: `.opencode/skills/templates/`,
+or `.claude/templates/` / `.github/templates/` after the agent installers have run:
+
+| Template | Install to |
+|---|---|
+| `templates/docs/corrections-log.md` | `docs/corrections-log.md` |
+| `templates/docs/risk-register.md` | `docs/risk-register.md` |
+| `templates/docs/privacy/README.md`, `TEMPLATE-pia.md`, `data-inventory.md` | `docs/privacy/` |
+| `templates/scripts/privacy-screening.test.mjs` | `scripts/__tests__/privacy-screening.test.mjs`, **only if the user said yes in Phase 7** |
+
+Replace `{product owner}` with the privacy decision owner from Phase 7. Never overwrite a
+file that already exists. If the guard was installed, run it once and confirm it
+passes, then delete the screening from a scratch copy of a feature doc and confirm it
+fails.
+
 #### 3.9 Install / restore dependencies
 
 Run the install command appropriate to the active profile:
@@ -804,6 +904,9 @@ its one-line description.}
 - [`docs/proposals/`](./docs/proposals/) — technical design proposals
 - [`docs/decisions/`](./docs/decisions/) — architecture decision records (ADRs)
 - [`docs/design/`](./docs/design/) — UI design plans *(frontend projects)*
+- [`docs/privacy/`](./docs/privacy/) — privacy screening, PIAs and the data inventory
+- [`docs/risk-register.md`](./docs/risk-register.md) — accepted and deferred risks
+- [`docs/corrections-log.md`](./docs/corrections-log.md) — what agents got wrong, and the checks that catch it
 
 ## Contributing
 
@@ -850,7 +953,8 @@ Tell the user:
 > "Your project is bootstrapped, installed, and verified.
 >
 > Suggested next steps:
-> 1. Commit `CLAUDE.md`, `README.md`, `opencode.json`, and any updated skill files to version control
+> 1. Commit `CLAUDE.md`, `README.md`, `opencode.json`, the `docs/` process documents
+>    (privacy, risk register, corrections log), and any updated skill files to version control
 > 2. Start developing — the dev command is `{actual dev command from the scaffold}`
 > 3. If you have existing architectural decisions, run: `use the decision-log skill to seed the initial ADRs`
 > 4. For your first feature, run: `use the create-feature skill`"

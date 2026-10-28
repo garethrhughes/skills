@@ -11,6 +11,16 @@ The skills are organised in two layers so they can target multiple stacks:
   overlay refines the core for a specific stack (language conventions, framework
   rules, ORM, logger, test runner).
 
+The core rules also carry the **process** the skills follow on every project: the
+evidence checks every agent runs before claiming something (`RULES.md` *Evidence,
+Corrections & Decisions*), local CI before every PR where a SKIPPED job is NOT VERIFIED,
+review briefs that carry only the original request and the diff, changelog discipline,
+a risk register for anything left open on purpose, evaluation-gate methodology, and a
+five-question **privacy screening** with a privacy impact assessment (PIA) before any
+change that touches personal data. Starter files for these process documents live in
+[`templates/`](templates/), and `project-bootstrap` / `project-onboard` install them
+into a project's `docs/`.
+
 Selectable skillset profiles:
 
 | Identifier | Overlay | Stack |
@@ -75,8 +85,9 @@ from your project root:
 ```
 
 This writes one agent file per skill into `.claude/agents/<skill>.md` with the
-appropriate per-skill tool restrictions, copies `RULES.md` alongside, and is safe to
-re-run after `update-skills` pulls upstream changes.
+appropriate per-skill tool restrictions, copies `RULES.md`, `rules/`, `profiles/` and
+`templates/` into `.claude/`, and is safe to re-run after `update-skills` pulls upstream
+changes.
 
 ### GitHub Copilot
 
@@ -84,8 +95,8 @@ re-run after `update-skills` pulls upstream changes.
 ~/.config/opencode/skills/scripts/install-copilot-agents.sh
 ```
 
-Symlinks each `SKILL.md` into `.github/agents/<skill>.md` and copies `RULES.md`
-alongside.
+Symlinks each `SKILL.md` into `.github/agents/<skill>.md` and copies `RULES.md`,
+`rules/`, `profiles/` and `templates/` alongside.
 
 ### Configure for your project
 
@@ -261,3 +272,12 @@ directly — changes are tracked in version control alongside your code.
 
 See [`CLAUDE.md.template`](CLAUDE.md.template) for a generic `CLAUDE.md` structure you can
 copy into any new project and fill in manually, without running `project-bootstrap`.
+
+## Process Document Templates
+
+[`templates/`](templates/) holds the starters for the documents the skills read and write:
+`docs/corrections-log.md`, `docs/risk-register.md`, and `docs/privacy/` (screening
+README, PIA template, data inventory), plus an optional dependency-free `node --test`
+guard for the privacy screening. See [`templates/README.md`](templates/README.md) for
+where each one is installed. A project owns its installed copies, and `update-skills`
+refreshes only the starters.

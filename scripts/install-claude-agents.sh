@@ -106,7 +106,7 @@ skill_description() {
   esac
 }
 
-# ── Copy RULES.md, rules/ and profiles/ alongside the agents ────────────────
+# ── Copy RULES.md, rules/, profiles/ and templates/ alongside the agents ──
 # Skill files reference RULES.md, rules/<profile>.md, and profiles/<profile>/
 # by relative path (../RULES.md, ../rules/, ../profiles/). The installed
 # agents live at .claude/agents/<skill>.md, so those relative links resolve
@@ -143,6 +143,16 @@ if [[ -d "$SKILLS_DIR/profiles" ]]; then
   profile_count="$(find "$RULES_PARENT_DIR/profiles" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d '[:space:]')"
   echo "  profiles/ copied ($profile_count profile(s)) to ${RULES_PARENT_DIR#$PROJECT_ROOT/}/profiles/"
 fi
+
+# templates/ holds the process-document starters (corrections log, risk register,
+# privacy screening + PIA) that project-bootstrap / project-onboard install into
+# docs/. Skills reference them as ../templates/, so copy them next to rules/.
+if [[ -d "$SKILLS_DIR/templates" ]]; then
+  rm -rf "$RULES_PARENT_DIR/templates"
+  cp -R "$SKILLS_DIR/templates" "$RULES_PARENT_DIR/templates"
+  template_count="$(find "$RULES_PARENT_DIR/templates" -type f | wc -l | tr -d '[:space:]')"
+  echo "  templates/ copied ($template_count file(s)) to ${RULES_PARENT_DIR#$PROJECT_ROOT/}/templates/"
+fi
 echo ""
 
 # ── Process each skill ───────────────────────────────────────────────────────
@@ -156,7 +166,7 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
 
   # Skip non-skill directories
   case "$skill_name" in
-    scripts|README*) continue ;;
+    scripts|templates|README*) continue ;;
   esac
 
   # ── Resolve description ────────────────────────────────────────────────────

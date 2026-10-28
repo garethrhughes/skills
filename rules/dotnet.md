@@ -134,3 +134,5 @@ implementation:
 - **Mocking:** NSubstitute (preferred) or Moq, at boundaries only. Do not mock the
   system under test.
 - Tests live in a sibling `*.Tests` project per production project.
+- **Semgrep rule packs** for this stack: `p/csharp` (plus the core packs listed in the
+  `reviewer` skill).

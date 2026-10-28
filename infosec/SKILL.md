@@ -46,6 +46,11 @@ mechanisms — `ConfigService`/`IOptions<T>`, `pino`/`Serilog`, etc.).
 If `CLAUDE.md` does not declare an active skillset, default to the
 [`typescript`](../rules/typescript.md) overlay for backwards compatibility.
 
+Before auditing, read `docs/risk-register.md` (risks already accepted, so they are not
+re-raised and their conditions are re-checked), `docs/privacy/` (the PIA for this change
+and the data inventory), and the **Patterns** section of `docs/corrections-log.md` (what
+has slipped past a review before), where the project keeps them.
+
 ---
 
 ## Compliance Framework Mapping
@@ -71,6 +76,7 @@ replace the Control column in the table below in your Project Context.
 | A.5.25 | Assessment and decision on information security events | Detection, triage, severity classification |
 | A.5.26 | Response to information security incidents | Error handling, breach detection, response procedures |
 | A.5.27 | Learning from information security incidents | Lessons learned, post-incident remediation |
+| A.5.34 | Privacy and protection of PII | Privacy screening, PIAs, data inventory, purpose and retention of personal data |
 | A.8.2  | Privileged access rights | Admin endpoints, IAM admin scopes, break-glass accounts |
 | A.8.8  | Management of technical vulnerabilities | Dependency scanning, patch cadence |
 | A.8.15 | Logging | Audit trails, sensitive-operation logging |
@@ -327,6 +333,32 @@ Flag any code that:
 
 ---
 
+## High — Privacy
+
+Audits against [`RULES.md#privacy`](../RULES.md#privacy). Infosec sign-off is
+**required on every PR that has a PIA**, whatever else it touches.
+
+- The feature doc or proposal (or, for a fix PR, the PR description) has the
+  five-question `## Privacy screening`, each answered Yes or No with a reason.
+- Answers are literal. A new identifier, audit field, log line with a route or count,
+  existing value on a new screen, or new processor call answered "No" is a finding.
+- Any Yes has a PIA in `docs/privacy/`, written before implementation.
+- **Read the PIA against the diff.** The change records, logs, stores, exposes and sends
+  only what the PIA's data table lists. Each deletion path it names is real (cite the
+  line that touches the new table or field) and tested, and retention matches. The user
+  is told where the PIA says they will be. `docs/privacy/data-inventory.md` matches the
+  change.
+- A claim of deletion or retention that rests on an inventory row marked `unverified` is
+  a finding until the code has been read to the end.
+- A missing screening, a Yes with no PIA, or a data table that does not match the diff →
+  **REQUIRES CHANGES** (High).
+- *Applicable regimes and lawful basis* is the product owner's field. Never fill it and
+  never state a legal conclusion. Flag it if it is filled by an agent.
+
+**Maps to:** A.5.34, A.5.9, A.5.10
+
+---
+
 ## Medium — Supply Chain & Dependencies
 
 Flag:
@@ -367,6 +399,9 @@ to the change under review:
 - **Access Control Matrix:** who/what has access to which systems and data
 - **Change Management Procedure:** how schema and infra changes are reviewed and deployed
 - **Privacy Policy:** what data is collected, how it's used, who can access it
+- **Data Inventory** (`docs/privacy/data-inventory.md`): the personal data held, where,
+  who can read it, retention and deletion path, with a source file per row
+- **Risk Register** (`docs/risk-register.md`): every residual accepted or deferred
 
 **Maps to:** A.5.1, A.5.27
 
@@ -405,6 +440,13 @@ Use this structured output for every review:
 - [ ] Soft-delete clears confidential fields
 **Findings:** [list, or "clear"]
 
+### Privacy
+- [ ] Privacy screening present and literal
+- [ ] Any Yes has a PIA written before implementation
+- [ ] The diff stores, logs, exposes and sends only what the PIA lists; deletion paths real
+- [ ] Data inventory updated
+**Findings:** [list, or "clear"]
+
 ### Infrastructure & Network
 - [ ] IAM least-privilege; no `*:*`
 - [ ] No unintended public exposure
@@ -422,7 +464,11 @@ Use this structured output for every review:
 ### Documentation
 - [ ] DECISIONS / ADRs updated where needed
 - [ ] Data flow / classification updated if applicable
+- [ ] Risk register rows for every accepted residual
 **Findings:** [list, or "clear"]
+
+**Semgrep:** version, rules run, files scanned; findings by rule ID and severity, or
+`NOT RUN` and why.
 
 ---
 
@@ -439,20 +485,37 @@ REQUIRES CHANGES — N critical issue(s) must be resolved:
 *or*
 
 APPROVED WITH EXCEPTION — N issue(s) accepted as documented risk:
-1. [Issue + control mapping + business justification + mitigation + ADR link]
+1. [Issue + control mapping + business justification + mitigation + ADR link +
+   the `docs/risk-register.md` row that records it]
 ```
 
 ## MCP Tools
 
 ### semgrep — Automated Security Scanning
-Use the Semgrep MCP server as the first step of every review. Run a scan against the
-staged diff or changed files before performing manual checks:
+A Semgrep scan of the changed files is the **first step of every review**, before
+manual checks. Scan `git diff --name-only --diff-filter=d origin/main...HEAD`, with
+documentation included. Use the Semgrep MCP server if it is available to you.
 
-- Run with security-focused rule sets (OWASP Top 10, secrets detection, injection)
-- Treat High / Critical findings as **REQUIRES CHANGES** — include the rule ID and
-  file location in your report
-- Treat Medium findings as individual issues to evaluate in context
-- Do not skip Semgrep output — it may surface issues not visible in a manual diff review
+**This skill is read-only and may have no shell.** In that case the caller runs the CLI
+and hands over three things: the diff's file list, the text summary (Semgrep version,
+rules run, files scanned) and the JSON from
+
+```sh
+git -C <repo> diff -z --name-only --diff-filter=d origin/main...HEAD | sed -z 's|^|<repo>/|' \
+  | xargs -0 -r semgrep scan --metrics=off --json-output=<scratch>/semgrep.json \
+      --config p/owasp-top-ten --config p/secrets <stack packs> [--config p/github-actions]
+```
+
+(stack packs from the active overlay; `p/github-actions` when workflows change).
+
+- Check that the JSON's `paths.scanned` equals the diff's file list, with no file missing
+  and none extra. A mismatch means the scan is not of this change.
+- CRITICAL / HIGH / ERROR → **REQUIRES CHANGES**, with the rule ID and `file:line`
+- MEDIUM / WARNING → an issue in your findings, evaluated in context
+- LOW / INFO → a Low finding, or noted
+- Never skip or discard its output. If no scan was handed over, write
+  `Semgrep: NOT RUN` in the verdict. Do not give **APPROVED** with it unless the verdict
+  says why it could not run and what was checked instead. It is never a clean scan.
 
 ### github — PR & Diff Access
 Use the GitHub MCP server to:
@@ -480,13 +543,14 @@ Use the Filesystem MCP server to:
 
 A change reaches infosec sign-off after the reviewer skill has returned PASS or
 PASS WITH COMMENTS. Infosec is the **final gate** before merge for any change touching
-auth, data, crypto, logging, infrastructure, external integrations, or
-security-sensitive dependencies.
+auth, data, crypto, logging, infrastructure, external integrations,
+security-sensitive dependencies, or a PIA.
 
 1. Reviewer verdict is PASS / PASS WITH COMMENTS
 2. Infosec runs the review and produces the structured output above
 3. If REQUIRES CHANGES: developer fixes → infosec re-runs
-4. If APPROVED WITH EXCEPTION: each exception must be logged as an ADR
+4. If APPROVED WITH EXCEPTION: each exception must be logged as an ADR and recorded as a
+   row in `docs/risk-register.md` before merge
 5. Final verdict (APPROVED or APPROVED WITH EXCEPTION) is recorded in the PR description
 
 **Any change merged without infosec sign-off — when one was required by the workflow —

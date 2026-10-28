@@ -303,7 +303,9 @@ Ask: "Any corrections? Anything I marked `[TBD]` you want to fill in now?"
 - Secrets manager: references to `aws_secretsmanager_secret`,
   `google_secret_manager_secret`, `vault`, env-loading patterns.
 - CI/CD: `.github/workflows/*.yml`, `.gitlab-ci.yml`, `.circleci/config.yml`,
-  `buildkite/*`, `Jenkinsfile`. Note which jobs run lint/test/plan/apply.
+  `buildkite/*`, `Jenkinsfile`. Note which jobs run lint/test/plan/apply, and
+  **whether CI runs on pull requests** (the workflow's `on:` triggers). Look for a local
+  CI runner (`scripts/ci-local*`, `act` config, a `make ci` target).
 - Tags: scan IaC modules for a common `tags = { ... }` or `default_tags` block.
 - Config / env: `.env.example`, `.env.*.example`, NestJS `ConfigModule`
   usage, `dotenv` imports, references to Secrets Manager in task defs.
@@ -453,6 +455,15 @@ as Onboarding Notes.
 - **Network exposure:** grep for `0.0.0.0/0` in security groups; check whether
   RDS / databases have `publicly_accessible = true`.
 - **Audit logging:** look for an audit log table/service, CloudTrail config.
+- **Privacy:** look for a privacy policy, terms, `docs/privacy/`, a PIA/DPIA, a data
+  inventory or record of processing. List every entity and log line that holds data about
+  a person (emails, identity-provider ids, payment ids, IPs, user agents, timestamps of
+  use), what deletes each (account deletion, purge jobs, soft-delete), and which
+  processors receive it. This seeds `docs/privacy/data-inventory.md`: cite a file for
+  each row, and write `unverified` where the code cannot show it.
+- **Changelog and risk records:** a `CHANGELOG.md` (and whether its unreleased entries
+  are short), an existing risk register or accepted-risk list, a lessons-learned or
+  corrections log.
 
 ### Present
 
@@ -462,6 +473,14 @@ Summary table; ask the user for:
   evidence and the user is unsure.
 - Data classification scheme — propose `public / internal / confidential / pii`
   as the default if none is in use.
+- Who makes privacy and risk decisions (fills a PIA's *Applicable regimes and lawful
+  basis*, accepts or defers residual risks) — a name, usually the product owner.
+- Whether to install the optional privacy-screening guard script (default: no), and,
+  if a changelog exists, its entry limit (default 300 characters).
+
+Gaps between the inventory and what the product says (account deletion that leaves rows
+behind, purge jobs that never run, no export) go into the inventory's *What the seeding
+found* and into Onboarding Notes.
 
 Anything risky discovered (public endpoints, `*:*` IAM, `0.0.0.0/0` ingress,
 plaintext secrets, missing scanning) goes into Onboarding Notes and should be
@@ -575,6 +594,39 @@ This project follows the language-agnostic core rules in
 [`rules/{profile}.md`](https://github.com/garethrhughes/skills/blob/main/rules/{profile}.md).
 Skills (`architect`, `design`, `developer`, `reviewer`, `infosec`) read both when applying
 conventions to this project.
+
+---
+
+## Running Commands — never `cd`
+
+Name the directory in the command instead of changing into it: the shell tool's
+working-directory parameter where it has one, otherwise absolute paths, `git -C <dir>`,
+`npm --prefix <dir>` (or the stack's equivalent). A `cd`, even in a chain, raises a
+permission prompt that halts an unattended run. Two directories means two calls.
+
+---
+
+## Corrections Log — read before deciding
+
+[`docs/corrections-log.md`](docs/corrections-log.md) records every time an agent was wrong
+on this project and every time a decision had to be pushed back. Read its **Patterns**
+before acting. The checks for every agent, at every step
+([`RULES.md#evidence-corrections--decisions`](https://github.com/garethrhughes/skills/blob/main/RULES.md#evidence-corrections--decisions)):
+verify a "done / out of scope / pre-existing" claim with a command before writing it;
+break what a test guards and watch it fail; `git diff` a passage before claiming it
+changed; quote failures, not only the passing count; brief a review with the original
+request and the diff only; fix a shared function at the source and find every other
+writer of the same state; reconcile every copy of a changed rule or name. Append an
+entry when you get something wrong.
+
+---
+
+## Keeping This File Small
+
+This file is loaded into every session, so it holds rules and pointers, not history.
+Detail lives in the ADR, feature doc, README or risk-register row it came from. A new
+Settled Decision gets **one line**: the rule as it stands, plus which ADRs it amends or
+supersedes.
 
 ---
 
@@ -704,6 +756,13 @@ etc.).
 See [`RULES.md#testing`](https://github.com/garethrhughes/skills/blob/main/RULES.md#testing)
 for the canonical testing rules.
 
+- **Run CI locally before every PR** with `{local CI command from Phase 3}`, against the
+  committed branch, for every CI job the change touches (all of them for a dependency,
+  workflow or config change). The report names the jobs that ran and those SKIPPED; a
+  SKIPPED job is **NOT VERIFIED**, never "passing", and the reviewer blocks a report
+  that does not say so.
+{if CI does not run on pull requests: "- CI does not run on pull requests: the local run is the only check before merge."}
+
 **Project-specific additions** (observed or supplied):
 {additions, or "_(none)_"}
 
@@ -730,9 +789,40 @@ UI work that only consumes existing tokens and components does not need one.
 See the `architect`, `design`, and `decision-log` skills for the exact proposal, design
 plan, and ADR formats.
 
+**Privacy screening** ([`RULES.md#privacy`](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy)).
+Every feature doc and proposal answers the five-question `## Privacy screening` in
+[`docs/privacy/README.md`](docs/privacy/README.md). A fix PR with no feature doc puts it
+in the PR description. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
+written before implementation and built only as it lists. Infosec is then required, and
+the reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
+engineering assessment, not legal advice: *Applicable regimes and lawful basis* is
+{privacy decision owner from Phase 7}'s field.
+{if the guard script was installed: "Run `node --test scripts/__tests__/privacy-screening.test.mjs` before a PR."}
+
+---
+
+## Changelog
+
+*(omit if the project keeps no user-facing changelog)*
+`{changelog path}`, per [`RULES.md#changelog`](https://github.com/garethrhughes/skills/blob/main/RULES.md#changelog):
+it says what changed since the last release, a fix to unreleased work amends the entry
+that introduced it, and an entry is a bold headline plus at most two short sentences,
+≤{limit, default 300} characters, on one line.
+
+---
+
+## Risk Register
+
+[`docs/risk-register.md`](docs/risk-register.md) lists every risk {privacy decision owner
+from Phase 7} has accepted, deferred or not yet treated. When you leave something open on
+purpose (a residual an infosec review accepts, a fix deferred to a later release), add a
+row there rather than only mentioning it in a PR or a report.
+
 ---
 
 ## Settled Decisions (do not revisit without a superseding ADR)
+
+One line each: the rule as it stands. The ADR holds the detail.
 
 | # | Decision |
 |---|---|
@@ -841,24 +931,45 @@ If `.opencode/skills/` does not exist, tell the user:
 > automatically, copy the skills into `.opencode/skills/` — see the skills
 > README for instructions."
 
-### Step 3 — MCP Setup
+### Step 3 — Install the process documents
+
+Install any of these the project does not already have, from the skills'
+[`templates/`](../templates/) directory (next to `rules/`: `.opencode/skills/templates/`,
+or `.claude/templates/` / `.github/templates/` after the agent installers have run).
+**Never overwrite an existing file.** Where the project has its own equivalent (an
+existing risk list, a privacy policy), link it from the installed file rather than
+replacing it.
+
+| Template | Install to |
+|---|---|
+| `templates/docs/corrections-log.md` | `docs/corrections-log.md` |
+| `templates/docs/risk-register.md` | `docs/risk-register.md` (seed it with the risky findings from Phase 7 that the user chooses to accept or defer) |
+| `templates/docs/privacy/README.md`, `TEMPLATE-pia.md` | `docs/privacy/` |
+| `templates/docs/privacy/data-inventory.md` | `docs/privacy/data-inventory.md`, filled with the rows from Phase 7's privacy investigation |
+| `templates/scripts/privacy-screening.test.mjs` | `scripts/__tests__/privacy-screening.test.mjs`, **only if the user said yes**; set `FIRST_SCREENED_FEATURE` / `FIRST_SCREENED_PROPOSAL` to the next numbers so existing documents are not checked |
+
+Replace `{product owner}` with the privacy decision owner from Phase 7. If the guard
+was installed, run it and confirm it passes.
+
+### Step 4 — MCP Setup
 
 Invoke the `mcp-setup` skill to let the user choose which MCP servers to add to
 this project. The mcp-setup skill will handle reading/writing `opencode.json` and
 explaining each option.
 
-After mcp-setup completes, continue to Step 4.
+After mcp-setup completes, continue to Step 5.
 
 ---
 
-### Step 4 — Finish
+### Step 5 — Finish
 
 Tell the user:
 
 > "Your CLAUDE.md is ready to commit to the root of your repository.
 >
 > Suggested next steps:
-> 1. Commit `CLAUDE.md`, `opencode.json`, and any updated skill files to version control
+> 1. Commit `CLAUDE.md`, `opencode.json`, the `docs/` process documents (privacy, risk
+>    register, corrections log), and any updated skill files to version control
 > 2. Review the **Onboarding Notes** section — each bullet is a candidate for a
 >    proposal via the `architect` skill, or a backlog ticket
 > 3. If `docs/proposals/` and `docs/decisions/` don't exist yet, scaffold them

@@ -50,6 +50,22 @@ a proposal in `docs/proposals/`.
 
 ### Process
 - Write a proposal in `docs/proposals/` before any significant design decision is acted on
+- Fill every proposal's **Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy)).
+  When any answer is Yes, write the privacy impact assessment from
+  `docs/privacy/TEMPLATE-pia.md` before the proposal is presented, and update
+  `docs/privacy/data-inventory.md` for any row it adds or changes. A PIA is an
+  engineering and product assessment: never fill *Applicable regimes and lawful basis*
+  (it reads `legal review needed` until the product owner does) and never state a legal
+  conclusion
+- Put each decision the product owner must make to them with its options, the
+  consequences of each, and your recommendation. Record their answer in the proposal,
+  quoted and dated
+- An evaluation or recall gate the proposal introduces follows
+  [`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates).
+  Write the question sets, the split rule and the bar counts into the proposal before
+  any run
+- When the proposal changes during review, re-read every sentence in it, its PIA and
+  its draft ADRs that states the rule you changed, and make them agree
 - Keep the proposal index up to date
 - Hand off accepted proposals to the `decision-log` skill for ADR creation
 
@@ -127,7 +143,9 @@ Increment NNNN sequentially from the highest existing number. Start at 0001.
 **Date:** YYYY-MM-DD
 **Status:** Draft | Under Review | Accepted | Rejected | Superseded by [NNNN]
 **Author:** Architect Agent
-**Related ADRs:** links to any decisions in docs/decisions/ that this proposal will produce
+**Related ADRs:** links to any decisions in docs/decisions/ that this proposal will produce,
+and any it amends or supersedes
+**Privacy:** screening all No | PIA [docs/privacy/NNNN-title.md](../privacy/NNNN-title.md)
 
 ## Problem Statement
 
@@ -166,11 +184,26 @@ Why it was considered and why it was ruled out.
 | Infrastructure | None / New resource / IAM change / Network change | detail |
 | Observability | None / New log fields / New metric / New alert | detail |
 | Security / Compliance | None / New attack surface / New data class | detail |
+| Privacy | None / PIA docs/privacy/NNNN-title.md | screening result |
+
+## Privacy screening
+
+The five questions from `docs/privacy/README.md` (or `RULES.md#privacy`), word for word,
+each answered Yes or No with a one-line reason, then the result line. Any Yes: write the
+PIA in `docs/privacy/` with this proposal and link it from the result line.
 
 ## Open Questions
 
 List anything that needs input before this proposal can be accepted.
 If there are no open questions, write "None."
+
+## Decisions
+
+One entry per decision the product owner makes. Give the question, the options with
+their consequences, the recommendation, and the answer quoted with its date
+("{name}, YYYY-MM-DD: …"). A decision taken on their behalf is marked "pending their
+review". **Settled** marks one that an earlier decision or ADR already answers, with the
+reference.
 
 ## Acceptance Criteria
 
@@ -349,7 +382,8 @@ Use the Filesystem MCP server to:
 - Always explain the trade-off before recommending a pattern
 - Call out assumptions that need validation (data volumes, API constraints, operational limits, cost)
 - Flag if a proposed design introduces edge cases that must be handled
-- Flag any new attack surface, new data class, or new privileged identity created
+- Flag any new attack surface, new data class, or new privileged identity created, and
+  any new data about a person, which the privacy screening must answer Yes to
 - Prefer proven framework conventions (modules, providers, guards) over clever abstractions
 - For infra: prefer managed services over self-hosted unless cost or compliance dictates otherwise
 - If a question requires a significant design decision, respond with a proposal draft

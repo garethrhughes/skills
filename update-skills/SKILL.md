@@ -78,6 +78,16 @@ If any of these were modified in this update, **call it out at the top of the re
 - New profiles/overlays added — list them so the user knows new skillsets are
   selectable
 
+### templates/ changes
+
+`templates/` holds the starters for the process documents (corrections log, risk
+register, privacy README, PIA template, data inventory, the optional privacy-screening
+guard). The script refreshes the installed `templates/`, never the project's own copies
+under `docs/` or `scripts/`. If the report lists **TEMPLATES UPDATED**, summarise what
+changed and tell the user which project copies they may want to update by hand. A
+change to the five screening questions has to reach `docs/privacy/README.md` and, if
+installed, the guard script together.
+
 ## Rules
 
 - Do not edit any skill files yourself — the script handles everything.
@@ -86,17 +96,18 @@ If any of these were modified in this update, **call it out at the top of the re
 
 ## After updating — re-run installers if applicable
 
-The update script syncs the skills, root files, and `scripts/` directory but does
-**not** re-propagate changes into Claude Code or Copilot agent directories. After
+The update script syncs the skills, root files, and the `scripts/`, `rules/`,
+`profiles/` and `templates/` directories, but does **not** re-propagate changes into
+Claude Code or Copilot agent directories. After
 a successful update, remind the user:
 
 - **Claude Code users** — re-run `scripts/install-claude-agents.sh` from each
   project root to refresh `.claude/agents/<skill>.md` and pick up any new tool
-  restrictions, `RULES.md` changes, new stack overlays under `rules/`, or new
-  profiles under `profiles/`.
+  restrictions, `RULES.md` changes, new stack overlays under `rules/`, new
+  profiles under `profiles/`, or updated `templates/`.
 - **GitHub Copilot users** — re-run `scripts/install-copilot-agents.sh` to refresh
-  symlinks in `.github/agents/` and re-copy `RULES.md`, `rules/`, and `profiles/`
-  alongside.
+  symlinks in `.github/agents/` and re-copy `RULES.md`, `rules/`, `profiles/` and
+  `templates/` alongside.
 - **OpenCode users** — no action needed; OpenCode reads `.opencode/skills/`
   directly.
 

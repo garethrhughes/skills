@@ -13,6 +13,53 @@ conventions to this project.
 
 ---
 
+## Running Commands — never `cd`
+
+Name the directory in the command instead of changing into it: the shell tool's
+working-directory parameter where it has one, otherwise absolute paths, `git -C <dir>`,
+`npm --prefix <dir>` (or the stack's equivalent). A `cd`, even in a chain, raises a
+permission prompt that halts an unattended run. If a command needs two directories, it
+needs two calls.
+
+---
+
+## Corrections Log — read before deciding
+
+[`docs/corrections-log.md`](docs/corrections-log.md) records every time an agent was wrong
+on this project and every time a decision had to be pushed back. Read its **Patterns**
+section before acting. The ledger is the evidence behind it. The checks that apply to
+every agent, at every step
+([`RULES.md#evidence-corrections--decisions`](.opencode/skills/RULES.md#evidence-corrections--decisions)):
+
+1. Before writing *already done / out of scope / resolved / pre-existing*, run the
+   command that proves it and cite the output. Narrowing scope is the product owner's
+   call.
+2. Before keeping a test, break what it guards and watch it fail. Break every line that
+   enforces the control.
+3. Before claiming a document was amended, `git diff` the passage.
+4. Before reporting a result, quote the failures too.
+5. Brief a review with the original request and the diff only, never a list of what was
+   done or where to look.
+6. After fixing a write, find every other writer of the same state. When a shared
+   function is wrong, fix it at that function, not at the caller that noticed.
+7. When a rule, claim or name changes, grep every copy of it (proposal, ADR, PIA, risk
+   register, this file, agent and skill files) and make each agree. After removing a
+   name, search for it.
+
+This entry is the durable copy: `update-skills` can overwrite the skills' own pointers.
+Append an entry to the log when you get something wrong.
+
+---
+
+## Keeping This File Small
+
+This file is loaded into every session, so it holds rules and pointers, not history.
+Detail lives in the ADR, feature doc, README or risk-register row it came from. A new
+Settled Decision gets **one line**: the rule as it stands, plus which ADRs it amends or
+supersedes.
+
+---
+
 ## Project Overview
 
 [Short description: what does this system do, who uses it, what problem does it solve?]
@@ -88,7 +135,10 @@ conventions to this project.
 │   ├── features/
 │   ├── proposals/
 │   ├── decisions/
-│   └── design/          # UI design plans (frontend projects)
+│   ├── design/          # UI design plans (frontend projects)
+│   ├── privacy/         # privacy screening rules, PIA template, PIAs, data inventory
+│   ├── corrections-log.md
+│   └── risk-register.md
 └── .env.example
 ```
 
@@ -148,9 +198,57 @@ UI work that only consumes existing tokens and components does not need one.
 See the `architect`, `design`, and `decision-log` skills for the exact proposal, design
 plan, and ADR formats.
 
+**Privacy screening** ([`RULES.md#privacy`](.opencode/skills/RULES.md#privacy)). Every
+feature doc and proposal answers the five-question `## Privacy screening` in
+[`docs/privacy/README.md`](docs/privacy/README.md). A fix PR with no feature doc puts it
+in the PR description. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
+written before implementation and built only as it lists. Infosec is then required, and
+the reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
+engineering assessment, not legal advice: *Applicable regimes and lawful basis* is
+[product owner]'s field. [If installed: run `node --test
+scripts/__tests__/privacy-screening.test.mjs` before a PR.]
+
+---
+
+## Testing & Local CI
+
+See [`RULES.md#testing`](.opencode/skills/RULES.md#testing). Plus:
+
+- **Run CI locally before every PR** with `[local CI command, e.g. a runner script that
+  reads the workflow file]`, against the **committed** branch (pass the commit, e.g.
+  `--ref <sha>`, when running from a worktree). Run every CI job the change touches, and
+  all of them for a dependency, workflow or config change. The report names the jobs
+  that ran and those **SKIPPED**. A SKIPPED job is **NOT VERIFIED**, never "passing",
+  and the reviewer blocks a report that does not say so. Never use a hosted CI run to
+  find out.
+- [Does CI run on pull requests? If not, say so here: the local run is the only check
+  before merge.]
+
+---
+
+## Changelog
+
+[If the project keeps a user-facing changelog: its path.] Per
+[`RULES.md#changelog`](.opencode/skills/RULES.md#changelog): the changelog says what
+changed since the last release. A fix to unreleased work amends the entry that
+introduced it. An entry is a bold one-sentence headline plus at most two short
+sentences, ≤[300] characters, on one line, written for a user.
+
+---
+
+## Risk Register
+
+[`docs/risk-register.md`](docs/risk-register.md) lists every risk the product owner has
+accepted, deferred or not yet treated, with likelihood, impact, owner and a review
+date. When you leave something open on purpose (a residual an infosec review accepts, a
+fix deferred to a later release), add a row there rather than only mentioning it in a PR
+or a report.
+
 ---
 
 ## Settled Decisions (do not revisit without a superseding ADR)
+
+One line each: the rule as it stands. The ADR holds the detail.
 
 | # | Decision |
 |---|---|

@@ -13,7 +13,8 @@ Generates `.claude/agents/<skill>.md` files for Claude Code subagents.
 
 - Strips OpenCode-specific frontmatter (`compatibility`, `permission`).
 - Applies per-skill tool restrictions (e.g. `infosec` is read-only).
-- Copies `RULES.md` alongside the agents so relative `RULES.md` links resolve.
+- Copies `RULES.md`, `rules/`, `profiles/` and `templates/` into `.claude/` so the
+  skills' relative links (`../RULES.md`, `../templates/`) resolve.
 - Writes `.rules-version` sidecar so drift can be detected later.
 - Safe to re-run after `update-skills` pulls upstream changes.
 
@@ -26,7 +27,8 @@ Generates `.claude/agents/<skill>.md` files for Claude Code subagents.
 Symlinks each `SKILL.md` into `.github/agents/<skill>.md` for GitHub Copilot.
 
 - Skips files that already exist (manual replacement required).
-- Copies `RULES.md` alongside (not symlinked, so it survives skill removal).
+- Copies `RULES.md`, `rules/`, `profiles/` and `templates/` into `.github/` (not
+  symlinked, so they survive skill removal).
 - Writes `.rules-version` sidecar.
 
 ```bash

@@ -171,6 +171,9 @@ if [ -d "$SKILLS_DIR/profiles" ]; then
   done
 fi
 
+# Snapshot templates/ before update (process-document starters)
+[ -d "$SKILLS_DIR/templates" ] && cp -R "$SKILLS_DIR/templates" "$BEFORE_DIR/__templates__"
+
 for upstream_skill_dir in "$CLONE_DIR"/*/; do
   [ -d "$upstream_skill_dir" ] || continue
   skill="$(basename "$upstream_skill_dir")"
@@ -290,6 +293,14 @@ if [ -d "$CLONE_DIR/profiles" ]; then
     profile="$(basename "$installed_profile_dir")"
     [ -d "$CLONE_DIR/profiles/$profile" ] || rm -rf "$installed_profile_dir"
   done
+fi
+
+# Sync templates/ from upstream (process-document starters that
+# project-bootstrap / project-onboard copy into a project's docs/). The
+# installed copy is upstream-owned: a project edits its own docs/ copies.
+if [ -d "$CLONE_DIR/templates" ]; then
+  rm -rf "$SKILLS_DIR/templates"
+  cp -R "$CLONE_DIR/templates" "$SKILLS_DIR/templates"
 fi
 
 for f in "$SKILLS_DIR"/*/SKILL.md; do
@@ -460,7 +471,33 @@ done
 profiles_modified_count=0
 for f in $PROFILES_MODIFIED; do profiles_modified_count=$((profiles_modified_count+1)); done
 
-TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count + rules_modified_count + profiles_modified_count ))
+# Snapshot templates/ after update and list what changed
+[ -d "$SKILLS_DIR/templates" ] && cp -R "$SKILLS_DIR/templates" "$AFTER_DIR/__templates__"
+TEMPLATES_MODIFIED=""
+tb="$BEFORE_DIR/__templates__"
+ta="$AFTER_DIR/__templates__"
+# Either side may be missing (first install of templates/, or removed upstream),
+# so build the list without a failing test inside a pipeline (set -e + pipefail).
+template_files=""
+for d in "$ta" "$tb"; do
+  [ -d "$d" ] || continue
+  template_files="$template_files
+$(cd "$d" && find . -type f | sed 's|^\./||')"
+done
+template_files="$(printf '%s\n' "$template_files" | sed '/^$/d' | sort -u)"
+for rel in $template_files; do
+  if [ ! -f "$tb/$rel" ]; then
+    TEMPLATES_MODIFIED="$TEMPLATES_MODIFIED ADDED:$rel"
+  elif [ ! -f "$ta/$rel" ]; then
+    TEMPLATES_MODIFIED="$TEMPLATES_MODIFIED REMOVED:$rel"
+  elif ! diff -q "$tb/$rel" "$ta/$rel" > /dev/null 2>&1; then
+    TEMPLATES_MODIFIED="$TEMPLATES_MODIFIED $rel"
+  fi
+done
+templates_modified_count=0
+for f in $TEMPLATES_MODIFIED; do templates_modified_count=$((templates_modified_count+1)); done
+
+TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count + rules_modified_count + profiles_modified_count + templates_modified_count ))
 
 if [ $TOTAL -eq 0 ]; then
   echo "STATUS: up-to-date"
@@ -613,6 +650,33 @@ if [ $profiles_modified_count -gt 0 ]; then
         else
           echo "    (new file)"
         fi
+        ;;
+    esac
+  done
+  echo ""
+fi
+
+if [ $templates_modified_count -gt 0 ]; then
+  echo "--- TEMPLATES UPDATED ($templates_modified_count) ---"
+  echo "  (starters only: re-copy into the project's docs/ by hand if you want a change)"
+  for entry in $TEMPLATES_MODIFIED; do
+    case "$entry" in
+      ADDED:*)
+        echo ""
+        echo "  file: templates/${entry#ADDED:}  (new file)"
+        ;;
+      REMOVED:*)
+        echo ""
+        echo "  file: templates/${entry#REMOVED:}  (REMOVED upstream)"
+        ;;
+      *)
+        echo ""
+        echo "  file: templates/$entry"
+        diff --unified=3 \
+          --label "before/templates/$entry" \
+          --label "after/templates/$entry" \
+          "$tb/$entry" "$ta/$entry" \
+          | sed 's/^/    /' || true
         ;;
     esac
   done
