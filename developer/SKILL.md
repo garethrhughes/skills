@@ -175,9 +175,12 @@ Read the feature doc's (or proposal's) `## Privacy screening` before coding
   same branch before review, and say so in the PR.
 - If the screening said No and the build now touches personal data, change the answer
   and write the PIA before continuing.
-- A PR with no feature doc (a fix, dependency, configuration, infrastructure or CI
-  change) carries the screening in its PR description. A docs-only or tests-only PR
-  says "Privacy screening: not applicable (docs/tests only)".
+- For a PR with no feature doc (a fix, dependency, configuration, infrastructure or CI
+  change), the developer writes the screening during implementation (create-feature Step
+  2) as a "Privacy screening" section of a **PR-description draft**, which is handed to
+  the reviewer and infosec as evidence and later becomes the PR description verbatim.
+  Write that draft now, before review. A docs-only or tests-only PR says "Privacy
+  screening: not applicable (docs/tests only)" in the draft.
 - If `docs/privacy/` does not exist yet (a project set up before these rules), install it
   from the skills' `../templates/` as [`../templates/README.md`](../templates/README.md)
   describes (replace `{product owner}` and the adoption-point placeholders), and say so

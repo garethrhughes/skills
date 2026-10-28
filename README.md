@@ -15,7 +15,8 @@ The core rules also carry the **process** the skills follow on every project: th
 evidence checks every agent runs before claiming something (`RULES.md` *Evidence,
 Corrections & Decisions*), CI evidence on every PR (a local CI report where CI does not
 run on pull requests, in which a SKIPPED job is NOT VERIFIED),
-review briefs that carry only the original request and the diff, changelog discipline,
+review briefs that carry the original request, the diff and existing evidence but never a
+list of fixes, changelog discipline,
 a risk register for anything left open on purpose, evaluation-gate methodology, and a
 five-question **privacy screening** with a privacy impact assessment (PIA) before any
 change that touches personal data. Starter files for these process documents live in

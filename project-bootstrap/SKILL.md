@@ -356,10 +356,12 @@ before acting. The checks for every agent, at every step
 ([`RULES.md#evidence-corrections--decisions`](https://github.com/garethrhughes/skills/blob/main/RULES.md#evidence-corrections--decisions)):
 verify a "done / out of scope / pre-existing" claim with a command before writing it;
 break what a test guards and watch it fail; `git diff` a passage before claiming it
-changed; quote failures, not only the passing count; brief a review with the original
-request and the diff only; fix a shared function at the source and find every other
-writer of the same state; reconcile every copy of a changed rule or name. Append an
-entry when you get something wrong.
+changed; quote failures, not only the passing count; brief reviewers with the original
+request, the diff, and existing evidence (the local CI report or "pending: hosted CI on
+the PR head", scanner output, and the privacy screening), never a list of what was done
+or where to look; fix a shared function at the source and find every other writer of the
+same state; reconcile every copy of a changed rule or name; after removing a name,
+search for it. Append an entry when you get something wrong.
 
 ---
 
@@ -539,12 +541,17 @@ plan, and ADR formats.
 
 **Privacy screening** ([`RULES.md#privacy`](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy)).
 Every feature doc and proposal answers the five-question `## Privacy screening` in
-[`docs/privacy/README.md`](docs/privacy/README.md). A PR with no feature doc (a fix,
-dependency, configuration, infrastructure or CI change) puts it in the PR description;
-a docs-only or tests-only PR needs none. **Adoption point:** feature docs from
-`{first screened feature number}` and proposals from `{first screened proposal number}`
+[`docs/privacy/README.md`](docs/privacy/README.md). For a PR with no feature doc (a fix, dependency, configuration, infrastructure or CI
+change), the developer writes the screening during implementation (create-feature Step
+2) as a "Privacy screening" section of a **PR-description draft**, which is handed to
+the reviewer and infosec as evidence and later becomes the PR description verbatim. A
+docs-only or tests-only PR needs none. **Adoption point:** feature docs from `{first
+screened feature number}` and proposals from `{first screened proposal number}`
 ({bootstrap: 0001 and 0001; onboard: the numbers after the newest existing ones}); older
-documents are not checked unless reopened. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
+documents are not checked unless reopened. **If `CLAUDE.md` records no adoption point**,
+the newest feature-doc and proposal numbers that existed when the rule was adopted, and
+every number below them, count as before it: the reviewer does not block them, and asks
+the product owner to record the "first screened" numbers (newest + 1) in `CLAUDE.md`. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
 written before implementation and built only as it lists. Infosec is then required, and
 the reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
 engineering assessment, not legal advice: *Applicable regimes and lawful basis* is

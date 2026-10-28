@@ -338,11 +338,17 @@ Flag any code that:
 Audits against [`RULES.md#privacy`](../RULES.md#privacy). Infosec sign-off is
 **required on every PR that has a PIA**, whatever else it touches.
 
-- The feature doc or proposal has the five-question `## Privacy screening`, each answered
-  Yes or No with a reason; a PR with no feature doc (a fix, dependency, configuration,
-  infrastructure or CI change) has it in the PR description. Docs-only and tests-only PRs,
-  and documents numbered before the adoption point recorded in `CLAUDE.md` (unless
-  reopened), are exempt.
+- The feature doc or proposal has the five-question `## Privacy screening`, each
+  answered Yes or No with a reason. For a PR with no feature doc (a fix, dependency,
+  configuration, infrastructure or CI change), the developer writes the screening during
+  implementation (create-feature Step 2) as a "Privacy screening" section of a
+  **PR-description draft**, which is handed to the reviewer and infosec as evidence and
+  later becomes the PR description verbatim. Read it there. Docs-only and tests-only
+  PRs, and documents numbered before the adoption point recorded in `CLAUDE.md` (unless
+  reopened), are exempt. **If `CLAUDE.md` records no adoption point**, the newest
+  feature-doc and proposal numbers that existed when the rule was adopted, and every
+  number below them, count as before it: the reviewer does not block them, and asks the
+  product owner to record the "first screened" numbers (newest + 1) in `CLAUDE.md`.
 - Answers are literal. A new identifier, audit field, log line with a route or count,
   existing value on a new screen, or new processor call answered "No" is a finding.
 - Any Yes has a PIA in `docs/privacy/`, written before implementation.
@@ -489,7 +495,9 @@ REQUIRES CHANGES — N critical issue(s) must be resolved:
 
 APPROVED WITH EXCEPTION — N issue(s) accepted as documented risk:
 1. [Issue + control mapping + business justification + mitigation + ADR link +
-   the `docs/risk-register.md` row that records it]
+   the risk-register row to add, with a proposed ID (the next free `R-NNN` in
+   `docs/risk-register.md`) and its text; the row is written in the decision-log step
+   and must exist before merge]
 ```
 
 ## MCP Tools
@@ -558,8 +566,9 @@ security-sensitive dependencies, or a PIA.
 1. Reviewer verdict is PASS / PASS WITH COMMENTS
 2. Infosec runs the review and produces the structured output above
 3. If REQUIRES CHANGES: developer fixes → infosec re-runs
-4. If APPROVED WITH EXCEPTION: each exception must be logged as an ADR and recorded as a
-   row in `docs/risk-register.md` before merge
+4. If APPROVED WITH EXCEPTION: name a proposed risk-register ID and row text for each
+   exception; the decision-log step logs it as an ADR and writes the row, and both must
+   exist before merge
 5. Final verdict (APPROVED or APPROVED WITH EXCEPTION) is recorded in the PR description
 
 **Any change merged without infosec sign-off — when one was required by the workflow —

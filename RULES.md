@@ -187,9 +187,11 @@ set:
   PR carries the report: the jobs that ran, their results with failures quoted, and the
   jobs **SKIPPED**. A SKIPPED job is **NOT VERIFIED**, never "passing". Never push to the
   default branch to find out whether a change passes.
-- **Brief reviewers with the original request and the diff only.** Never send a list of
-  what was done or where to look. A reviewer given the fixes confirms the fixes. A
-  re-review gets the same brief as the first review.
+- **Review briefs.** Brief reviewers with the original request, the diff, and existing
+  evidence (the local CI report or "pending: hosted CI on the PR head", scanner output,
+  and the privacy screening), never a list of what was done or where to look. A reviewer
+  given the fixes confirms the fixes. A re-review gets the same brief as the first
+  review.
 - The PR description is another writer of the change's claims. After each fix round,
   re-read it, the report and the changelog entry against the files as they now are.
 
@@ -224,12 +226,15 @@ screened, and any change the screening flags gets a **privacy impact assessment 
 before it is built**.
 
 - **Screening.** Every feature document and every proposal carries a `## Privacy
-  screening` section. **A PR with no feature doc** (a fix, dependency, configuration,
-  infrastructure or CI change) carries it in the PR description, because a dependency
-  or config change can add a network call or telemetry. A PR that changes only
-  documentation or tests, with no runtime effect, needs none and says "Privacy
-  screening: not applicable (docs/tests only)". The screening holds five questions, each answered Yes or No with a one-line reason, and a result
-  line:
+  screening` section. For a PR with no feature doc (a fix, dependency, configuration,
+  infrastructure or CI change), the developer writes the screening during implementation
+  (create-feature Step 2) as a "Privacy screening" section of a **PR-description
+  draft**, which is handed to the reviewer and infosec as evidence and later becomes the
+  PR description verbatim. (A dependency or config change can add a network call or
+  telemetry.) A PR that changes only documentation or tests, with no runtime effect,
+  needs none and says "Privacy screening: not applicable (docs/tests only)". The
+  screening holds five questions, each answered Yes or No with a one-line reason, and a
+  result line:
   1. Does it collect, derive, log, store, expose or send any new data about a person
      (identifiers included: account ids, entity ids, key prefixes, IPs, emails,
      timestamps, usage or behaviour)?
@@ -262,15 +267,16 @@ before it is built**.
   where the code could not show it. An `unverified` is an open item, not a footnote:
   read the code to the end before any claim rests on it. The PR that changes a row
   updates the inventory, and the privacy policy if one is kept in the repository.
-- **Adoption point.** A project records in its `CLAUDE.md` the first feature-document and
-  proposal numbers the screening applies to (the numbers after the newest existing ones
-  when it adopts the rule; `0001` for a new project; the optional guard's
+- **Adoption point.** A project records in its `CLAUDE.md` the first feature-document
+  and proposal numbers the screening applies to (the numbers after the newest existing
+  ones when it adopts the rule; `0001` for a new project; the optional guard's
   `FIRST_SCREENED_*` use the same numbers). Documents numbered before it are not checked
   unless they are reopened (their scope or design changes), when they are screened like
-  new ones. **If `CLAUDE.md` records no adoption point**, the newest feature-doc and proposal
-  numbers that existed when the rule was adopted, and every number below them, count as
-  before it: the reviewer does not block them, and asks the product owner to record the
-  "first screened" numbers (newest + 1) in `CLAUDE.md`.
+  new ones (and added to the guard's `ALSO_SCREENED_*` if it is installed). **If
+  `CLAUDE.md` records no adoption point**, the newest feature-doc and proposal numbers
+  that existed when the rule was adopted, and every number below them, count as before
+  it: the reviewer does not block them, and asks the product owner to record the "first
+  screened" numbers (newest + 1) in `CLAUDE.md`.
 - **Gates.** A missing screening on a document or PR the rule covers, a Yes with no PIA,
   or a diff that logs or stores something the PIA does not list is a review BLOCK and an
   infosec REQUIRES CHANGES. Infosec sign-off is required on every PR that has a PIA.

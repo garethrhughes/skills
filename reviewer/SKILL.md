@@ -72,9 +72,11 @@ check these against the diff
    A removed name still in the docs or agent files.
 8. **Acceptance Criteria with no covering test.** Trace every one to `file:line`.
 
-**Your brief is the original request and the diff.** If you were also handed a list of
-what was fixed or where to look, treat each item as a claim to verify, not as the scope
-of the review. Where you and the author disagree on a measurable fact, measure it. If
+**Your brief** ([`RULES.md#git--prs`](../RULES.md#git--prs)): Brief reviewers with the
+original request, the diff, and existing evidence (the local CI report or "pending:
+hosted CI on the PR head", scanner output, and the privacy screening), never a list of
+what was done or where to look. If you were also handed a list of what was fixed or
+where to look, treat each item as a claim to verify, not as the scope of the review. Where you and the author disagree on a measurable fact, measure it. If
 the review finds something the log has not seen, say so in the verdict so it can be
 added.
 
@@ -235,7 +237,10 @@ Read the diff and flag any deviation. Severity is determined as follows:
 
 ### Process Checks — each → **BLOCK**
 
-- **CI evidence** ([`RULES.md#git--prs`](../RULES.md#git--prs)). Where hosted CI runs on
+- **CI evidence** ([`RULES.md#git--prs`](../RULES.md#git--prs)). If `CLAUDE.md` does not
+  say whether CI runs on pull requests, read the workflows' `on:` triggers (for example
+  `pull_request` in `.github/workflows/*.yml`), apply the matching case, and ask the
+  product owner to record the answer in `CLAUDE.md`. Where hosted CI runs on
   pull requests, a review held before the PR exists records the CI evidence as
   **"pending: hosted CI on the PR head"**; the gate is re-checked on the PR head before
   merge: green is required to merge, and the agent that opens the PR waits for the run
@@ -255,9 +260,12 @@ Read the diff and flag any deviation. Severity is determined as follows:
   headline, has a second paragraph or nested list, or carries implementation detail.
   Internal-only work needs no entry.
 - **Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy)). Every PR the rule
-  covers has one: in the feature doc or proposal, or, for a PR with no feature doc (a
-  fix, dependency, configuration, infrastructure or CI change; Phase 1 is skipped then),
-  in the PR description. A docs-only or tests-only PR needs none and says so. Documents
+  covers has one, in the feature doc or proposal. For a PR with no feature doc (a fix,
+  dependency, configuration, infrastructure or CI change), the developer writes the
+  screening during implementation (create-feature Step 2) as a "Privacy screening"
+  section of a **PR-description draft**, which is handed to the reviewer and infosec as
+  evidence and later becomes the PR description verbatim. Check it there (Phase 1 is
+  skipped for such a PR); a PR without the draft section blocks. A docs-only or tests-only PR needs none and says so. Documents
   numbered before the adoption point in `CLAUDE.md` are exempt unless reopened. **If
   `CLAUDE.md` records no adoption point**, the newest feature-doc and proposal numbers
   that existed when the rule was adopted, and every number below them, count as before
@@ -537,7 +545,7 @@ Use the Filesystem MCP server to:
 - A removed dependency, file or name is gone from the docs, `CLAUDE.md` and the
   agent/skill files
 - Every copy of a rule or claim the change touches says the same thing (proposal, ADR,
-  PIA, risk register, `CLAUDE.md`, the PR description)
+  PIA, risk register, `CLAUDE.md`, the PR description or its draft)
 - `docs/privacy/data-inventory.md` is updated for any personal-data row the change adds,
   changes or removes
 

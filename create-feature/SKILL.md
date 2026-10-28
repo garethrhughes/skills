@@ -274,6 +274,13 @@ Use the **developer** skill to:
    locally** then, on the committed branch, for every job the change touches, and record
    the jobs that ran, with failures quoted, and those SKIPPED (**NOT VERIFIED**)
 
+10. **PR-description draft.** For a PR with no feature doc (a fix, dependency,
+    configuration, infrastructure or CI change), the developer writes the screening
+    during implementation (create-feature Step 2) as a "Privacy screening" section of a
+    **PR-description draft**, which is handed to the reviewer and infosec as evidence
+    and later becomes the PR description verbatim. Start the draft here in any case
+    (summary, tests, CI evidence) so Steps 3 and 4 receive it and Step 6 uses it.
+
 **Handoff to Step 3 when:** all tests pass and the branch is ready for review.
 
 ---
@@ -286,9 +293,13 @@ Use the **developer** skill to:
 so the reviewer records "pending: hosted CI on the PR head" and Step 6 re-checks it
 before merge. Where it does not, the local CI report from Step 2 goes to the reviewer.
 
-**Brief the reviewer with the original requirement and the diff only.** Never send a list
-of what was done or where to look: a reviewer given the fixes confirms the fixes. A
-re-review after a fix round gets the same brief as the first review.
+**Brief the reviewer** ([`RULES.md#git--prs`](../RULES.md#git--prs)): Brief reviewers
+with the original request, the diff, and existing evidence (the local CI report or
+"pending: hosted CI on the PR head", scanner output, and the privacy screening), never a
+list of what was done or where to look. A reviewer given the fixes confirms the fixes. A
+re-review after a fix round gets the same brief as the first review. For a PR with no
+feature doc, the evidence includes the PR-description draft from Step 2 with its
+"Privacy screening" section.
 
 Use the **reviewer** skill to:
 1. Trace each Acceptance Criterion from the proposal to a covering test
@@ -330,7 +341,8 @@ For pure UI / pure refactor / pure docs changes with none of the above, **skip t
 If infosec has no shell or Semgrep tool (it is read-only), run Semgrep on the changed
 files first (the CLI command in the `reviewer` skill) and hand infosec three things: the
 diff's file list, the text summary and the JSON, with the same brief the reviewer got
-(the original requirement and the diff). If Semgrep cannot run, say so and why. Infosec
+(the original request, the diff, and the existing evidence, including the PR-description
+draft for a PR with no feature doc). If Semgrep cannot run, say so and why. Infosec
 then records `Semgrep: NOT RUN`.
 
 Use the **infosec** skill to:
@@ -392,7 +404,8 @@ append it to `docs/corrections-log.md`.
    - The Semgrep summary, or `Semgrep: NOT RUN` and why
    - For infra changes: the `terraform plan` (or equivalent) summary
    - For a PR with no feature doc (fix, dependency, config, infra or CI change): the
-     privacy screening; for a docs-only or tests-only PR, "not applicable"
+     "Privacy screening" section of the Step 2 PR-description draft, verbatim; for a
+     docs-only or tests-only PR, "not applicable"
    - Reviewer verdict, and the infosec verdict (APPROVED / APPROVED WITH EXCEPTION + ADR
      link + risk-register row)
 4. Ensure CI passes (including infra `plan` and any IaC tests). Where hosted CI runs on
@@ -438,7 +451,7 @@ step-specific instructions.
 | Accessibility floor conflicts with the design | Change the design, not the floor (Step 1.5 → Step 2) |
 | New dependency needed | Call it out explicitly in Step 2; reviewer checks supply-chain in Step 3; infosec checks crypto/secrets handling in Step 4 |
 | Infra-only change | Same flow — proposal must include Infrastructure Addendum; PR must include `plan` output |
-| Trivial fix (no design impact, no infra, no security) | Start at Step 2; skip Steps 1 and 4; the privacy screening goes in the PR description (none for a docs-only or tests-only change) |
+| Trivial fix (no design impact, no infra, no security) | Start at Step 2; skip Steps 1 and 4; the developer writes the privacy screening in a PR-description draft in Step 2, it goes to the reviewer as evidence and becomes the PR description verbatim (none for a docs-only or tests-only change) |
 | A step is refused (e.g. a write is not permitted) | The requirement is **not met**: say so in every status line. Narrowing scope is the product owner's call |
 | A question needs the product owner | Give the options with their consequences and a recommendation; quote the answer and date in the feature doc's Decisions |
 | An evaluation bar fails its first run | Stop and take it to the product owner; never re-tune the bar ([`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates)) |
@@ -452,7 +465,7 @@ Feature doc → docs/features/NNNN-short-title.md (written before Step 1; privac
 Step 1   → architect skill     (propose; include Infra Addendum if relevant; back-link feature doc)
 Step 1.5 → design skill        (UI-bearing work only: token plan in docs/design/, sign-off)
 Step 2   → developer skill     (TDD; changelog; Semgrep; CI evidence — local report only without PR CI; plan output for infra)
-Step 3   → reviewer skill      (brief = requirement + diff only; loop back to Step 2 if blocked)
+Step 3   → reviewer skill      (brief = request + diff + existing evidence, never a list of fixes; loop back to Step 2 if blocked)
 Step 4   → infosec skill       (security/compliance sign-off; required with a PIA; exceptions → risk register)
 Step 5   → decision-log skill  (log ADRs, update proposal statuses, log any exceptions)
 Step 6   → open PR             (feature doc, proposal, design plan + screenshots, ADRs, CI evidence, plan output, verdicts)

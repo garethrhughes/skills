@@ -18,14 +18,20 @@ and it reads `legal review needed` until {product owner} fills it.
 ## The screening
 
 Every feature document (`docs/features/`) and every proposal (`docs/proposals/`)
-carries this section, filled in. A PR with no feature document (a fix, dependency,
-configuration, infrastructure or CI change) carries the same table in its PR
-description. A PR that changes only documentation or tests, with no runtime effect,
-needs none and says "Privacy screening: not applicable (docs/tests only)".
+carries this section, filled in. For a PR with no feature doc (a fix, dependency,
+configuration, infrastructure or CI change), the developer writes the screening during
+implementation (create-feature Step 2) as a "Privacy screening" section of a
+**PR-description draft**, which is handed to the reviewer and infosec as evidence and
+later becomes the PR description verbatim. A PR that changes only documentation or
+tests, with no runtime effect, needs none and says "Privacy screening: not applicable
+(docs/tests only)".
 
 **Adoption point:** feature documents from {first screened feature number} and proposals
 from {first screened proposal number} (also recorded in `CLAUDE.md`). Older documents
-are not checked unless they are reopened. A "yes" to any question means a PIA. All "no":
+are not checked unless they are reopened. **If `CLAUDE.md` records no adoption point**,
+the newest feature-doc and proposal numbers that existed when the rule was adopted, and
+every number below them, count as before it: the reviewer does not block them, and asks
+the product owner to record the "first screened" numbers (newest + 1) in `CLAUDE.md`. A "yes" to any question means a PIA. All "no":
 one sentence saying why, and the screening is still recorded.
 
 ```markdown
@@ -59,8 +65,9 @@ count, an existing value shown on a new screen, or a new call to a processor is 
 | Feature document | the feature cycle (`create-feature`) | Fills the screening. With no proposal and any "yes", writes the PIA here too. |
 | Proposal | `architect` | Fills the screening; with any "yes", writes the PIA with the proposal. |
 | Implementation | `developer` | Builds what the PIA lists and nothing more; updates the PIA (and the inventory) if the build differs. |
-| Code review | `reviewer` | BLOCKs a PR whose feature doc has no screening, whose "yes" has no PIA link, or whose diff logs or stores data the PIA does not list. |
-| Infosec | `infosec` | Required whenever a PIA exists. Reads the PIA against the diff; a missing PIA or a data table that does not match the diff is REQUIRES CHANGES. |
+| Implementation, PR with no feature doc | `developer` | Writes the screening as a "Privacy screening" section of the PR-description draft in Step 2; it goes to the reviewer and infosec as evidence and becomes the PR description verbatim. |
+| Code review | `reviewer` | BLOCKs a PR whose feature doc (or, with no feature doc, whose PR-description draft) has no screening, whose "yes" has no PIA link, or whose diff logs or stores data the PIA does not list. |
+| Infosec | `infosec` | Required whenever a PIA exists. Reads the screening (feature doc, proposal or PR-description draft) and the PIA against the diff; a missing PIA or a data table that does not match the diff is REQUIRES CHANGES. |
 | Decision | {product owner} | Fills *Applicable regimes and lawful basis*; confirms or overrides a decision taken on their behalf. |
 
 <!-- Optional: if you installed scripts/__tests__/privacy-screening.test.mjs (from the skills'

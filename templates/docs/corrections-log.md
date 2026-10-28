@@ -79,7 +79,9 @@ should have merged, a removal of one untrusted field that kept another of the sa
 class, a PR description left describing the files as they were before the fix. One
 fix made a review gate ask for evidence that could only exist after the review it gated:
 the reviewer required a green hosted CI run on the PR head, while the workflow opened the
-PR only after the review passed.
+PR only after the review passed. The same shape recurred one round later: a fix PR's
+privacy screening had to be "in the PR description", which the workflow wrote after the
+review and infosec steps, and the review brief excluded it anyway.
 
 **The check:** after a fix, ask what else reads the thing you just wrote to, and add the
 case that combines your change with its nearest neighbour. After correcting a claim or
