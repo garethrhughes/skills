@@ -173,15 +173,15 @@ set:
   testing performed.
 - CI must pass before merge: lint, typecheck/build, unit + integration tests,
   `tofu plan` for infra changes, dependency / SAST scan.
-- **Run CI locally before every PR**, and always when CI does not run on pull requests.
-  Run every CI job the change touches, and all of them for a dependency, workflow or
+- **Run CI locally before every PR.** Where CI does not run on pull requests, this is
+  the only check before merge. Run every CI job the change touches, and all of them for a dependency, workflow or
   config change. Run against the **committed** branch: pass the commit explicitly (for
   example `--ref <sha>`) when the runner resolves the repository from the working
   directory, and check that its output names the commit you meant. A worktree run can
   otherwise test the main checkout. The PR carries the report: the jobs that ran, their
   results with failures quoted, and the jobs **SKIPPED**. A SKIPPED job is **NOT
-  VERIFIED**, never "passing". Never use a hosted CI run to find out whether a change
-  passes.
+  VERIFIED**, never "passing". Hosted CI stays the merge gate where it runs, but never
+  push to find out whether a change passes.
 - **Brief reviewers with the original request and the diff only.** Never send a list of
   what was done or where to look. A reviewer given the fixes confirms the fixes. A
   re-review gets the same brief as the first review.
@@ -308,7 +308,7 @@ past review more than once.
   processes by pattern.
 - **Never `cd` in an agent's shell command.** Name the directory in the command: the
   shell tool's working-directory parameter where it has one, otherwise absolute paths,
-  `git -C <dir>`, `npm --prefix <dir>` or `dotnet --project <path>`. A `cd`, even in a
+  `git -C <dir>`, `npm --prefix <dir>` or `dotnet test <path>`. A `cd`, even in a
   chain, can raise a permission prompt that halts an unattended run. Use one directory
   per call. After any stash or checkout, run `git status` and confirm the tree is what
   you think it is.

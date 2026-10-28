@@ -13,7 +13,7 @@ replace the word with a file and line. This is an engineering inventory, not a l
 record of processing.
 
 **Classes:** the project's data classification scheme (see `CLAUDE.md`), for example
-`public` / `internal` / `confidential` / `pii`, or `ciphertext-only` / `metadata` / `pii`.
+`public` / `internal` / `confidential` / `pii`, or `restricted` / `metadata` / `pii`.
 
 **Where:** the accounts, regions and processors every store below lives in, with the
 file that sets each (IaC, config). Processors' own regions and retention: `unverified`

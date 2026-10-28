@@ -829,8 +829,8 @@ or `.claude/templates/` / `.github/templates/` after the agent installers have r
 
 Replace `{product owner}` with the privacy decision owner from Phase 7. Never overwrite a
 file that already exists. If the guard was installed, run it once and confirm it
-passes, then delete the screening from a scratch copy of a feature doc and confirm it
-fails.
+passes. Then write a minimal feature doc without a screening in a scratch directory, run
+the guard with `PRIVACY_FEATURES_DIR` pointing at it, and confirm it fails.
 
 #### 3.9 Install / restore dependencies
 

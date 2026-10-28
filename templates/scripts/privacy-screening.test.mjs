@@ -70,7 +70,7 @@ const normalise = (s) => s.replace(/\s+/g, ' ').trim().toLowerCase();
 /** The text's lines with fenced code blocks blanked, so a quoted template is never read as the document's own. */
 export function proseLines(text) {
   let fence = null;
-  return text.split('\n').map((line) => {
+  return text.split(/\r?\n/).map((line) => {
     const marker = /^\s{0,3}(`{3,}|~{3,})/.exec(line);
     if (fence === null) {
       if (marker === null) return line;

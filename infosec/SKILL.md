@@ -506,7 +506,9 @@ git -C <repo> diff -z --name-only --diff-filter=d origin/main...HEAD | sed -z 's
       --config p/owasp-top-ten --config p/secrets <stack packs> [--config p/github-actions]
 ```
 
-(stack packs from the active overlay; `p/github-actions` when workflows change).
+(stack packs from the active overlay; `p/github-actions` when workflows change; GNU
+`sed`/`xargs`, `gsed`/`gxargs` on macOS). A pack the registry cannot serve can make the
+scan run nothing, which the `paths.scanned` check below catches.
 
 - Check that the JSON's `paths.scanned` equals the diff's file list, with no file missing
   and none extra. A mismatch means the scan is not of this change.

@@ -324,7 +324,13 @@ Ask: "Any corrections? Anything I marked `[TBD]` you want to fill in now?"
 | Secrets         | AWS Secrets Manager                       | high       | infra/modules/app/main.tf |
 | CI/CD           | GitHub Actions (plan on PR, apply on main)| high       | .github/workflows/*.yml   |
 | Task runner     | Makefile                                  | high       | Makefile                  |
+| CI on PRs       | yes (`on: pull_request`)                  | high       | .github/workflows/ci.yml  |
+| Local CI        | none found                                | high       | —                         |
 ```
+
+If no local CI runner exists, propose the default from `project-bootstrap` Phase 3: the
+exact commands CI runs, listed in the README, and record it as the `{local CI command}`
+for the generated CLAUDE.md.
 
 Ask the user to confirm; ask explicitly about anything `[TBD]` (e.g. "I see
 multiple AWS accounts referenced — do prod and staging live in separate

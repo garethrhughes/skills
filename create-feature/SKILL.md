@@ -124,7 +124,7 @@ linked ticket, etc.).
 
 | # | Question | Answer | Why |
 |---|---|---|---|
-| 1–5 | *(the five questions, word for word from `docs/privacy/README.md` or `RULES.md#privacy`)* | Yes / No | one line each |
+| 1 … 5 | *(copy the five rows from `docs/privacy/README.md`, questions word for word)* | Yes / No | one line each |
 
 **Result:** No PIA: one sentence why. *(or)* PIA: [docs/privacy/NNNN-title.md](../privacy/NNNN-title.md)
 
@@ -148,7 +148,7 @@ Any additional context, constraints, or decisions that should inform the archite
 this feature does, literally. Any Yes means a PIA in `docs/privacy/` from
 `docs/privacy/TEMPLATE-pia.md`, written **before implementation**: by the architect with
 the proposal, or here when there is no proposal. Infosec then becomes required in
-Step 4. Leave *Applicable regimes and lawful basis* to the product owner. If the project
+Step 4. Leave *Applicable regimes and lawful basis* to the product owner. If `docs/privacy/` does not exist yet (a project set up before these rules), copy the templates from the skills' `../templates/docs/privacy/` first and say so in the PR. If the project
 installed the privacy-screening guard, run it.
 
 After writing the file, confirm to the user:

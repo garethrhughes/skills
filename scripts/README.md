@@ -15,6 +15,7 @@ Generates `.claude/agents/<skill>.md` files for Claude Code subagents.
 - Applies per-skill tool restrictions (e.g. `infosec` is read-only).
 - Copies `RULES.md`, `rules/`, `profiles/` and `templates/` into `.claude/` so the
   skills' relative links (`../RULES.md`, `../templates/`) resolve.
+  An existing `templates/` without the installer's `.from-skills` marker is left alone.
 - Writes `.rules-version` sidecar so drift can be detected later.
 - Safe to re-run after `update-skills` pulls upstream changes.
 
@@ -29,6 +30,7 @@ Symlinks each `SKILL.md` into `.github/agents/<skill>.md` for GitHub Copilot.
 - Skips files that already exist (manual replacement required).
 - Copies `RULES.md`, `rules/`, `profiles/` and `templates/` into `.github/` (not
   symlinked, so they survive skill removal).
+  An existing `templates/` without the installer's `.from-skills` marker is left alone.
 - Writes `.rules-version` sidecar.
 
 ```bash

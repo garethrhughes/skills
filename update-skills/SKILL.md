@@ -88,6 +88,14 @@ changed and tell the user which project copies they may want to update by hand. 
 change to the five screening questions has to reach `docs/privacy/README.md` and, if
 installed, the guard script together.
 
+**Projects set up before `templates/` existed** have the new review gates (privacy
+screening, local CI report, risk register) but none of the documents. When the report
+lists every template as "(new file)", tell the user to install them once: run the
+`project-onboard` skill's *Install the process documents* step (it never overwrites), or
+copy them by hand per `templates/README.md`, and add the CLAUDE.md sections from
+`CLAUDE.md.template` (Running Commands, Corrections Log, privacy screening, Testing &
+Local CI, Changelog, Risk Register).
+
 ## Rules
 
 - Do not edit any skill files yourself — the script handles everything.

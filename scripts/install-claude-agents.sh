@@ -147,11 +147,18 @@ fi
 # templates/ holds the process-document starters (corrections log, risk register,
 # privacy screening + PIA) that project-bootstrap / project-onboard install into
 # docs/. Skills reference them as ../templates/, so copy them next to rules/.
+# A templates/ directory this script did not write (no .from-skills marker) is
+# left alone: it may be the project's own.
 if [[ -d "$SKILLS_DIR/templates" ]]; then
-  rm -rf "$RULES_PARENT_DIR/templates"
-  cp -R "$SKILLS_DIR/templates" "$RULES_PARENT_DIR/templates"
-  template_count="$(find "$RULES_PARENT_DIR/templates" -type f | wc -l | tr -d '[:space:]')"
-  echo "  templates/ copied ($template_count file(s)) to ${RULES_PARENT_DIR#$PROJECT_ROOT/}/templates/"
+  if [[ -e "$RULES_PARENT_DIR/templates" && ! -f "$RULES_PARENT_DIR/templates/.from-skills" ]]; then
+    echo "  skip : ${RULES_PARENT_DIR#$PROJECT_ROOT/}/templates/ exists and was not installed by this script; move it aside to install the skills' templates"
+  else
+    rm -rf "$RULES_PARENT_DIR/templates"
+    cp -R "$SKILLS_DIR/templates" "$RULES_PARENT_DIR/templates"
+    printf 'Installed by %s from %s. Re-running the installer replaces this directory.\n' "$(basename "$0")" "$SKILLS_DIR" > "$RULES_PARENT_DIR/templates/.from-skills"
+    template_count="$(find "$RULES_PARENT_DIR/templates" -type f ! -name .from-skills | wc -l | tr -d '[:space:]')"
+    echo "  templates/ copied ($template_count file(s)) to ${RULES_PARENT_DIR#$PROJECT_ROOT/}/templates/"
+  fi
 fi
 echo ""
 

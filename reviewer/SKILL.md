@@ -242,10 +242,14 @@ Read the diff and flag any deviation. Severity is determined as follows:
 - **Changelog** ([`RULES.md#changelog`](../RULES.md#changelog), projects with a
   changelog). A fix to, or change in, work merged after the last release tag amends
   that work's entry. A separate entry for unreleased work blocks, and so does a missing
-  entry for a user-visible change to shipped behaviour. An unreleased entry over the
-  project's limit (default 300 characters), without an opening bold headline, with a
-  second paragraph or nested list, or carrying implementation detail blocks.
+  entry for a user-visible change to shipped behaviour. An unreleased entry also blocks
+  if it is over the project's limit (default 300 characters), has no opening bold
+  headline, has a second paragraph or nested list, or carries implementation detail.
   Internal-only work needs no entry.
+- **Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy)), for every PR,
+  including a fix PR with no feature doc (Phase 1 is skipped then). The screening is in
+  the feature doc, the proposal or the PR description. Any Yes links an existing PIA, and
+  the diff logs, stores, exposes or sends nothing its data table does not list.
 - **Risk register** ([`RULES.md#risk-register`](../RULES.md#risk-register)). A residual
   left open on purpose (an accepted exception, a deferred fix, a gap the PIA leaves) has
   a row in `docs/risk-register.md`.
@@ -460,7 +464,8 @@ Use the GitHub MCP server to:
 Run Semgrep on **every** review, before you complete it, over the changed files
 (`git diff --name-only --diff-filter=d origin/main...HEAD`, documentation included).
 Use the Semgrep MCP server if it is available. Otherwise use the CLI, with absolute
-paths and no `cd`:
+paths and no `cd` (`sed -z` and `xargs -r` are GNU; on macOS use `gsed` / `gxargs`
+from GNU coreutils/findutils):
 
 ```sh
 git -C <repo> diff -z --name-only --diff-filter=d origin/main...HEAD | sed -z 's|^|<repo>/|' \
@@ -536,6 +541,7 @@ Status: In Progress | Implemented | Draft | Missing link — <action if problema
 - [✓] Scope is consistent with what was built
 - [✗] Open question "X" is unresolved → flagged as Major below
 - [✓] Related proposal field is populated
+- [✓] Privacy screening complete; Yes answers link a PIA that matches the diff
 - [✗] Status field is still Draft → flagged as Minor below
 ```
 

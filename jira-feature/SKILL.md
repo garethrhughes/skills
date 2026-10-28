@@ -181,8 +181,8 @@ Include the Jira issue key and link as the authoritative source.}
 
 ## Privacy screening
 
-{The five questions from `docs/privacy/README.md` (or `RULES.md#privacy`), each answered
-Yes or No with a one-line reason, and the result line. Any Yes: the PIA is written before
+{Copy the table from `docs/privacy/README.md` (`| # | Question | Answer | Why |`, the five
+questions word for word), answer each Yes or No with a one-line reason, then the result line. Any Yes: the PIA is written before
 implementation; see the create-feature skill's Feature Document step.}
 
 ## Open Questions

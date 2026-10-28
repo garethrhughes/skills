@@ -176,6 +176,7 @@ Read the feature doc's (or proposal's) `## Privacy screening` before coding
 - If the screening said No and the build now touches personal data, change the answer
   and write the PIA before continuing.
 - A fix PR with no feature doc carries the screening in its PR description.
+- If `docs/privacy/` does not exist yet (a project set up before these rules), copy the templates from the skills' `../templates/docs/privacy/` first and say so in the PR.
 
 ## Language, Backend, Frontend, IaC, and Observability Conventions
 

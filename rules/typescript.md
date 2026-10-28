@@ -105,8 +105,9 @@ implementation:
   state settled (`await expect(el).toBeFocused()`, `await waitFor(...)`) before
   `keyboard.press` / `user.keyboard`. Never `el.focus()` and press a key in the same
   step when the component moves focus in a frame, timer or effect.
-- **Process guards** (privacy screening, changelog shape, decision index) are
-  dependency-free `node --test` scripts under `scripts/__tests__/`.
+- **Process guards** (for example the optional privacy-screening guard from `templates/`,
+  or a changelog-shape check) are dependency-free `node --test` scripts under
+  `scripts/__tests__/`.
 - **Semgrep rule packs** for this stack: `p/typescript`, `p/javascript` (plus the core
   packs listed in the `reviewer` skill).
 
