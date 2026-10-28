@@ -148,7 +148,11 @@ Any additional context, constraints, or decisions that should inform the archite
 this feature does, literally. Any Yes means a PIA in `docs/privacy/` from
 `docs/privacy/TEMPLATE-pia.md`, written **before implementation**: by the architect with
 the proposal, or here when there is no proposal. Infosec then becomes required in
-Step 4. Leave *Applicable regimes and lawful basis* to the product owner. If `docs/privacy/` does not exist yet (a project set up before these rules), copy the templates from the skills' `../templates/docs/privacy/` first and say so in the PR. If the project
+Step 4. Leave *Applicable regimes and lawful basis* to the product owner. If
+`docs/privacy/` does not exist yet (a project set up before these rules), install it
+from the skills' `../templates/` as [`../templates/README.md`](../templates/README.md)
+describes (replace `{product owner}` and the adoption-point placeholders), and say so in
+the PR. If the project
 installed the privacy-screening guard, run it.
 
 After writing the file, confirm to the user:
@@ -261,11 +265,14 @@ Use the **developer** skill to:
 8. **Changelog** (if the project keeps one) per [`RULES.md#changelog`](../RULES.md#changelog):
    amend the entry of unreleased work rather than adding one; short, one line
 9. Run the full test suite and Semgrep on the changed files. **CI evidence**
-   ([`RULES.md#git--prs`](../RULES.md#git--prs)): where CI runs on pull requests, its
-   result on the PR head (after Step 6's push) is the evidence. Where it does not (or
-   `CLAUDE.md` requires a local report), run **CI locally** on the committed branch for
-   every job the change touches, and record the jobs that ran, with failures quoted, and
-   those SKIPPED (**NOT VERIFIED**)
+   ([`RULES.md#git--prs`](../RULES.md#git--prs)): Where hosted CI runs on pull requests,
+   a review held before the PR exists records the CI evidence as **"pending: hosted CI
+   on the PR head"**; the gate is re-checked on the PR head before merge: green is
+   required to merge, and the agent that opens the PR waits for the run and reports it,
+   failures quoted. Where CI does not run on pull requests (or the project's `CLAUDE.md`
+   requires a local report), the local CI report is required at review time. Run **CI
+   locally** then, on the committed branch, for every job the change touches, and record
+   the jobs that ran, with failures quoted, and those SKIPPED (**NOT VERIFIED**)
 
 **Handoff to Step 3 when:** all tests pass and the branch is ready for review.
 
@@ -274,6 +281,10 @@ Use the **developer** skill to:
 ### Step 3 — Code Review (Reviewer skill)
 
 **When:** Implementation is complete and tests are green.
+
+**CI evidence at review time:** where CI runs on pull requests, the PR does not exist yet,
+so the reviewer records "pending: hosted CI on the PR head" and Step 6 re-checks it
+before merge. Where it does not, the local CI report from Step 2 goes to the reviewer.
 
 **Brief the reviewer with the original requirement and the diff only.** Never send a list
 of what was done or where to look: a reviewer given the fixes confirms the fixes. A
@@ -375,18 +386,22 @@ append it to `docs/corrections-log.md`.
    - Link to the accepted design plan and the Phase 5 screenshots (for UI changes)
    - Link to any new ADRs created
    - Test coverage summary (new tests added, the full result line with failures)
-   - The CI evidence: the hosted CI result on the head, or, where CI does not run on
-     pull requests, the local CI report (jobs run and results, jobs SKIPPED = NOT VERIFIED)
+   - The CI evidence: where CI does not run on pull requests, the local CI report (jobs
+     run and results, jobs SKIPPED = NOT VERIFIED); where it does, "pending: hosted CI on
+     the PR head", replaced by the result once the run finishes
    - The Semgrep summary, or `Semgrep: NOT RUN` and why
    - For infra changes: the `terraform plan` (or equivalent) summary
    - For a PR with no feature doc (fix, dependency, config, infra or CI change): the
      privacy screening; for a docs-only or tests-only PR, "not applicable"
    - Reviewer verdict, and the infosec verdict (APPROVED / APPROVED WITH EXCEPTION + ADR
      link + risk-register row)
-4. Ensure CI passes (including infra `plan` and any IaC tests). Where CI does not run on
-   pull requests, the local CI report is the only check before merge; never push to the
-   default branch to find out. Never trigger a
-   workflow or deploy without asking
+4. Ensure CI passes (including infra `plan` and any IaC tests). Where hosted CI runs on
+   pull requests, a review held before the PR exists records the CI evidence as
+   **"pending: hosted CI on the PR head"**; the gate is re-checked on the PR head before
+   merge: green is required to merge, and the agent that opens the PR waits for the run
+   and reports it, failures quoted. Where CI does not run on pull requests, the local CI
+   report is the only check before merge; never push to the default branch to find out.
+   Never trigger a workflow or deploy without asking
 5. After every fix round, re-read the PR description against the files as they now are
 
 ---

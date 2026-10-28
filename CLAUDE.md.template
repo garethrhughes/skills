@@ -220,8 +220,11 @@ the adoption point.]
 See [`RULES.md#testing`](.opencode/skills/RULES.md#testing). Plus:
 
 - **CI on pull requests: [yes | no].** Keep the one bullet that applies:
-  - *yes:* hosted CI's result on the PR head is the CI evidence; quote it, failures
-    included. A local report is not required.
+  - *yes:* Where hosted CI runs on pull requests, a review held before the PR exists
+    records the CI evidence as **"pending: hosted CI on the PR head"**; the gate is
+    re-checked on the PR head before merge: green is required to merge, and the agent
+    that opens the PR waits for the run and reports it, failures quoted. A local report
+    is not required.
   - *no:* run CI locally before every PR with `[local CI command, e.g. a runner script
     that reads the workflow file]`, against the **committed** branch (pass the commit,
     e.g. `--ref <sha>`, when running from a worktree). Run every CI job the change

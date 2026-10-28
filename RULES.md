@@ -173,10 +173,13 @@ set:
   testing performed.
 - CI must pass before merge: lint, typecheck/build, unit + integration tests,
   `tofu plan` for infra changes, dependency / SAST scan.
-- **CI evidence on every PR.** Where hosted CI runs on the pull request, its result on
-  the PR head is the evidence: quote it, failures included. Where CI does **not** run on
-  pull requests (or the project's `CLAUDE.md` requires a local report), run CI locally
-  before the PR; it is then the only check before merge. Run every CI job the change
+- **CI evidence on every PR.** Where hosted CI runs on pull requests, a review held
+  before the PR exists records the CI evidence as **"pending: hosted CI on the PR
+  head"**; the gate is re-checked on the PR head before merge: green is required to
+  merge, and the agent that opens the PR waits for the run and reports it, failures
+  quoted. Where CI does not run on pull requests (or the project's `CLAUDE.md` requires
+  a local report), the local CI report is required at review time. Run it before the PR
+  (it is then the only check before merge), for every CI job the change
   touches, and all of them for a dependency, workflow or config change. Run against the
   **committed** branch: pass the commit explicitly (for example `--ref <sha>`) when the
   runner resolves the repository from the working directory, and check that its output
@@ -264,10 +267,13 @@ before it is built**.
   when it adopts the rule; `0001` for a new project; the optional guard's
   `FIRST_SCREENED_*` use the same numbers). Documents numbered before it are not checked
   unless they are reopened (their scope or design changes), when they are screened like
-  new ones.
-- **Gates.** A missing screening on a document or PR the rule covers, a Yes with no PIA, or a diff that logs or stores
-  something the PIA does not list is a review BLOCK and an infosec REQUIRES CHANGES.
-  Infosec sign-off is required on every PR that has a PIA.
+  new ones. **If `CLAUDE.md` records no adoption point**, the newest feature-doc and proposal
+  numbers that existed when the rule was adopted, and every number below them, count as
+  before it: the reviewer does not block them, and asks the product owner to record the
+  "first screened" numbers (newest + 1) in `CLAUDE.md`.
+- **Gates.** A missing screening on a document or PR the rule covers, a Yes with no PIA,
+  or a diff that logs or stores something the PIA does not list is a review BLOCK and an
+  infosec REQUIRES CHANGES. Infosec sign-off is required on every PR that has a PIA.
 
 ---
 

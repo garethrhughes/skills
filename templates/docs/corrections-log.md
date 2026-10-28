@@ -76,13 +76,17 @@ it and how you know.
 
 Every block-then-fix cycle introduced something new: a fix that replaced where it
 should have merged, a removal of one untrusted field that kept another of the same
-class, a PR description left describing the files as they were before the fix.
+class, a PR description left describing the files as they were before the fix. One
+fix made a review gate ask for evidence that could only exist after the review it gated:
+the reviewer required a green hosted CI run on the PR head, while the workflow opened the
+PR only after the review passed.
 
 **The check:** after a fix, ask what else reads the thing you just wrote to, and add the
 case that combines your change with its nearest neighbour. After correcting a claim or
 rule, grep every file the branch adds or changes for the old wording and the names it
 travels with (proposal, ADR, PIA, risk register, `CLAUDE.md`, agent files), and fix or
-rule out each hit.
+rule out each hit. For a gate, ask when its evidence comes into existence: if only after
+the review it gates, record it as pending at review and re-check it before merge.
 
 ### 7. Generating from a source of truth moves the risk, it does not remove it
 

@@ -236,9 +236,13 @@ Read the diff and flag any deviation. Severity is determined as follows:
 ### Process Checks — each → **BLOCK**
 
 - **CI evidence** ([`RULES.md#git--prs`](../RULES.md#git--prs)). Where hosted CI runs on
-  the pull request, its result on the PR head is enough: a red or missing run on the
-  head blocks. Where CI does **not** run on pull requests, or the project's `CLAUDE.md`
-  requires a local report, the author's local CI report is required. It names the jobs
+  pull requests, a review held before the PR exists records the CI evidence as
+  **"pending: hosted CI on the PR head"**; the gate is re-checked on the PR head before
+  merge: green is required to merge, and the agent that opens the PR waits for the run
+  and reports it, failures quoted. A review of an open PR checks that run: red or
+  missing on the head blocks; still running is recorded as pending. Where CI does not
+  run on pull requests (or the project's `CLAUDE.md` requires a local report), the local
+  CI report is required at review time. It names the jobs
   that ran, with failures quoted, and the jobs SKIPPED; covers every CI job the change
   touches (all of them for a dependency, workflow or config change); says it ran against
   the committed head; and calls a SKIPPED job **NOT VERIFIED**, never passing. A missing
@@ -254,9 +258,12 @@ Read the diff and flag any deviation. Severity is determined as follows:
   covers has one: in the feature doc or proposal, or, for a PR with no feature doc (a
   fix, dependency, configuration, infrastructure or CI change; Phase 1 is skipped then),
   in the PR description. A docs-only or tests-only PR needs none and says so. Documents
-  numbered before the adoption point in `CLAUDE.md` are exempt unless reopened. Any Yes
-  links an existing PIA, and the diff logs, stores, exposes or sends nothing its data
-  table does not list.
+  numbered before the adoption point in `CLAUDE.md` are exempt unless reopened. **If
+  `CLAUDE.md` records no adoption point**, the newest feature-doc and proposal numbers
+  that existed when the rule was adopted, and every number below them, count as before
+  it: the reviewer does not block them, and asks the product owner to record the "first
+  screened" numbers (newest + 1) in `CLAUDE.md`. Any Yes links an existing PIA, and the
+  diff logs, stores, exposes or sends nothing its data table does not list.
 - **Risk register** ([`RULES.md#risk-register`](../RULES.md#risk-register)). A residual
   left open on purpose (an accepted exception, a deferred fix, a gap the PIA leaves) has
   a row in `docs/risk-register.md`.

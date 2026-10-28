@@ -236,10 +236,10 @@ if [ -f "$SKILLS_DIR/RULES.md" ] && [ -f "$CLONE_DIR/RULES.md" ]; then
     fi
   elif ! diff -q "$SKILLS_DIR/RULES.md" "$CLONE_DIR/RULES.md" >/dev/null 2>&1; then
     echo ""
-    echo "Note: RULES.md changed upstream. There is no record of the last upstream copy"
-    echo "      (.rules-upstream.cksum is written from this run on), so local edits cannot"
-    echo "      be told apart from the upstream change. Check the ROOT FILES diff below;"
-    echo "      overrides belong in ADRs, never in RULES.md."
+    echo "Note: RULES.md differs from upstream (a local edit or an upstream change) and"
+    echo "      was replaced; re-apply any local edit in CLAUDE.md (project overrides) or"
+    echo "      an ADR, never in RULES.md. The ROOT FILES diff below shows the change."
+    echo "      (No .rules-upstream.cksum record existed; it is written from this run on.)"
   fi
   if [ "$RULES_LOCAL_MODIFIED" = "1" ]; then
     echo ""
@@ -306,6 +306,7 @@ if [ -d "$CLONE_DIR/profiles" ]; then
   done
 fi
 
+TEMPLATES_SKIPPED=0
 # Sync templates/ from upstream (process-document starters that
 # project-bootstrap / project-onboard copy into a project's docs/). The
 # installed copy is upstream-owned: a project edits its own docs/ copies.
@@ -316,6 +317,7 @@ if [ -d "$CLONE_DIR/templates" ]; then
     echo ""
     echo "⚠  templates/ in the skills dir has no .from-skills marker, so it is not the"
     echo "   skills' copy; left alone. Move it aside and re-run to install the templates."
+    TEMPLATES_SKIPPED=1
   else
     rm -rf "$SKILLS_DIR/templates"
     cp -R "$CLONE_DIR/templates" "$SKILLS_DIR/templates"
@@ -519,7 +521,7 @@ done
 templates_modified_count=0
 for f in $TEMPLATES_MODIFIED; do templates_modified_count=$((templates_modified_count+1)); done
 
-TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count + rules_modified_count + profiles_modified_count + templates_modified_count ))
+TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count + rules_modified_count + profiles_modified_count + templates_modified_count + TEMPLATES_SKIPPED ))
 
 if [ $TOTAL -eq 0 ]; then
   echo "STATUS: up-to-date"
@@ -527,8 +529,13 @@ if [ $TOTAL -eq 0 ]; then
   exit 0
 fi
 
-echo "STATUS: updated"
-echo "CHANGES: $TOTAL skill(s) affected"
+if [ "$TOTAL" -eq "$TEMPLATES_SKIPPED" ]; then
+  echo "STATUS: needs-attention"
+  echo "Nothing was updated, but an item needs attention (below)."
+else
+  echo "STATUS: updated"
+  echo "CHANGES: $TOTAL skill(s) affected"
+fi
 echo ""
 
 if [ $added_count -gt 0 ]; then
@@ -675,6 +682,12 @@ if [ $profiles_modified_count -gt 0 ]; then
         ;;
     esac
   done
+  echo ""
+fi
+
+if [ "$TEMPLATES_SKIPPED" = "1" ]; then
+  echo "--- NEEDS ATTENTION (1) ---"
+  echo "  templates/ was not updated: it has no .from-skills marker (see the warning above)."
   echo ""
 fi
 

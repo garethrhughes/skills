@@ -130,6 +130,16 @@ if [[ -f "$SKILLS_DIR/RULES.md" ]]; then
   fi
 fi
 
+# Record the RULES.md this install used, so update-skills can tell a local
+# edit from an upstream change later. Written only when no record exists yet.
+if [[ -f "$SKILLS_DIR/RULES.md" && ! -f "$SKILLS_DIR/.rules-upstream.cksum" ]]; then
+  if cksum < "$SKILLS_DIR/RULES.md" > "$SKILLS_DIR/.rules-upstream.cksum" 2>/dev/null; then
+    echo "  RULES.md record written to ${SKILLS_DIR}/.rules-upstream.cksum"
+  else
+    rm -f "$SKILLS_DIR/.rules-upstream.cksum"
+  fi
+fi
+
 if [[ -d "$SKILLS_DIR/rules" ]]; then
   rm -rf "$RULES_PARENT_DIR/rules"
   cp -R "$SKILLS_DIR/rules" "$RULES_PARENT_DIR/rules"

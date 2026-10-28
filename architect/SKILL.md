@@ -53,7 +53,11 @@ a proposal in `docs/proposals/`.
 - Fill every proposal's **Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy)).
   When any answer is Yes, write the privacy impact assessment from
   `docs/privacy/TEMPLATE-pia.md` before the proposal is presented, and update
-  `docs/privacy/data-inventory.md` for any row it adds or changes. If `docs/privacy/` does not exist yet (a project set up before these rules), copy the templates from the skills' `../templates/docs/privacy/` first and say so in the PR. A PIA is an
+  `docs/privacy/data-inventory.md` for any row it adds or changes. If `docs/privacy/` does
+  not exist yet (a project set up before these rules), install it from the skills'
+  `../templates/` as [`../templates/README.md`](../templates/README.md) describes
+  (replace `{product owner}` and the adoption-point placeholders), and say so in the PR.
+  A PIA is an
   engineering and product assessment: never fill *Applicable regimes and lawful basis*
   (it reads `legal review needed` until the product owner does) and never state a legal
   conclusion

@@ -763,10 +763,12 @@ See [`RULES.md#testing`](https://github.com/garethrhughes/skills/blob/main/RULES
 for the canonical testing rules.
 
 {write ONE of these two bullets, from the Phase 3 answer "CI on PRs":}
-{CI runs on PRs:} - **CI runs on pull requests.** Its result on the PR head is the CI
-  evidence; quote it, failures included. Before pushing, run `{local CI command from
-  Phase 3}` for the jobs the change touches if you want an earlier answer; a local
-  report is not required.
+{CI runs on PRs:} - **CI runs on pull requests.** Where hosted CI runs on pull requests,
+  a review held before the PR exists records the CI evidence as **"pending: hosted CI on
+  the PR head"**; the gate is re-checked on the PR head before merge: green is required
+  to merge, and the agent that opens the PR waits for the run and reports it, failures
+  quoted. Before pushing, run `{local CI command from Phase 3}` for the jobs the change
+  touches if you want an earlier answer; a local report is not required.
 {CI does not run on PRs:} - **CI does not run on pull requests, so run CI locally before
   every PR** with `{local CI command from Phase 3}`, against the committed branch, for
   every CI job the change touches (all of them for a dependency, workflow or config
