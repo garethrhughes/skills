@@ -178,15 +178,17 @@ set:
   head"**; the gate is re-checked on the PR head before merge: green is required to
   merge, and the agent that opens the PR waits for the run and reports it, failures
   quoted. Where CI does not run on pull requests (or the project's `CLAUDE.md` requires
-  a local report), the local CI report is required at review time. Run it before the PR
-  (it is then the only check before merge), for every CI job the change
-  touches, and all of them for a dependency, workflow or config change. Run against the
-  **committed** branch: pass the commit explicitly (for example `--ref <sha>`) when the
-  runner resolves the repository from the working directory, and check that its output
-  names the commit you meant (a worktree run can otherwise test the main checkout). The
-  PR carries the report: the jobs that ran, their results with failures quoted, and the
-  jobs **SKIPPED**. A SKIPPED job is **NOT VERIFIED**, never "passing". Never push to the
-  default branch to find out whether a change passes.
+  a local report), the local CI report is required at review time. A project with no CI
+  at all records in `CLAUDE.md` the commands it runs instead (lint, test, build), and
+  the local report covers those. Run it before the PR (it is then the only check before
+  merge), for every CI job the change touches, and all of them for a dependency,
+  workflow or config change. Run against the **committed** branch: pass the commit
+  explicitly (for example `--ref <sha>`) when the runner resolves the repository from
+  the working directory, and check that its output names the commit you meant (a
+  worktree run can otherwise test the main checkout). The PR carries the report: the
+  jobs that ran, their results with failures quoted, and the jobs **SKIPPED**. A SKIPPED
+  job is **NOT VERIFIED**, never "passing". Never push to the default branch to find out
+  whether a change passes.
 - **Review briefs.** Brief reviewers with the original request, the diff, and existing
   evidence (the local CI report or "pending: hosted CI on the PR head", scanner output,
   and the privacy screening), never a list of what was done or where to look. A reviewer
@@ -227,14 +229,16 @@ before it is built**.
 
 - **Screening.** Every feature document and every proposal carries a `## Privacy
   screening` section. For a PR with no feature doc (a fix, dependency, configuration,
-  infrastructure or CI change), the developer writes the screening during implementation
-  (create-feature Step 2) as a "Privacy screening" section of a **PR-description
-  draft**, which is handed to the reviewer and infosec as evidence and later becomes the
-  PR description verbatim. (A dependency or config change can add a network call or
-  telemetry.) A PR that changes only documentation or tests, with no runtime effect,
-  needs none and says "Privacy screening: not applicable (docs/tests only)". The
-  screening holds five questions, each answered Yes or No with a one-line reason, and a
-  result line:
+  infrastructure or CI change), the developer writes the screening **before coding**, as
+  the first action of implementation (create-feature Step 2), in a "Privacy screening"
+  section of a **PR-description draft**, which is handed to the reviewer and infosec as
+  evidence and later becomes the PR description verbatim. Any Yes: the developer writes
+  the PIA then, before any code, with the header line `**PR:** <branch or PR>, screening
+  in the PR-description draft`, and infosec (create-feature Step 4) is required. (A
+  dependency or config change can add a network call or telemetry.) A PR that changes
+  only documentation or tests, with no runtime effect, needs none and says "Privacy
+  screening: not applicable (docs/tests only)". The screening holds five questions, each
+  answered Yes or No with a one-line reason, and a result line:
   1. Does it collect, derive, log, store, expose or send any new data about a person
      (identifiers included: account ids, entity ids, key prefixes, IPs, emails,
      timestamps, usage or behaviour)?
@@ -253,8 +257,10 @@ before it is built**.
   a Yes.
 - **Any Yes means a PIA** in `docs/privacy/NNNN-short-title.md`, from the template,
   indexed in `docs/privacy/README.md`. It is written before implementation: by the
-  architect with the proposal, or in the feature-document step when there is no
-  proposal. All No: one sentence why, and the screening is still recorded.
+  architect with the proposal, in the feature-document step when there is no proposal,
+  or, for a PR with no feature doc, by the developer before any code (header line
+  `**PR:** <branch or PR>, screening in the PR-description draft`). All No: one sentence
+  why, and the screening is still recorded.
 - **A PIA is an engineering and product assessment, not legal advice.** No agent states a
   legal conclusion. *Applicable regimes and lawful basis* is the product owner's field.
   It reads `legal review needed` until they fill it.
@@ -275,8 +281,8 @@ before it is built**.
   new ones (and added to the guard's `ALSO_SCREENED_*` if it is installed). **If
   `CLAUDE.md` records no adoption point**, the newest feature-doc and proposal numbers
   that existed when the rule was adopted, and every number below them, count as before
-  it: the reviewer does not block them, and asks the product owner to record the "first
-  screened" numbers (newest + 1) in `CLAUDE.md`.
+  it: neither the reviewer nor infosec blocks them, and the reviewer asks the product
+  owner to record the "first screened" numbers (newest + 1) in `CLAUDE.md`.
 - **Gates.** A missing screening on a document or PR the rule covers, a Yes with no PIA,
   or a diff that logs or stores something the PIA does not list is a review BLOCK and an
   infosec REQUIRES CHANGES. Infosec sign-off is required on every PR that has a PIA.

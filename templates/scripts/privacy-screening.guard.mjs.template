@@ -2,22 +2,29 @@
 // (RULES.md#privacy in github.com/garethrhughes/skills).
 //
 // It ships as privacy-screening.guard.mjs.template so that no test runner collects it
-// where the skills are installed (Vitest's default include matches *.test.mjs even under
-// .claude/, .github/ and .opencode/). Install it only if the project wants a mechanical
-// check, by copying it to scripts/__tests__/privacy-screening.test.mjs, and run it with
+// where the skills are installed (Vitest's default include matches *.test.mjs even
+// under .claude/, .github/ and .opencode/). Install it only if the project wants a
+// mechanical check, by copying it to scripts/__tests__/privacy-screening.test.mjs, and
+// run it with
 //   node --test scripts/__tests__/privacy-screening.test.mjs
-// If the project's own runner (Vitest/Jest) would also collect that path, exclude it there.
-// It needs Node 18+ and no dependencies. Set FIRST_SCREENED_* below to the adoption point
-// recorded in CLAUDE.md, so documents written before the project adopted the screening
-// are not checked; list an older document that is reopened in ALSO_SCREENED_*. Then break it once (write a feature doc with no screening in a scratch
-// directory, point PRIVACY_FEATURES_DIR at it) and watch it fail before you rely on it.
+// If the project's own runner (Vitest/Jest) would also collect that path, exclude it
+// there. It needs Node 18+ and no dependencies. Set FIRST_SCREENED_* below to the
+// adoption point recorded in CLAUDE.md, so documents written before the project adopted
+// the screening are not checked; list an older document that is reopened in
+// ALSO_SCREENED_*. Then break it once (write a feature doc with no screening in a
+// scratch directory, point PRIVACY_FEATURES_DIR at it) and watch it fail before you
+// rely on it.
 //
 // What it checks: every screened feature doc and proposal has a "## Privacy screening"
 // with the five standard questions answered Yes/No with a reason and a result line; a
 // Yes links a PIA that exists and that names the document back; each PIA has the
 // template's headings, its regimes field and a valid decision, and its header links a
 // document whose screening links it; the privacy README indexes every PIA, and every
-// index row points at a PIA that exists.
+// index row points at a PIA that exists; no numbered file in those directories has a name
+// the patterns cannot read. A PIA for a PR with no feature doc carries the header line
+// `**PR:** <branch or PR>, screening in the PR-description draft` instead of a document
+// link; the guard accepts it and cannot check that back-link (the draft is not in the
+// repository).
 // What it cannot check: that an answer is true. Review and infosec do that.
 
 import test from 'node:test';
@@ -68,8 +75,8 @@ export const PIA_HEADINGS = [
   'Review',
 ];
 
-const PIA_NAME = /^\d{4}-[A-Za-z0-9-]+\.md$/; // PIAs may carry a ticket key too
-const DOC_NAME = /^(\d{4})-[A-Za-z0-9-]+\.md$/; // feature docs may carry a ticket key (0007-PLAT-12-x.md)
+const PIA_NAME = /^\d{4}-[A-Za-z0-9_-]+\.md$/; // PIAs may carry a ticket key too
+const DOC_NAME = /^(\d{4})-[A-Za-z0-9_-]+\.md$/; // feature docs may carry a ticket key (0007-PLAT-12-x.md)
 const DECISIONS = ['proceed', 'proceed with conditions', 'stop'];
 
 const normalise = (s) => s.replace(/\s+/g, ' ').trim().toLowerCase();
@@ -103,7 +110,7 @@ export function sectionLines(text, heading) {
 
 /** PIA file names a line links to (`../privacy/NNNN-x.md` or `docs/privacy/NNNN-x.md`). */
 export function linkedPias(line) {
-  return [...line.matchAll(/\]\((?:(?:\.\.\/)+|docs\/)privacy\/(\d{4}-[A-Za-z0-9-]+\.md)\)/g)].map((m) => m[1]);
+  return [...line.matchAll(/\]\((?:(?:\.\.\/)+|docs\/)privacy\/(\d{4}-[A-Za-z0-9_-]+\.md)\)/g)].map((m) => m[1]);
 }
 
 /** Every problem with a document's `## Privacy screening`. `piaExists(name)` says whether docs/privacy/<name> exists. */
@@ -178,7 +185,20 @@ export function piaSources(text) {
   const lines = proseLines(text);
   const first = lines.findIndex((line) => line.startsWith('## '));
   const header = (first === -1 ? lines : lines.slice(0, first)).join('\n').replace(/<!--[\s\S]*?-->/g, '');
-  return [...header.matchAll(/\]\(\.\.\/((?:features|proposals)\/\d{4}-[A-Za-z0-9-]+\.md)\)/g)].map((m) => m[1]);
+  return [...header.matchAll(/\]\(\.\.\/((?:features|proposals)\/\d{4}-[A-Za-z0-9_-]+\.md)\)/g)].map((m) => m[1]);
+}
+
+/** Whether a PIA's header (before its first `## `, comments removed) names a PR origin: `**PR:** <branch or PR>`. */
+export function piaPrOrigin(text) {
+  const lines = proseLines(text.replace(/<!--[\s\S]*?-->/g, ''));
+  const first = lines.findIndex((line) => line.startsWith('## '));
+  return (first === -1 ? lines : lines.slice(0, first)).some((line) => /^\*\*PR:\*\*\s*\S/.test(line));
+}
+
+/** Numbered markdown files (`NNNN-….md`) in `dir` whose names the guard's patterns cannot read. */
+export function misnamedFiles(dir, pattern = DOC_NAME) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((name) => /^\d{4}-.*\.md$/.test(name) && !pattern.test(name));
 }
 
 /**
@@ -204,7 +224,9 @@ export function forwardLinkProblems(docRel, text, readPia) {
  */
 export function backLinkProblems(name, text, readDoc) {
   const sources = piaSources(text);
-  if (sources.length === 0) return ['the header links no docs/features/ or docs/proposals/ document'];
+  if (sources.length === 0) {
+    return piaPrOrigin(text) ? [] : ['the header links no docs/features/ or docs/proposals/ document, and has no **PR:** line'];
+  }
   const problems = [];
   for (const source of sources) {
     const doc = readDoc(source);
@@ -226,7 +248,7 @@ export function indexProblems(readme, piaNames, piaExists) {
     if (!index.some((line) => line.includes(`](${name})`))) problems.push(`## Index does not link ${name}`);
   }
   for (const line of index) {
-    for (const m of line.matchAll(/\]\((\d{4}-[A-Za-z0-9-]+\.md)\)/g)) {
+    for (const m of line.matchAll(/\]\((\d{4}-[A-Za-z0-9_-]+\.md)\)/g)) {
       if (!piaExists(m[1])) problems.push(`## Index links ${m[1]}, which does not exist`);
     }
   }
@@ -370,7 +392,34 @@ test('the checker refuses a PIA whose linked document does not link it back', ()
   const allNo = screening(['No', 'No', 'No', 'No', 'No'], NO_PIA);
   assert.ok(backLinkProblems('0001-x.md', pia, () => allNo).some((p) => p.includes('does not link 0001-x.md')));
   assert.ok(backLinkProblems('0001-x.md', pia, () => null).some((p) => p.includes('does not exist')));
-  assert.deepEqual(backLinkProblems('0001-x.md', '## What changes\n', () => allNo), ['the header links no docs/features/ or docs/proposals/ document']);
+  assert.deepEqual(backLinkProblems('0001-x.md', '## What changes\n', () => allNo), ['the header links no docs/features/ or docs/proposals/ document, and has no **PR:** line']);
+});
+
+test('a PIA for a PR with no feature doc is accepted by its **PR:** header line, and only by that', () => {
+  const pr = '**PR:** fix/login-timeout, screening in the PR-description draft\n**Date:** 2026-10-29\n\n## What changes\n';
+  assert.equal(piaPrOrigin(pr), true);
+  assert.equal(piaPrOrigin('**PR:** fix/x, screening in the PR-description draft'), true); // header only, no heading
+  assert.deepEqual(backLinkProblems('0001-x.md', pr, () => null), []);
+  for (const text of ['**PR:**\n\n## What changes\n', '<!-- **PR:** x -->\n\n## What changes\n', '## What changes\n\n**PR:** x\n']) {
+    assert.equal(piaPrOrigin(text), false, JSON.stringify(text));
+    assert.deepEqual(backLinkProblems('0001-x.md', text, () => null), ['the header links no docs/features/ or docs/proposals/ document, and has no **PR:** line']);
+  }
+});
+
+test('numbered files the patterns cannot read are reported, underscores are accepted', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'privacy-guard-names-'));
+  try {
+    for (const name of ['0005-has space.md', '0006-dot.v2.md', '0007-ok_name.md', '0008-PLAT-1-ok.md', 'README.md', '12-x.md']) {
+      writeFileSync(path.join(dir, name), '# x\n');
+    }
+    assert.deepEqual(misnamedFiles(dir).sort(), ['0005-has space.md', '0006-dot.v2.md']);
+    assert.deepEqual(misnamedFiles(dir, PIA_NAME).sort(), ['0005-has space.md', '0006-dot.v2.md']);
+    assert.deepEqual(screenedDocs(dir, 1).map((d) => d.name).sort(), ['0007-ok_name.md', '0008-PLAT-1-ok.md']);
+    assert.deepEqual(pias(dir).map((d) => d.name).sort(), ['0007-ok_name.md', '0008-PLAT-1-ok.md']);
+    assert.deepEqual(misnamedFiles(path.join(dir, 'missing')), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('the checker refuses an index that misses a PIA or points at a missing one', () => {
@@ -484,6 +533,16 @@ for (const pia of pias()) {
 
   test(`PIA ${pia.name} links a feature doc or proposal whose screening links it back`, () => {
     assert.deepEqual(backLinkProblems(pia.name, pia.text, readDoc), []);
+  });
+}
+
+for (const [label, dir, pattern] of [
+  ['docs/features', FEATURES_DIR, DOC_NAME],
+  ['docs/proposals', PROPOSALS_DIR, DOC_NAME],
+  ['docs/privacy', PRIVACY_DIR, PIA_NAME],
+]) {
+  test(`${label} has no numbered file the guard cannot read`, () => {
+    assert.deepEqual(misnamedFiles(dir, pattern), []);
   });
 }
 

@@ -176,11 +176,14 @@ Read the feature doc's (or proposal's) `## Privacy screening` before coding
 - If the screening said No and the build now touches personal data, change the answer
   and write the PIA before continuing.
 - For a PR with no feature doc (a fix, dependency, configuration, infrastructure or CI
-  change), the developer writes the screening during implementation (create-feature Step
-  2) as a "Privacy screening" section of a **PR-description draft**, which is handed to
-  the reviewer and infosec as evidence and later becomes the PR description verbatim.
-  Write that draft now, before review. A docs-only or tests-only PR says "Privacy
-  screening: not applicable (docs/tests only)" in the draft.
+  change), the developer writes the screening **before coding**, as the first action of
+  implementation (create-feature Step 2), in a "Privacy screening" section of a
+  **PR-description draft**, which is handed to the reviewer and infosec as evidence and
+  later becomes the PR description verbatim. Any Yes: the developer writes the PIA then,
+  before any code, with the header line `**PR:** <branch or PR>, screening in the
+  PR-description draft`, and infosec (create-feature Step 4) is required. Write that
+  draft now, before review. A docs-only or tests-only PR says "Privacy screening: not
+  applicable (docs/tests only)" in the draft.
 - If `docs/privacy/` does not exist yet (a project set up before these rules), install it
   from the skills' `../templates/` as [`../templates/README.md`](../templates/README.md)
   describes (replace `{product owner}` and the adoption-point placeholders), and say so
@@ -389,16 +392,16 @@ problems you could have caught yourself.
   local CI (whatever reproduces the CI workflow: a runner script that reads the workflow
   file, `act`, or the documented list of CI commands) **on the committed branch**, for
   every job the change touches, and all of them for a dependency, workflow or config
-  change. Then:
-
-- Pass the commit explicitly (`--ref <sha>` or equivalent) when the runner resolves the
-  repository from the working directory. Read the line that names the commit before you
-  trust the summary.
-- Report the jobs that ran, their results with failures quoted, and the jobs SKIPPED. A
-  SKIPPED job is **NOT VERIFIED**, never "passing".
-- Never push to the default branch to find out whether the change passes.
-- The runner executes the branch's code and install scripts as you. Run a ref you do not
-  trust only as a separate user or in a VM.
+  change. A project with no CI at all records in `CLAUDE.md` the commands it runs
+  instead (lint, test, build), and the local report covers those. Then:
+  - Pass the commit explicitly (`--ref <sha>` or equivalent) when the runner resolves
+    the repository from the working directory. Read the line that names the commit
+    before you trust the summary.
+  - Report the jobs that ran, their results with failures quoted, and the jobs SKIPPED.
+    A SKIPPED job is **NOT VERIFIED**, never "passing".
+  - Never push to the default branch to find out whether the change passes.
+  - The runner executes the branch's code and install scripts as you. Run a ref you do
+    not trust only as a separate user or in a VM.
 
 ---
 

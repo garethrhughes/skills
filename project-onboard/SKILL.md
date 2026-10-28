@@ -330,7 +330,8 @@ Ask: "Any corrections? Anything I marked `[TBD]` you want to fill in now?"
 
 If no local CI runner exists, propose the default from `project-bootstrap` Phase 3: the
 exact commands CI runs, listed in the README, and record it as the `{local CI command}`
-for the generated CLAUDE.md.
+for the generated CLAUDE.md. If there is no CI at all, ask which commands (lint, test,
+build) are run before a PR instead, and record them as `{commands from Phase 3}`.
 
 Ask the user to confirm; ask explicitly about anything `[TBD]` (e.g. "I see
 multiple AWS accounts referenced — do prod and staging live in separate
@@ -777,6 +778,9 @@ for the canonical testing rules.
   change). The report names the jobs that ran and those SKIPPED; a SKIPPED job is **NOT
   VERIFIED**, never "passing", and the reviewer blocks a missing or non-compliant
   report. The local run is the only check before merge.
+{No CI at all:} - **No CI.** A project with no CI at all records in `CLAUDE.md` the
+  commands it runs instead (lint, test, build), and the local report covers those:
+  `{commands from Phase 3}`. The bullet for "CI does not run on PRs" applies to them.
 
 **Project-specific additions** (observed or supplied):
 {additions, or "_(none)_"}
@@ -804,23 +808,28 @@ UI work that only consumes existing tokens and components does not need one.
 See the `architect`, `design`, and `decision-log` skills for the exact proposal, design
 plan, and ADR formats.
 
-**Privacy screening** ([`RULES.md#privacy`](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy)).
+**Privacy screening**
+([`RULES.md#privacy`](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy)).
 Every feature doc and proposal answers the five-question `## Privacy screening` in
-[`docs/privacy/README.md`](docs/privacy/README.md). For a PR with no feature doc (a fix, dependency, configuration, infrastructure or CI
-change), the developer writes the screening during implementation (create-feature Step
-2) as a "Privacy screening" section of a **PR-description draft**, which is handed to
-the reviewer and infosec as evidence and later becomes the PR description verbatim. A
-docs-only or tests-only PR needs none. **Adoption point:** feature docs from `{first
-screened feature number}` and proposals from `{first screened proposal number}`
-({bootstrap: 0001 and 0001; onboard: the numbers after the newest existing ones}); older
-documents are not checked unless reopened. **If `CLAUDE.md` records no adoption point**,
-the newest feature-doc and proposal numbers that existed when the rule was adopted, and
-every number below them, count as before it: the reviewer does not block them, and asks
-the product owner to record the "first screened" numbers (newest + 1) in `CLAUDE.md`. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
-written before implementation and built only as it lists. Infosec is then required, and
-the reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
-engineering assessment, not legal advice: *Applicable regimes and lawful basis* is
-{privacy decision owner from Phase 7}'s field.
+[`docs/privacy/README.md`](docs/privacy/README.md). For a PR with no feature doc (a fix,
+dependency, configuration, infrastructure or CI change), the developer writes the
+screening **before coding**, as the first action of implementation (create-feature Step
+2), in a "Privacy screening" section of a **PR-description draft**, which is handed to
+the reviewer and infosec as evidence and later becomes the PR description verbatim. Any
+Yes: the developer writes the PIA then, before any code, with the header line `**PR:**
+<branch or PR>, screening in the PR-description draft`, and infosec (create-feature Step
+4) is required. A docs-only or tests-only PR needs none. **Adoption point:** feature
+docs from `{first screened feature number}` and proposals from `{first screened proposal
+number}` ({bootstrap: 0001 and 0001; onboard: the numbers after the newest existing
+ones}); older documents are not checked unless reopened. **If `CLAUDE.md` records no
+adoption point**, the newest feature-doc and proposal numbers that existed when the rule
+was adopted, and every number below them, count as before it: neither the reviewer nor
+infosec blocks them, and the reviewer asks the product owner to record the "first
+screened" numbers (newest + 1) in `CLAUDE.md`. Any Yes means a PIA in `docs/privacy/`
+from `TEMPLATE-pia.md`, written before implementation and built only as it lists.
+Infosec is then required, and the reviewer BLOCKs a diff that logs or stores what the
+PIA does not list. It is an engineering assessment, not legal advice: *Applicable
+regimes and lawful basis* is {privacy decision owner from Phase 7}'s field.
 {if the guard script was installed: "Run `node --test scripts/__tests__/privacy-screening.test.mjs` before a PR; its `FIRST_SCREENED_*` match the adoption point above."}
 
 ---
@@ -972,16 +981,16 @@ replacing it.
 | `templates/docs/privacy/data-inventory.md` | `docs/privacy/data-inventory.md`, filled with the rows from Phase 7's privacy investigation |
 | `templates/scripts/privacy-screening.guard.mjs.template` | `scripts/__tests__/privacy-screening.test.mjs` (renamed), **only if the user said yes**; set `FIRST_SCREENED_FEATURE` / `FIRST_SCREENED_PROPOSAL` to the adoption point recorded in CLAUDE.md (the numbers after the newest existing documents) |
 
-Replace `{product owner}` with the privacy decision owner from Phase 7, and the
-README's adoption-point placeholders with the numbers after the newest existing feature
-doc and proposal (the same numbers go in CLAUDE.md). If the guard was installed, run it
-and confirm it passes. Its first run checks no document (every existing one is below
-the adoption point), so also break it once: write `9999-no-screening.md` (a heading and
-one line of text, no screening) in a scratch directory, run the guard with
+Replace `{product owner}` with the privacy decision owner from Phase 7, and the README's
+adoption-point placeholders with the numbers after the newest existing feature doc and
+proposal (the same numbers go in CLAUDE.md). If the guard was installed, run it and
+confirm it passes. Its first run checks no document (every existing one is below the
+adoption point), so also break it once: write `9999-no-screening.md` (a heading and one
+line of text, no screening) in a scratch directory, run the guard with
 `PRIVACY_FEATURES_DIR` pointing at that directory, and confirm the test for
 `9999-no-screening.md` fails. An older document reopened later goes in the guard's
-`ALSO_SCREENED_FEATURES` / `ALSO_SCREENED_PROPOSALS`. If the project's own test runner would also collect
-`scripts/__tests__/*.test.mjs`, add it to that runner's exclude list.
+`ALSO_SCREENED_FEATURES` / `ALSO_SCREENED_PROPOSALS`. If the project's own test runner
+would also collect `scripts/__tests__/*.test.mjs`, add it to that runner's exclude list.
 
 ### Step 4 — MCP Setup
 

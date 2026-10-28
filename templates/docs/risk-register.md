@@ -15,7 +15,9 @@ with who decided and when to look again
   leaves. Close a row by moving it to *Closed* below with the commit or ADR that closed
   it.
 
-IDs are never reused. Record a gap in the numbering here when one appears.
+IDs are `R-NNN`: `R-` and a three-digit sequence number (`R-001`, `R-002`, …; four
+digits after `R-999`), always the next free one. IDs are never reused. Record a gap in
+the numbering here when one appears.
 
 | ID | Risk | Likelihood | Impact | Owner | Mitigation / treatment | Status | Raised | Review |
 |---|---|---|---|---|---|---|---|---|

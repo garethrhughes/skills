@@ -534,7 +534,7 @@ if [ "$TOTAL" -eq "$TEMPLATES_SKIPPED" ]; then
   echo "Nothing was updated, but an item needs attention (below)."
 else
   echo "STATUS: updated"
-  echo "CHANGES: $TOTAL skill(s) affected"
+  echo "CHANGES: $TOTAL item(s) affected"
 fi
 echo ""
 

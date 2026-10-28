@@ -158,7 +158,8 @@ corresponding row at runtime.
 - Is there a task runner? [**from profile 3.10**]
 - Does CI run on pull requests, and how is it run locally before a PR? [**Default:** CI
   runs on every PR; locally, a runner that reproduces the CI workflow, or the exact
-  commands CI runs, listed in the README. See `RULES.md#git--prs`]
+  commands CI runs, listed in the README. With no CI at all, the commands run instead
+  (lint, test, build). See `RULES.md#git--prs`]
 
 After this round, confirm:
 
@@ -512,6 +513,9 @@ not controllers, IaC modules tested, plan summary in PR description).
   change). The report names the jobs that ran and those SKIPPED; a SKIPPED job is **NOT
   VERIFIED**, never "passing", and the reviewer blocks a missing or non-compliant
   report. The local run is the only check before merge.
+{No CI at all:} - **No CI.** A project with no CI at all records in `CLAUDE.md` the
+  commands it runs instead (lint, test, build), and the local report covers those:
+  `{commands from Phase 3}`. The bullet for "CI does not run on PRs" applies to them.
 
 **Project-specific additions:**
 {additions captured in Phase 5/8, or "_(none)_"}
@@ -539,23 +543,28 @@ UI work that only consumes existing tokens and components does not need one.
 See the `architect`, `design`, and `decision-log` skills for the exact proposal, design
 plan, and ADR formats.
 
-**Privacy screening** ([`RULES.md#privacy`](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy)).
+**Privacy screening**
+([`RULES.md#privacy`](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy)).
 Every feature doc and proposal answers the five-question `## Privacy screening` in
-[`docs/privacy/README.md`](docs/privacy/README.md). For a PR with no feature doc (a fix, dependency, configuration, infrastructure or CI
-change), the developer writes the screening during implementation (create-feature Step
-2) as a "Privacy screening" section of a **PR-description draft**, which is handed to
-the reviewer and infosec as evidence and later becomes the PR description verbatim. A
-docs-only or tests-only PR needs none. **Adoption point:** feature docs from `{first
-screened feature number}` and proposals from `{first screened proposal number}`
-({bootstrap: 0001 and 0001; onboard: the numbers after the newest existing ones}); older
-documents are not checked unless reopened. **If `CLAUDE.md` records no adoption point**,
-the newest feature-doc and proposal numbers that existed when the rule was adopted, and
-every number below them, count as before it: the reviewer does not block them, and asks
-the product owner to record the "first screened" numbers (newest + 1) in `CLAUDE.md`. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
-written before implementation and built only as it lists. Infosec is then required, and
-the reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
-engineering assessment, not legal advice: *Applicable regimes and lawful basis* is
-{privacy decision owner from Phase 7}'s field.
+[`docs/privacy/README.md`](docs/privacy/README.md). For a PR with no feature doc (a fix,
+dependency, configuration, infrastructure or CI change), the developer writes the
+screening **before coding**, as the first action of implementation (create-feature Step
+2), in a "Privacy screening" section of a **PR-description draft**, which is handed to
+the reviewer and infosec as evidence and later becomes the PR description verbatim. Any
+Yes: the developer writes the PIA then, before any code, with the header line `**PR:**
+<branch or PR>, screening in the PR-description draft`, and infosec (create-feature Step
+4) is required. A docs-only or tests-only PR needs none. **Adoption point:** feature
+docs from `{first screened feature number}` and proposals from `{first screened proposal
+number}` ({bootstrap: 0001 and 0001; onboard: the numbers after the newest existing
+ones}); older documents are not checked unless reopened. **If `CLAUDE.md` records no
+adoption point**, the newest feature-doc and proposal numbers that existed when the rule
+was adopted, and every number below them, count as before it: neither the reviewer nor
+infosec blocks them, and the reviewer asks the product owner to record the "first
+screened" numbers (newest + 1) in `CLAUDE.md`. Any Yes means a PIA in `docs/privacy/`
+from `TEMPLATE-pia.md`, written before implementation and built only as it lists.
+Infosec is then required, and the reviewer BLOCKs a diff that logs or stores what the
+PIA does not list. It is an engineering assessment, not legal advice: *Applicable
+regimes and lawful basis* is {privacy decision owner from Phase 7}'s field.
 {if the guard script was installed: "Run `node --test scripts/__tests__/privacy-screening.test.mjs` before a PR; its `FIRST_SCREENED_*` match the adoption point above."}
 
 ---

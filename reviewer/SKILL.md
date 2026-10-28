@@ -76,9 +76,9 @@ check these against the diff
 original request, the diff, and existing evidence (the local CI report or "pending:
 hosted CI on the PR head", scanner output, and the privacy screening), never a list of
 what was done or where to look. If you were also handed a list of what was fixed or
-where to look, treat each item as a claim to verify, not as the scope of the review. Where you and the author disagree on a measurable fact, measure it. If
-the review finds something the log has not seen, say so in the verdict so it can be
-added.
+where to look, treat each item as a claim to verify, not as the scope of the review.
+Where you and the author disagree on a measurable fact, measure it. If the review finds
+something the log has not seen, say so in the verdict so it can be added.
 
 ---
 
@@ -240,18 +240,20 @@ Read the diff and flag any deviation. Severity is determined as follows:
 - **CI evidence** ([`RULES.md#git--prs`](../RULES.md#git--prs)). If `CLAUDE.md` does not
   say whether CI runs on pull requests, read the workflows' `on:` triggers (for example
   `pull_request` in `.github/workflows/*.yml`), apply the matching case, and ask the
-  product owner to record the answer in `CLAUDE.md`. Where hosted CI runs on
-  pull requests, a review held before the PR exists records the CI evidence as
-  **"pending: hosted CI on the PR head"**; the gate is re-checked on the PR head before
-  merge: green is required to merge, and the agent that opens the PR waits for the run
-  and reports it, failures quoted. A review of an open PR checks that run: red or
-  missing on the head blocks; still running is recorded as pending. Where CI does not
-  run on pull requests (or the project's `CLAUDE.md` requires a local report), the local
-  CI report is required at review time. It names the jobs
-  that ran, with failures quoted, and the jobs SKIPPED; covers every CI job the change
-  touches (all of them for a dependency, workflow or config change); says it ran against
-  the committed head; and calls a SKIPPED job **NOT VERIFIED**, never passing. A missing
-  or non-compliant report then blocks. `CLAUDE.md` says which case the project is in.
+  product owner to record the answer in `CLAUDE.md`. Where hosted CI runs on pull
+  requests, a review held before the PR exists records the CI evidence as **"pending:
+  hosted CI on the PR head"**; the gate is re-checked on the PR head before merge: green
+  is required to merge, and the agent that opens the PR waits for the run and reports
+  it, failures quoted. A review of an open PR checks that run: red or missing on the
+  head blocks; still running is recorded as pending. Where CI does not run on pull
+  requests (or the project's `CLAUDE.md` requires a local report), the local CI report
+  is required at review time. A project with no CI at all records in `CLAUDE.md` the
+  commands it runs instead (lint, test, build), and the local report covers those. It
+  names the jobs that ran, with failures quoted, and the jobs SKIPPED; covers every CI
+  job the change touches (all of them for a dependency, workflow or config change); says
+  it ran against the committed head; and calls a SKIPPED job **NOT VERIFIED**, never
+  passing. A missing or non-compliant report then blocks. `CLAUDE.md` says which case
+  the project is in.
 - **Changelog** ([`RULES.md#changelog`](../RULES.md#changelog), projects with a
   changelog). A fix to, or change in, work merged after the last release tag amends
   that work's entry. A separate entry for unreleased work blocks, and so does a missing
@@ -262,16 +264,20 @@ Read the diff and flag any deviation. Severity is determined as follows:
 - **Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy)). Every PR the rule
   covers has one, in the feature doc or proposal. For a PR with no feature doc (a fix,
   dependency, configuration, infrastructure or CI change), the developer writes the
-  screening during implementation (create-feature Step 2) as a "Privacy screening"
-  section of a **PR-description draft**, which is handed to the reviewer and infosec as
-  evidence and later becomes the PR description verbatim. Check it there (Phase 1 is
-  skipped for such a PR); a PR without the draft section blocks. A docs-only or tests-only PR needs none and says so. Documents
-  numbered before the adoption point in `CLAUDE.md` are exempt unless reopened. **If
-  `CLAUDE.md` records no adoption point**, the newest feature-doc and proposal numbers
-  that existed when the rule was adopted, and every number below them, count as before
-  it: the reviewer does not block them, and asks the product owner to record the "first
-  screened" numbers (newest + 1) in `CLAUDE.md`. Any Yes links an existing PIA, and the
-  diff logs, stores, exposes or sends nothing its data table does not list.
+  screening **before coding**, as the first action of implementation (create-feature
+  Step 2), in a "Privacy screening" section of a **PR-description draft**, which is
+  handed to the reviewer and infosec as evidence and later becomes the PR description
+  verbatim. Any Yes: the developer writes the PIA then, before any code, with the header
+  line `**PR:** <branch or PR>, screening in the PR-description draft`, and infosec
+  (create-feature Step 4) is required. Check it there (Phase 1 is skipped for such a
+  PR); a PR without the draft section blocks. A docs-only or tests-only PR needs none
+  and says so. Documents numbered before the adoption point in `CLAUDE.md` are exempt
+  unless reopened. **If `CLAUDE.md` records no adoption point**, the newest feature-doc
+  and proposal numbers that existed when the rule was adopted, and every number below
+  them, count as before it: neither the reviewer nor infosec blocks them, and the
+  reviewer asks the product owner to record the "first screened" numbers (newest + 1) in
+  `CLAUDE.md`. Any Yes links an existing PIA, and the diff logs, stores, exposes or
+  sends nothing its data table does not list.
 - **Risk register** ([`RULES.md#risk-register`](../RULES.md#risk-register)). A residual
   left open on purpose (an accepted exception, a deferred fix, a gap the PIA leaves) has
   a row in `docs/risk-register.md`.
@@ -497,9 +503,9 @@ git -C <repo> diff -z --name-only --diff-filter=d origin/main...HEAD | sed -z 's
 ```
 
 `--max-target-bytes=0` lifts Semgrep's 1 MB default, which otherwise drops large files
-from the scan without an error. The stack packs are in the active overlay (for example `p/typescript p/javascript`, or
-`p/csharp`). Add `p/github-actions` when workflows change. Replace `origin/main` with
-the project's default branch.
+from the scan without an error. The stack packs are in the active overlay (for example
+`p/typescript p/javascript`, or `p/csharp`). Add `p/github-actions` when workflows
+change. Replace `origin/main` with the project's default branch.
 
 - Severity (each finding's `extra.severity` in the JSON): CRITICAL / HIGH / ERROR →
   **Blocker**; MEDIUM / WARNING → **Major**; LOW / INFO → **Minor**

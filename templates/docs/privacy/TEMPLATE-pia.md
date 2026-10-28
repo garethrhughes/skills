@@ -5,8 +5,15 @@ Copy this file to docs/privacy/NNNN-short-kebab-title.md (NNNN = the next free n
 docs/privacy/README.md), fill it in, delete these comments and add a row to the README.
 
 A PIA is written when any answer in a Privacy screening is "yes", before implementation
-starts: by the architect with the proposal, or in the feature-document step when there
-is no proposal. The developer updates it if the build differs.
+starts: by the architect with the proposal, in the feature-document step when there is
+no proposal, or, for a PR with no feature doc, by the developer before any code. The
+developer updates it if the build differs.
+
+Header: keep the Feature/Proposal line for a PIA that comes from a feature doc or a
+proposal. For a PR with no feature doc, replace that line with
+  **PR:** <branch or PR>, screening in the PR-description draft
+(the optional guard accepts it, and cannot check that back-link: the draft is not in the
+repository).
 
 This is an engineering and product assessment. It states no legal conclusion. Keep it
 short: a small change is one page and an hour's work. Build on

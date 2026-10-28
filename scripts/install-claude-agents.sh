@@ -131,12 +131,21 @@ if [[ -f "$SKILLS_DIR/RULES.md" ]]; then
 fi
 
 # Record the RULES.md this install used, so update-skills can tell a local
-# edit from an upstream change later. Written only when no record exists yet.
+# edit from an upstream change later. Written only when no record exists yet AND
+# the skills dir is a git checkout whose RULES.md is unmodified from what it
+# checked out, i.e. the copy is the source's. Otherwise a local edit made before
+# the record existed would be recorded as upstream; update-skills then prints a
+# note on its first run instead.
 if [[ -f "$SKILLS_DIR/RULES.md" && ! -f "$SKILLS_DIR/.rules-upstream.cksum" ]]; then
-  if cksum < "$SKILLS_DIR/RULES.md" > "$SKILLS_DIR/.rules-upstream.cksum" 2>/dev/null; then
-    echo "  RULES.md record written to ${SKILLS_DIR}/.rules-upstream.cksum"
+  if git -C "$SKILLS_DIR" ls-files --error-unmatch RULES.md >/dev/null 2>&1 \
+     && git -C "$SKILLS_DIR" diff --quiet HEAD -- RULES.md 2>/dev/null; then
+    if cksum < "$SKILLS_DIR/RULES.md" > "$SKILLS_DIR/.rules-upstream.cksum" 2>/dev/null; then
+      echo "  RULES.md record written to ${SKILLS_DIR}/.rules-upstream.cksum"
+    else
+      rm -f "$SKILLS_DIR/.rules-upstream.cksum"
+    fi
   else
-    rm -f "$SKILLS_DIR/.rules-upstream.cksum"
+    echo "  RULES.md record not written: the skills dir is not an unmodified git checkout"
   fi
 fi
 

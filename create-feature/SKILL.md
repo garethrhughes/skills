@@ -147,13 +147,14 @@ Any additional context, constraints, or decisions that should inform the archite
 **Privacy** ([`RULES.md#privacy`](../RULES.md#privacy)): answer the screening for what
 this feature does, literally. Any Yes means a PIA in `docs/privacy/` from
 `docs/privacy/TEMPLATE-pia.md`, written **before implementation**: by the architect with
-the proposal, or here when there is no proposal. Infosec then becomes required in
-Step 4. Leave *Applicable regimes and lawful basis* to the product owner. If
-`docs/privacy/` does not exist yet (a project set up before these rules), install it
-from the skills' `../templates/` as [`../templates/README.md`](../templates/README.md)
-describes (replace `{product owner}` and the adoption-point placeholders), and say so in
-the PR. If the project
-installed the privacy-screening guard, run it.
+the proposal, here when there is no proposal, or, for a PR with no feature doc, by the
+developer before any code (header line `**PR:** <branch or PR>, screening in the
+PR-description draft`). Infosec then becomes required in Step 4. Leave *Applicable
+regimes and lawful basis* to the product owner. If `docs/privacy/` does not exist yet (a
+project set up before these rules), install it from the skills' `../templates/` as
+[`../templates/README.md`](../templates/README.md) describes (replace `{product owner}`
+and the adoption-point placeholders), and say so in the PR. If the project installed the
+privacy-screening guard, run it.
 
 After writing the file, confirm to the user:
 
@@ -270,16 +271,21 @@ Use the **developer** skill to:
    on the PR head"**; the gate is re-checked on the PR head before merge: green is
    required to merge, and the agent that opens the PR waits for the run and reports it,
    failures quoted. Where CI does not run on pull requests (or the project's `CLAUDE.md`
-   requires a local report), the local CI report is required at review time. Run **CI
-   locally** then, on the committed branch, for every job the change touches, and record
-   the jobs that ran, with failures quoted, and those SKIPPED (**NOT VERIFIED**)
+   requires a local report), the local CI report is required at review time. A project
+   with no CI at all records in `CLAUDE.md` the commands it runs instead (lint, test,
+   build), and the local report covers those. Run **CI locally** then, on the committed
+   branch, for every job the change touches, and record the jobs that ran, with failures
+   quoted, and those SKIPPED (**NOT VERIFIED**)
 
 10. **PR-description draft.** For a PR with no feature doc (a fix, dependency,
     configuration, infrastructure or CI change), the developer writes the screening
-    during implementation (create-feature Step 2) as a "Privacy screening" section of a
-    **PR-description draft**, which is handed to the reviewer and infosec as evidence
-    and later becomes the PR description verbatim. Start the draft here in any case
-    (summary, tests, CI evidence) so Steps 3 and 4 receive it and Step 6 uses it.
+    **before coding**, as the first action of implementation, in a "Privacy screening"
+    section of a **PR-description draft**, which is handed to the reviewer and infosec
+    as evidence and later becomes the PR description verbatim. Any Yes: the developer
+    writes the PIA then, before any code, with the header line `**PR:** <branch or PR>,
+    screening in the PR-description draft`, and infosec (Step 4) is required. Start the
+    draft here in any case (summary, tests, CI evidence) so Steps 3 and 4 receive it and
+    Step 6 uses it.
 
 **Handoff to Step 3 when:** all tests pass and the branch is ready for review.
 
@@ -451,7 +457,7 @@ step-specific instructions.
 | Accessibility floor conflicts with the design | Change the design, not the floor (Step 1.5 → Step 2) |
 | New dependency needed | Call it out explicitly in Step 2; reviewer checks supply-chain in Step 3; infosec checks crypto/secrets handling in Step 4 |
 | Infra-only change | Same flow — proposal must include Infrastructure Addendum; PR must include `plan` output |
-| Trivial fix (no design impact, no infra, no security) | Start at Step 2; skip Steps 1 and 4; the developer writes the privacy screening in a PR-description draft in Step 2, it goes to the reviewer as evidence and becomes the PR description verbatim (none for a docs-only or tests-only change) |
+| Trivial fix (no design impact, no infra, no security) | Start at Step 2; skip Step 1. Step 2 begins, before any code, with the privacy screening in a PR-description draft, which goes to the reviewer (and infosec) as evidence and becomes the PR description verbatim (none for a docs-only or tests-only change). Any Yes: the developer writes the PIA (header `**PR:** <branch or PR>, screening in the PR-description draft`) before any code, and **Step 4 is required**; otherwise skip Step 4 |
 | A step is refused (e.g. a write is not permitted) | The requirement is **not met**: say so in every status line. Narrowing scope is the product owner's call |
 | A question needs the product owner | Give the options with their consequences and a recommendation; quote the answer and date in the feature doc's Decisions |
 | An evaluation bar fails its first run | Stop and take it to the product owner; never re-tune the bar ([`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates)) |

@@ -340,18 +340,26 @@ Audits against [`RULES.md#privacy`](../RULES.md#privacy). Infosec sign-off is
 
 - The feature doc or proposal has the five-question `## Privacy screening`, each
   answered Yes or No with a reason. For a PR with no feature doc (a fix, dependency,
-  configuration, infrastructure or CI change), the developer writes the screening during
-  implementation (create-feature Step 2) as a "Privacy screening" section of a
-  **PR-description draft**, which is handed to the reviewer and infosec as evidence and
-  later becomes the PR description verbatim. Read it there. Docs-only and tests-only
-  PRs, and documents numbered before the adoption point recorded in `CLAUDE.md` (unless
-  reopened), are exempt. **If `CLAUDE.md` records no adoption point**, the newest
-  feature-doc and proposal numbers that existed when the rule was adopted, and every
-  number below them, count as before it: the reviewer does not block them, and asks the
-  product owner to record the "first screened" numbers (newest + 1) in `CLAUDE.md`.
+  configuration, infrastructure or CI change), the developer writes the screening
+  **before coding**, as the first action of implementation (create-feature Step 2), in a
+  "Privacy screening" section of a **PR-description draft**, which is handed to the
+  reviewer and infosec as evidence and later becomes the PR description verbatim. Any
+  Yes: the developer writes the PIA then, before any code, with the header line `**PR:**
+  <branch or PR>, screening in the PR-description draft`, and infosec (create-feature
+  Step 4) is required. Read it there. Docs-only and tests-only PRs, and documents
+  numbered before the adoption point recorded in `CLAUDE.md` (unless reopened), are
+  exempt. **If `CLAUDE.md` records no adoption point**, the newest feature-doc and
+  proposal numbers that existed when the rule was adopted, and every number below them,
+  count as before it: neither the reviewer nor infosec blocks them, and the reviewer
+  asks the product owner to record the "first screened" numbers (newest + 1) in
+  `CLAUDE.md`.
 - Answers are literal. A new identifier, audit field, log line with a route or count,
   existing value on a new screen, or new processor call answered "No" is a finding.
-- Any Yes has a PIA in `docs/privacy/`, written before implementation.
+- Any Yes has a PIA in `docs/privacy/`, written before implementation: with the
+  proposal, in the feature-document step, or, for a PR with no feature doc, by the
+  developer before any code (header line `**PR:** <branch or PR>, screening in the
+  PR-description draft`). A PIA with the `**PR:**` header has no document to link back
+  to; read its screening in the PR-description draft.
 - **Read the PIA against the diff.** The change records, logs, stores, exposes and sends
   only what the PIA's data table lists. Each deletion path it names is real (cite the
   line that touches the new table or field) and tested, and retention matches. The user
@@ -451,7 +459,8 @@ Use this structured output for every review:
 
 ### Privacy
 - [ ] Privacy screening present and literal
-- [ ] Any Yes has a PIA written before implementation
+- [ ] Any Yes has a PIA written before implementation (before any code, for a PR with no
+  feature doc)
 - [ ] The diff stores, logs, exposes and sends only what the PIA lists; deletion paths real
 - [ ] Data inventory updated
 **Findings:** [list, or "clear"]

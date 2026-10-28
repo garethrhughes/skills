@@ -17,22 +17,25 @@ and it reads `legal review needed` until {product owner} fills it.
 
 ## The screening
 
-Every feature document (`docs/features/`) and every proposal (`docs/proposals/`)
-carries this section, filled in. For a PR with no feature doc (a fix, dependency,
-configuration, infrastructure or CI change), the developer writes the screening during
-implementation (create-feature Step 2) as a "Privacy screening" section of a
-**PR-description draft**, which is handed to the reviewer and infosec as evidence and
-later becomes the PR description verbatim. A PR that changes only documentation or
-tests, with no runtime effect, needs none and says "Privacy screening: not applicable
-(docs/tests only)".
+Every feature document (`docs/features/`) and every proposal (`docs/proposals/`) carries
+this section, filled in. For a PR with no feature doc (a fix, dependency, configuration,
+infrastructure or CI change), the developer writes the screening **before coding**, as
+the first action of implementation (create-feature Step 2), in a "Privacy screening"
+section of a **PR-description draft**, which is handed to the reviewer and infosec as
+evidence and later becomes the PR description verbatim. Any Yes: the developer writes
+the PIA then, before any code, with the header line `**PR:** <branch or PR>, screening
+in the PR-description draft`, and infosec (create-feature Step 4) is required. A PR that
+changes only documentation or tests, with no runtime effect, needs none and says
+"Privacy screening: not applicable (docs/tests only)".
 
 **Adoption point:** feature documents from {first screened feature number} and proposals
 from {first screened proposal number} (also recorded in `CLAUDE.md`). Older documents
 are not checked unless they are reopened. **If `CLAUDE.md` records no adoption point**,
 the newest feature-doc and proposal numbers that existed when the rule was adopted, and
-every number below them, count as before it: the reviewer does not block them, and asks
-the product owner to record the "first screened" numbers (newest + 1) in `CLAUDE.md`. A "yes" to any question means a PIA. All "no":
-one sentence saying why, and the screening is still recorded.
+every number below them, count as before it: neither the reviewer nor infosec blocks
+them, and the reviewer asks the product owner to record the "first screened" numbers
+(newest + 1) in `CLAUDE.md`. A "yes" to any question means a PIA. All "no": one sentence
+saying why, and the screening is still recorded.
 
 ```markdown
 ## Privacy screening
@@ -65,15 +68,16 @@ count, an existing value shown on a new screen, or a new call to a processor is 
 | Feature document | the feature cycle (`create-feature`) | Fills the screening. With no proposal and any "yes", writes the PIA here too. |
 | Proposal | `architect` | Fills the screening; with any "yes", writes the PIA with the proposal. |
 | Implementation | `developer` | Builds what the PIA lists and nothing more; updates the PIA (and the inventory) if the build differs. |
-| Implementation, PR with no feature doc | `developer` | Writes the screening as a "Privacy screening" section of the PR-description draft in Step 2; it goes to the reviewer and infosec as evidence and becomes the PR description verbatim. |
+| Implementation, PR with no feature doc | `developer` | Writes the screening before any code, as a "Privacy screening" section of the PR-description draft (the first action of Step 2); it goes to the reviewer and infosec as evidence and becomes the PR description verbatim. With any "yes", writes the PIA then, before any code, with the header line `**PR:** <branch or PR>, screening in the PR-description draft`; infosec is then required. |
 | Code review | `reviewer` | BLOCKs a PR whose feature doc (or, with no feature doc, whose PR-description draft) has no screening, whose "yes" has no PIA link, or whose diff logs or stores data the PIA does not list. |
 | Infosec | `infosec` | Required whenever a PIA exists. Reads the screening (feature doc, proposal or PR-description draft) and the PIA against the diff; a missing PIA or a data table that does not match the diff is REQUIRES CHANGES. |
 | Decision | {product owner} | Fills *Applicable regimes and lawful basis*; confirms or overrides a decision taken on their behalf. |
 
-<!-- Optional: if you installed scripts/__tests__/privacy-screening.test.mjs (from the skills'
-templates/scripts/privacy-screening.guard.mjs.template), say so here: it checks the mechanics (every screened document has five answers,
-a "yes" links a PIA that exists and links back, every PIA has the template's headings and a
-decision, and this index lists every PIA). It cannot check that an answer is true. -->
+<!-- Optional: if you installed scripts/__tests__/privacy-screening.test.mjs (from the
+skills' templates/scripts/privacy-screening.guard.mjs.template), say so here: it checks
+the mechanics (every screened document has five answers, a "yes" links a PIA that exists
+and links back, every PIA has the template's headings and a decision, and this index
+lists every PIA). It cannot check that an answer is true. -->
 
 ## Open gaps
 

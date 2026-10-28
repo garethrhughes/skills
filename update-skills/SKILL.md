@@ -92,23 +92,25 @@ installed, the guard script template together.
 The script replaces or removes the installed `templates/` only when it carries the
 `.from-skills` marker that ships in the skills repo; otherwise it warns and leaves the
 directory alone. It records the upstream `RULES.md` it installed in
-`.rules-upstream.cksum`, so the "edited locally" warning fires only for real local edits,
-not whenever upstream changes `RULES.md`. The agent installers write that record when
-none exists. Without a record, the script prints a note that RULES.md was replaced and
-any local edit must be re-applied in `CLAUDE.md`.
+`.rules-upstream.cksum`, so the "edited locally" warning fires only for real local
+edits, not whenever upstream changes `RULES.md`. The agent installers write that record
+when none exists and the skills dir is an unmodified git checkout (so the copy is the
+source's); a plain-directory install gets its record from its first update, and edits
+made before then are not detected. Without a record, the script prints a note that
+RULES.md was replaced and any local edit must be re-applied in `CLAUDE.md`.
 
 **Projects set up before `templates/` existed** have the new review gates (privacy
-screening, CI evidence, risk register) but none of the documents. When the report
-lists every template as "(new file)", tell the user to install them once: run the
+screening, CI evidence, risk register) but none of the documents. When the report lists
+every template as "(new file)", tell the user to install them once: run the
 `project-onboard` skill's *Install the process documents* step (it never overwrites), or
 copy them by hand per `templates/README.md`, and add the CLAUDE.md sections from
 `CLAUDE.md.template` (Running Commands, Corrections Log, privacy screening, Testing &
 Local CI, Changelog, Risk Register). When they add the privacy section, they record the
-**adoption point** in it: the newest existing feature-doc and proposal numbers + 1.
-**If `CLAUDE.md` records no adoption point**, the newest feature-doc and proposal
-numbers that existed when the rule was adopted, and every number below them, count as
-before it: the reviewer does not block them, and asks the product owner to record the
-"first screened" numbers (newest + 1) in `CLAUDE.md`.
+**adoption point** in it: the newest existing feature-doc and proposal numbers + 1. **If
+`CLAUDE.md` records no adoption point**, the newest feature-doc and proposal numbers
+that existed when the rule was adopted, and every number below them, count as before it:
+neither the reviewer nor infosec blocks them, and the reviewer asks the product owner to
+record the "first screened" numbers (newest + 1) in `CLAUDE.md`.
 
 
 ## Rules

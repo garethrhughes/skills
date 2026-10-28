@@ -201,19 +201,23 @@ plan, and ADR formats.
 
 **Privacy screening** ([`RULES.md#privacy`](.opencode/skills/RULES.md#privacy)). Every
 feature doc and proposal answers the five-question `## Privacy screening` in
-[`docs/privacy/README.md`](docs/privacy/README.md). For a PR with no feature doc (a fix, dependency, configuration, infrastructure or CI
-change), the developer writes the screening during implementation (create-feature Step
-2) as a "Privacy screening" section of a **PR-description draft**, which is handed to
-the reviewer and infosec as evidence and later becomes the PR description verbatim. A
-docs-only or tests-only PR needs none. **Adoption point:** feature docs from `[NNNN]`
-and proposals from `[NNNN]` (`0001` for a new project; the numbers after the newest
-existing ones when adopting the rule). Older documents are not checked unless reopened.
-**If `CLAUDE.md` records no adoption point**, the newest feature-doc and proposal
-numbers that existed when the rule was adopted, and every number below them, count as
-before it: the reviewer does not block them, and asks the product owner to record the
-"first screened" numbers (newest + 1) in `CLAUDE.md`. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`,
-written before implementation and built only as it lists. Infosec is then required, and
-the reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
+[`docs/privacy/README.md`](docs/privacy/README.md). For a PR with no feature doc (a fix,
+dependency, configuration, infrastructure or CI change), the developer writes the
+screening **before coding**, as the first action of implementation (create-feature Step
+2), in a "Privacy screening" section of a **PR-description draft**, which is handed to
+the reviewer and infosec as evidence and later becomes the PR description verbatim. Any
+Yes: the developer writes the PIA then, before any code, with the header line `**PR:**
+<branch or PR>, screening in the PR-description draft`, and infosec (create-feature Step
+4) is required. A docs-only or tests-only PR needs none. **Adoption point:** feature
+docs from `[NNNN]` and proposals from `[NNNN]` (`0001` for a new project; the numbers
+after the newest existing ones when adopting the rule). Older documents are not checked
+unless reopened. **If `CLAUDE.md` records no adoption point**, the newest feature-doc
+and proposal numbers that existed when the rule was adopted, and every number below
+them, count as before it: neither the reviewer nor infosec blocks them, and the reviewer
+asks the product owner to record the "first screened" numbers (newest + 1) in
+`CLAUDE.md`. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`, written
+before implementation and built only as it lists. Infosec is then required, and the
+reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
 engineering assessment, not legal advice: *Applicable regimes and lawful basis* is
 [product owner]'s field. [If installed: run `node --test
 scripts/__tests__/privacy-screening.test.mjs` before a PR; its `FIRST_SCREENED_*` match
@@ -238,6 +242,9 @@ See [`RULES.md#testing`](.opencode/skills/RULES.md#testing). Plus:
     names the jobs that ran and those **SKIPPED**. A SKIPPED job is **NOT VERIFIED**,
     never "passing", and the reviewer blocks a missing or non-compliant report. It is
     the only check before merge; never push to the default branch to find out.
+  - *no CI at all:* A project with no CI at all records in `CLAUDE.md` the commands it
+    runs instead (lint, test, build), and the local report covers those: `[commands]`.
+    The rest of the *no* case applies.
 
 ---
 

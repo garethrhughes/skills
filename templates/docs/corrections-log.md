@@ -15,10 +15,11 @@ Referenced by the `developer`, `reviewer` and `infosec` skills, and by `CLAUDE.m
 
 ## Patterns
 
-These seed patterns are generalised from one project's corrections log, where each one
-recurred. They are starting points, not evidence about this project. Replace them with
-this project's own as its ledger grows: add its cases under the matching pattern, drop
-a pattern that never applies here, and add a new pattern only when no existing one fits.
+These seed patterns are generalised from one project's corrections log and from the
+skills repository's own review rounds, where each one recurred. They are starting
+points, not evidence about this project. Replace them with this project's own as its
+ledger grows: add its cases under the matching pattern, drop a pattern that never
+applies here, and add a new pattern only when no existing one fits.
 
 ### 1. Do not assert scope, status or state without checking it
 
@@ -81,7 +82,9 @@ fix made a review gate ask for evidence that could only exist after the review i
 the reviewer required a green hosted CI run on the PR head, while the workflow opened the
 PR only after the review passed. The same shape recurred one round later: a fix PR's
 privacy screening had to be "in the PR description", which the workflow wrote after the
-review and infosec steps, and the review brief excluded it anyway.
+review and infosec steps, and the review brief excluded it anyway. A round later still:
+a fix PR whose screening had a Yes needed a PIA "before implementation", in a proposal
+or feature step that such a PR never has, and its PIA header had no way to name it.
 
 **The check:** after a fix, ask what else reads the thing you just wrote to, and add the
 case that combines your change with its nearest neighbour. After correcting a claim or
