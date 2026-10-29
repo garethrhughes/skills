@@ -83,7 +83,8 @@ Increment NNNN sequentially from the highest existing number. Start at 0001.
 **Status:** Proposed | Accepted | Deprecated | Superseded by [NNNN]
 **Decided by:** who decided, the owner's words quoted and dated; parts an agent chose
 "pending review"
-**Amends / Supersedes:** ADRs this one changes · **Amended by:** added later
+**Amends / Supersedes:** each ADR this one changes, and what it changes in it ·
+**Amended by:** added later
 **Privacy:** screening all No | PIA link · **Risks:** R-NNN rows raised, accepted or closed
 **Proposal:** link to docs/proposals/ file if this decision originated from a proposal
 
@@ -136,7 +137,8 @@ When asked to log a decision:
 4. Add a one-line entry to `docs/decisions/README.md` in the decision index table
 5. Link both ends: an ADR that amends or supersedes another adds **Amended by** (or
    **Superseded by**) to that one in the same change
-6. Add one line to `CLAUDE.md`'s Settled Decisions
+6. Add one line to `CLAUDE.md`'s Settled Decisions, naming the ADRs it amends or
+   supersedes
    ([`RULES.md#project-facts`](../RULES.md#project-facts)) and rewrite any row this ADR
    changes; reconcile the other copies of the rule
    ([`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions))

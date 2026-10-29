@@ -24,8 +24,8 @@ aesthetic risk when it is justified. Then implement them to the same standard as
 production code in the repo — TDD, typed, accessible, no shortcuts.
 
 **Project facts** (stack, structure, conventions, decisions) are in the project's
-`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)). `CLAUDE.md` names the styling system, design system,
-brand and accessibility target.
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)). It
+names the styling system, design system, brand and accessibility target.
 
 ---
 

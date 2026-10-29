@@ -164,6 +164,7 @@ Cloud:     [cloud provider + key services]
 IaC:       [tool] / state in [backend]
 Secrets:   [secrets manager]
 CI/CD:     [pipeline]
+Local CI:  [command, or "not required"] (CI on PRs: yes / no / no CI)
 ```
 
 Ask: "Does this look right?"
@@ -255,6 +256,8 @@ Data classes: [scheme]
 Encryption:   at rest [approach] / in transit [TLS version]
 Secrets:      [secrets manager]
 Scanning:     [tools]
+Privacy:      decisions by [name]; guard [installed / not installed]
+Changelog:    [path, limit / none]
 ```
 
 ---
@@ -533,11 +536,13 @@ scaffold by moving on.
 Look for `.opencode/skills/` in the project root and list the `SKILL.md` files. Skills
 no longer carry project facts
 ([`RULES.md#project-facts`](../RULES.md#project-facts)); note any file that still has a
-filled-in `## Project Context` block from an older version.
+filled-in `## Project Context` block from an older version, and read
+`.opencode/skills/.project-context-backup/*.md` (where `update-skills`, usually run
+first, keeps the blocks it removed).
 
 ### Step 2 — Move old Project Context blocks into CLAUDE.md
 
-For each block found, move any fact it holds that the new `CLAUDE.md` lacks into the
+For each block or backup found, move any fact it holds that the new `CLAUDE.md` lacks into the
 matching `CLAUDE.md` section, show the user what moved, and delete the block from the
 skill (`update-skills` also saves a copy of each under
 `.opencode/skills/.project-context-backup/`). If none was found, say so.

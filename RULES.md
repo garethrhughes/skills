@@ -118,9 +118,11 @@ These rules apply regardless of the application language.
   writes the same state (pointer, paste, API, import, jobs), each with its own test. A
   guard that skips a write also restores what the operation already changed.
 - **Re-run earlier mutations.** After each review round, re-run every earlier round's
-  break-the-guard mutations on the final head; assert where the guard acts.
+  break-the-guard mutations on the final head and report that tally; assert where the
+  guard acts.
 - **No races with the machine.** Assert that asynchronous work or focus has settled
-  before the next input. Pin the clock in any file whose code reads it.
+  before the next input. Pin the clock in any file whose code reads it, and run it once
+  with the clock moved forward before you keep it.
 - **Realistic fixtures.** A tool that rewrites a document is tested on real-shaped
   documents and with a round trip (writing back what was read changes nothing).
 
@@ -132,12 +134,14 @@ For any gate that scores a model, ranker, search or classifier against questions
   may be reported, never gated).
 - The calibration/gate split is a written, deterministic rule, set before any score is
   seen and re-derived by a test. Questions are committed before calibration output,
-  preferably by someone other than the calibrator.
-- Calibrate on the calibration half only, measuring the same statistic the bar gates.
-- Bars are counts (`24 of 30`) sized for their sets, and fixed before the first run. A
-  bar that fails its first run goes to the product owner; the only allowed fixes are a
-  changed question set or split rule, in an amendment the owner approves, with new
-  questions written by someone who has not seen the results. Never move a threshold.
+  preferably by someone other than the calibrator; the commit order is the evidence.
+- Calibrate on the calibration half only, measuring the same statistic the bar gates (a
+  per-pair distribution does not size a per-query bar).
+- Bars are counts (`24 of 30`), and each set is sized so the split divides it exactly.
+  Bars are fixed before the first run. A bar that fails its first run goes to the
+  product owner; the only allowed fixes are a changed question set or split rule, in an
+  amendment the owner approves, with new questions written by someone who has not seen
+  the results. Never move a threshold or a count by hand.
 - When a rule empties or moves part of a set, check every use of that part.
 
 ---
@@ -165,7 +169,8 @@ For any gate that scores a model, ranker, search or classifier against questions
 - **Review briefs** carry the original request, the diff and existing evidence (CI
   report or "pending", scanner output, privacy screening), never a list of what was
   done or where to look. A re-review gets the same brief.
-- After each fix round, re-read the PR description against the files as they now are.
+- After each fix round, re-read the PR description, the report and the changelog entry
+  against the files as they now are.
 
 ### Static Analysis
 
@@ -175,13 +180,14 @@ finishes, and first in an infosec review. Use the Semgrep MCP server if availabl
 otherwise:
 
 ```sh
-git -C <repo> diff -z --name-only --diff-filter=d origin/main...HEAD | sed -z 's|^|<repo>/|' \
+git -C <repo> diff -z --name-only --diff-filter=d <base>...HEAD | sed -z 's|^|<repo>/|' \
   | xargs -0 -r semgrep scan --metrics=off --max-target-bytes=0 \
       --json-output=<scratch>/semgrep.json --config p/owasp-top-ten --config p/secrets \
       <stack packs from the overlay> [--config p/github-actions]
 ```
 
-(`sed -z`/`xargs -r` are GNU: `gsed`/`gxargs` on macOS.) Quote the summary (version,
+`<base>` is the default branch (e.g. `origin/main`); add `--config p/github-actions` when
+workflows change. (`sed -z`/`xargs -r` are GNU: `gsed`/`gxargs` on macOS.) Quote the summary (version,
 rules, files). The JSON's `paths.scanned` must equal the diff's files (anything missing
 is in `paths.skipped` with a reason). Severity by `extra.severity`: CRITICAL/HIGH/ERROR →
 review Blocker / infosec REQUIRES CHANGES; MEDIUM/WARNING → Major / an issue in
@@ -201,7 +207,9 @@ For projects with a user-facing changelog:
 - An entry is a bold one-sentence headline plus at most two short sentences, on one
   line, written for a user (no internal names, intervals, options, rationale). Limit:
   **300 characters**, unless the project's `CLAUDE.md` sets another in one line.
-- Internal-only work gets no entry. A rule that can be measured gets a test.
+- A user-visible change to shipped behaviour has an entry (missing → BLOCK); an entry
+  has no second paragraph or nested list. Internal-only work gets no entry. A rule that
+  can be measured gets a test.
 
 ---
 
@@ -225,8 +233,9 @@ skills' [`templates/`](templates/README.md); a project without them installs the
   5. Does it derive new information about people (profiling, inference, embeddings,
      activity summaries)?
 
-  Answer literally, for what the change does: a new id column, audit field, log line or
-  processor call is a Yes.
+  Answer literally, for what the change does, not what the product already did: a new
+  id column, audit field, log line, processor call, or an existing value shown on a new
+  screen is a Yes.
 - **A PR with no feature doc** (fix, dependency, config, infra, CI) gets its screening
   **before coding**, in a "Privacy screening" section of a PR-description draft that
   goes to the reviewer and infosec as evidence and becomes the PR description. A
@@ -237,7 +246,8 @@ skills' [`templates/`](templates/README.md); a project without them installs the
   Infosec is then required. All No: one sentence why.
 - **A PIA is not legal advice.** *Applicable regimes and lawful basis* is the product
   owner's field and reads `legal review needed` until filled.
-- **The PIA is the specification** for personal data: build only what it lists, and
+- **The PIA is the specification** for personal data: build only what it lists, keep
+  data where and for as long as it says, make and test each deletion path it names, and
   update it (and the inventory) in the branch if the build differs.
 - **The data inventory** (`docs/privacy/data-inventory.md`) cites a file per row;
   `unverified` is an open item to resolve before a claim rests on it. A PR that changes
@@ -271,20 +281,23 @@ skills' [`templates/`](templates/README.md); a project without them installs the
 For every agent, at every step:
 
 - **Check before you claim.** Before writing *done*, *out of scope*, *resolved*,
-  *pre-existing* or *not affected*, run the command that proves it and cite it.
-  Narrowing scope is the product owner's call.
+  *pre-existing* or *not affected*, run the command that proves it and cite it;
+  reproduce a "pre-existing" failure on the merge base. Narrowing scope is the product
+  owner's call.
 - **Read the diff back** before claiming a change. A refused write is a requirement
-  **not met**.
-- **Report failures**, not only the passing count, and say whether you caused them.
+  **not met**; never claim a substitute.
+- **Report failures**: quote the whole result line, and say whether you caused them.
 - **Fix at the source.** Fix a shared function where it is wrong, then find every other
   writer of the same state. Rule out another caller by testing each symptom there.
-- **Reconcile every copy.** When a rule, claim or name changes (or is removed), search
-  every file the branch touches, `CLAUDE.md` and the agent/skill files, and check both
-  ends of every link.
-- **State what a mitigation does not cover**, and observe (old vs new code) before
-  claiming a behaviour changed.
-- **Cheap confirmation beats reasoning**: run the minute-long probe. Check your own
-  background processes before diagnosing a contradicting failure; never kill by pattern.
+- **Reconcile every copy.** When a rule, claim or name changes, search every file the
+  branch touches for the old wording, and check both ends of every link.
+- **After removing a dependency, file or name**, search `docs/`, `CLAUDE.md` and the
+  agent/skill files for it.
+- **State what a mitigation does not cover**: construct each failure and confirm the
+  control fires; observe (old vs new code) before claiming a behaviour changed.
+- **Cheap confirmation beats reasoning**, including when disagreeing with a reviewer:
+  run the minute-long probe. Check your own background processes before diagnosing a
+  contradicting failure; never kill by pattern.
 - **Never `cd`** in an agent's shell command: use the tool's working-directory
   parameter, absolute paths, `git -C`, `npm --prefix`. One directory per call;
   `git status` after any stash or checkout.
@@ -305,4 +318,4 @@ For every agent, at every step:
 - Project facts (stack, structure, conventions, decisions, overrides) live **only** in
   the project's `CLAUDE.md`. Skills read it first; they carry no per-project block.
 - `CLAUDE.md` holds rules and pointers, not history. A settled decision is one line:
-  the rule as it stands and the ADRs it amends.
+  the rule as it stands and the ADRs it amends or supersedes.

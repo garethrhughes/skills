@@ -356,7 +356,8 @@ wrong to `docs/corrections-log.md`.
    - Link to the accepted proposal (if one exists)
    - Link to the accepted design plan and the Phase 5 screenshots (for UI changes)
    - Link to any new ADRs created
-   - Test coverage summary (new tests added, all passing)
+   - Test summary: new tests added and the full test result line, with failures
+   - Reviewer verdict (PASS / PASS WITH COMMENTS)
    - For infra changes: the `terraform plan` (or equivalent) summary
    - Infosec verdict (APPROVED / APPROVED WITH EXCEPTION + ADR link + risk-register row)
    - The PR-description draft (with its privacy screening), the Semgrep summary and the

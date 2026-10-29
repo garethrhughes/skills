@@ -459,6 +459,9 @@ as Onboarding Notes.
 - **Privacy:** privacy policy, existing PIAs or data inventory; every entity and log line
   holding data about a person, what deletes it and which processors receive it. This
   seeds `docs/privacy/data-inventory.md` (a file per row, `unverified` where unknown).
+  Gaps between what the product says and what the code does (deletion that leaves rows,
+  purge jobs that never run, no export) go into the inventory's *What the seeding found*
+  and into Onboarding Notes.
 - **Changelog and risk records:** `CHANGELOG.md`, any accepted-risk list or lessons log.
 
 ### Present
@@ -812,11 +815,13 @@ to delete it once the gaps are addressed or explicitly accepted.*
 Look for `.opencode/skills/` in the project root and list the `SKILL.md` files. Skills
 no longer carry project facts
 ([`RULES.md#project-facts`](../RULES.md#project-facts)); note any file that still has a
-filled-in `## Project Context` block from an older version.
+filled-in `## Project Context` block from an older version, and read
+`.opencode/skills/.project-context-backup/*.md` (where `update-skills`, usually run
+first, keeps the blocks it removed).
 
 ### Step 2 — Move old Project Context blocks into CLAUDE.md
 
-For each block found, move any fact it holds that the new `CLAUDE.md` lacks into the
+For each block or backup found, move any fact it holds that the new `CLAUDE.md` lacks into the
 matching `CLAUDE.md` section, show the user what moved, and delete the block from the
 skill (`update-skills` also saves a copy of each under
 `.opencode/skills/.project-context-backup/`). If none was found, say so.

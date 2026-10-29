@@ -12,12 +12,14 @@ review rounds. They are starting points: file this project's cases under them, d
 what never applies, and add a pattern only when none fits.
 
 1. **Check scope and state before asserting them.** *Example:* an item called "out of
-   scope" had a real contact point. **Check:** run the command that proves "done / out of
+   scope" had a real contact point; an "is this a source checkout?" test answered yes for
+   the project repository the skills were vendored into. **Check:** run the command that proves "done / out of
    scope / pre-existing"; test every symptom before ruling out another caller.
 2. **Read the diff back.** *Example:* a commit said a section was amended; it was
    byte-identical. **Check:** `git diff` the passage; a refused write is not met.
 3. **A test that cannot fail is worse than none.** *Example:* a conditional assertion
-   never ran; a later guard made an earlier guard's test unable to fail. **Check:** break
+   never ran; a later guard made an earlier guard's test unable to fail; a "still the
+   default?" test matched one marker string, so facts added under it were deleted. **Check:** break
    every enforcing line and watch it fail; re-run earlier mutations on the final head.
 4. **Say what a mitigation does not cover.** *Example:* a check meant to cover two risks
    covered one. **Check:** construct each failure; trace what updates the field a

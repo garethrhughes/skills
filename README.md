@@ -84,6 +84,8 @@ This writes one agent file per skill into `.claude/agents/<skill>.md` with the
 appropriate per-skill tool restrictions, copies `RULES.md`, `rules/`, `profiles/` and
 `templates/` into `.claude/`, and is safe to re-run after `update-skills`. Pass another
 project-local path as the first argument if the skills live elsewhere in the project.
+An older install in a home directory moves into the project by cloning the skills into
+`.opencode/skills/` (as above), or by passing its path inside the project.
 
 ### GitHub Copilot
 

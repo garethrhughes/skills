@@ -183,10 +183,12 @@ for upstream_skill_dir in "$CLONE_DIR"/*/; do
     done
   fi
 
-  # A filled-in Project Context block (not the old placeholder) holds project
-  # facts: keep a copy and report it, so the user moves them into CLAUDE.md.
+  # A Project Context block holds project facts unless it is only the old
+  # placeholder: its heading, ">" blockquote lines and blank lines. Anything else
+  # (including facts added under the placeholder) is kept and reported, so the
+  # user moves it into CLAUDE.md.
   ctx_file="$CONTEXT_DIR/$skill.ctx"
-  if [ -s "$ctx_file" ] && ! grep -q 'Fill in before use' "$ctx_file"; then
+  if [ -s "$ctx_file" ] && grep -v -e '^## Project Context' -e '^>' -e '^[[:space:]]*$' "$ctx_file" | grep -q .; then
     mkdir -p "$SKILLS_DIR/.project-context-backup"
     backup="$SKILLS_DIR/.project-context-backup/$skill.md"
     if [ ! -f "$backup" ]; then

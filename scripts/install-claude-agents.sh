@@ -135,12 +135,17 @@ fi
 
 # Record the RULES.md this install used, so update-skills can tell a local
 # edit from an upstream change later. Written only when no record exists yet AND
-# the skills dir is a git checkout whose RULES.md is unmodified from what it
-# checked out, i.e. the copy is the source's. Otherwise a local edit made before
-# the record existed would be recorded as upstream; update-skills then prints a
-# note on its first run instead.
+# the skills dir is its own git checkout (its top level, not a directory vendored
+# into the project's repository) with RULES.md unmodified from what it checked
+# out, i.e. the copy is the source's. Otherwise a local edit made before the
+# record existed would be recorded as upstream; update-skills then prints a note
+# on its first run instead.
+skills_real="$(cd "$SKILLS_DIR" && pwd -P)"
+skills_top="$(git -C "$SKILLS_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+[[ -n "$skills_top" ]] && skills_top="$(cd "$skills_top" && pwd -P)"
 if [[ -f "$SKILLS_DIR/RULES.md" && ! -f "$SKILLS_DIR/.rules-upstream.cksum" ]]; then
-  if git -C "$SKILLS_DIR" ls-files --error-unmatch RULES.md >/dev/null 2>&1 \
+  if [[ "$skills_top" == "$skills_real" ]] \
+     && git -C "$SKILLS_DIR" ls-files --error-unmatch RULES.md >/dev/null 2>&1 \
      && git -C "$SKILLS_DIR" diff --quiet HEAD -- RULES.md 2>/dev/null; then
     if cksum < "$SKILLS_DIR/RULES.md" > "$SKILLS_DIR/.rules-upstream.cksum" 2>/dev/null; then
       echo "  RULES.md record written to ${SKILLS_DIR}/.rules-upstream.cksum"
@@ -148,7 +153,7 @@ if [[ -f "$SKILLS_DIR/RULES.md" && ! -f "$SKILLS_DIR/.rules-upstream.cksum" ]]; 
       rm -f "$SKILLS_DIR/.rules-upstream.cksum"
     fi
   else
-    echo "  RULES.md record not written: the skills dir is not an unmodified git checkout"
+    echo "  RULES.md record not written: the skills dir is not its own unmodified git checkout"
   fi
 fi
 
@@ -171,7 +176,9 @@ fi
 # docs/. Skills reference them as ../templates/, so copy them next to rules/.
 # A templates/ directory this script did not write (no .from-skills marker) is
 # left alone: it may be the project's own.
-if [[ -d "$SKILLS_DIR/templates" ]]; then
+if [[ -d "$SKILLS_DIR/templates" && ! -f "$SKILLS_DIR/templates/.from-skills" ]]; then
+  echo "  skip : $SKILLS_DIR/templates has no .from-skills marker, so it is not the skills' templates; not copied"
+elif [[ -d "$SKILLS_DIR/templates" ]]; then
   if [[ -e "$RULES_PARENT_DIR/templates" && ! -f "$RULES_PARENT_DIR/templates/.from-skills" ]]; then
     echo "  skip : ${RULES_PARENT_DIR#$PROJECT_ROOT/}/templates/ exists and was not installed by this script; move it aside to install the skills' templates"
   else
