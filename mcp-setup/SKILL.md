@@ -295,8 +295,9 @@ If the user selected **none**, say:
 
 ## Notes for callers (project-bootstrap / project-onboard)
 
-When this skill is invoked as **Step 3** of project-bootstrap or project-onboard,
-it replaces the hardcoded context7-only MCP step in those skills.
+When this skill is invoked as the **MCP Setup** step of project-bootstrap (Step 6) or
+project-onboard (Step 4), it replaces the hardcoded context7-only MCP step in those
+skills.
 
 After this skill completes, control returns to the calling skill to continue
-with its Step 4 (Finish).
+with its Finish step.

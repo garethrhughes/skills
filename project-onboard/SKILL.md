@@ -1,17 +1,14 @@
 ---
 name: project-onboard
-description: Interactive onboarding for an existing codebase. Investigates the repository to infer the answers that project-bootstrap would normally ask the user, then produces a complete CLAUDE.md and Project Context block. Asks the user only for intent, compliance posture, settled decisions, and to confirm or correct anything ambiguous. Run this once when adopting these skills on an existing project.
+description: Interactive onboarding for an existing codebase. Investigates the repository to infer the answers that project-bootstrap would normally ask the user, then produces a complete CLAUDE.md. Asks the user only for intent, compliance posture, settled decisions, and to confirm or correct anything ambiguous. Run this once when adopting these skills on an existing project.
 compatibility: opencode
 ---
 
 # Project Onboard Skill
 
 You are the Project Onboard agent. Your job is to **investigate an existing
-codebase** and produce two ready-to-use outputs:
-
-1. A complete, filled-in **`CLAUDE.md`** for the project
-2. A **`## Project Context` block** that can be pasted into any skill's `SKILL.md`
-   (or referenced at the start of a conversation to load context into any skill)
+codebase** and produce one ready-to-use output: a complete, filled-in **`CLAUDE.md`** for the project. It is the only home of project facts; skills carry no per-project block
+([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 This skill is the existing-project counterpart to `project-bootstrap`. The shape
 of the output is identical, but the input is different: instead of interviewing
@@ -303,7 +300,8 @@ Ask: "Any corrections? Anything I marked `[TBD]` you want to fill in now?"
 - Secrets manager: references to `aws_secretsmanager_secret`,
   `google_secret_manager_secret`, `vault`, env-loading patterns.
 - CI/CD: `.github/workflows/*.yml`, `.gitlab-ci.yml`, `.circleci/config.yml`,
-  `buildkite/*`, `Jenkinsfile`. Note which jobs run lint/test/plan/apply.
+  `buildkite/*`, `Jenkinsfile`. Note which jobs run lint/test/plan/apply, whether CI runs
+  on pull requests (the `on:` triggers), and any local CI runner (`act`, `make ci`).
 - Tags: scan IaC modules for a common `tags = { ... }` or `default_tags` block.
 - Config / env: `.env.example`, `.env.*.example`, NestJS `ConfigModule`
   usage, `dotenv` imports, references to Secrets Manager in task defs.
@@ -322,7 +320,12 @@ Ask: "Any corrections? Anything I marked `[TBD]` you want to fill in now?"
 | Secrets         | AWS Secrets Manager                       | high       | infra/modules/app/main.tf |
 | CI/CD           | GitHub Actions (plan on PR, apply on main)| high       | .github/workflows/*.yml   |
 | Task runner     | Makefile                                  | high       | Makefile                  |
+| CI on PRs       | yes (`on: pull_request`)                  | high       | .github/workflows/ci.yml  |
+| Local CI        | none found                                | high       | —                         |
 ```
+
+With no local runner, propose the commands CI runs (listed in the README); with no CI,
+ask which commands are run instead.
 
 Ask the user to confirm; ask explicitly about anything `[TBD]` (e.g. "I see
 multiple AWS accounts referenced — do prod and staging live in separate
@@ -453,6 +456,13 @@ as Onboarding Notes.
 - **Network exposure:** grep for `0.0.0.0/0` in security groups; check whether
   RDS / databases have `publicly_accessible = true`.
 - **Audit logging:** look for an audit log table/service, CloudTrail config.
+- **Privacy:** privacy policy, existing PIAs or data inventory; every entity and log line
+  holding data about a person, what deletes it and which processors receive it. This
+  seeds `docs/privacy/data-inventory.md` (a file per row, `unverified` where unknown).
+  Gaps between what the product says and what the code does (deletion that leaves rows,
+  purge jobs that never run, no export) go into the inventory's *What the seeding found*
+  and into Onboarding Notes.
+- **Changelog and risk records:** `CHANGELOG.md`, any accepted-risk list or lessons log.
 
 ### Present
 
@@ -462,6 +472,8 @@ Summary table; ask the user for:
   evidence and the user is unsure.
 - Data classification scheme — propose `public / internal / confidential / pii`
   as the default if none is in use.
+- Who makes privacy and risk decisions; whether to install the optional
+  privacy-screening guard (default no); the changelog limit (default 300).
 
 Anything risky discovered (public endpoints, `*:*` IAM, `0.0.0.0/0` ingress,
 plaintext secrets, missing scanning) goes into Onboarding Notes and should be
@@ -732,7 +744,29 @@ plan, and ADR formats.
 
 ---
 
+## Process
+
+Agents follow `RULES.md`: [evidence, corrections and decisions](https://github.com/garethrhughes/skills/blob/main/RULES.md#evidence-corrections--decisions)
+(including never `cd`), [Git & PRs](https://github.com/garethrhughes/skills/blob/main/RULES.md#git--prs) (CI evidence, review briefs),
+[static analysis](https://github.com/garethrhughes/skills/blob/main/RULES.md#static-analysis), [changelog](https://github.com/garethrhughes/skills/blob/main/RULES.md#changelog),
+[privacy](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy) and [risk register](https://github.com/garethrhughes/skills/blob/main/RULES.md#risk-register). This project's settings:
+
+| Setting | Value |
+|---|---|
+| CI on pull requests | {yes / no / no CI — from Phase 3} |
+| Local CI command | {command, or "not required"} |
+| Commands run instead of CI | {lint / test / build commands, or "n/a"} |
+| Privacy adoption point | feature docs from {NNNN}, proposals from {NNNN} |
+| Privacy and risk decisions | {name from Phase 7} (fills a PIA's regimes and lawful basis) |
+| Privacy guard | {`node --test scripts/__tests__/privacy-screening.test.mjs` / not installed} |
+| Changelog | {path and limit (default 300 characters) / none} |
+| Process documents | `docs/corrections-log.md`, `docs/risk-register.md`, `docs/privacy/` |
+
+---
+
 ## Settled Decisions (do not revisit without a superseding ADR)
+
+One line per decision ([`RULES.md#project-facts`](https://github.com/garethrhughes/skills/blob/main/RULES.md#project-facts)).
 
 | # | Decision |
 |---|---|
@@ -772,93 +806,67 @@ to delete it once the gaps are addressed or explicitly accepted.*
 - Logger does not appear to redact `Authorization` headers or known PII fields
 ```
 
-### Output 2 — Project Context Block
-
-```markdown
-## Project Context
-
-**Project:** {project name} — {one-line description}
-**Skillset profile:** `{profile}` (rules: `RULES.md` + `rules/{profile}.md`)
-
-**Backend:** {framework} / {language} / {database + ORM}
-**Frontend:** {framework} / {styling} / {state management} *(or: backend-only)*
-**Auth:** {auth approach}
-**Validation:** {validation library}
-**Logging:** {logger} → {logs backend}
-**Testing:** {backend test framework} / {frontend test framework}
-
-**Infra:** {iac tool} on {cloud}; state in {state backend}; secrets in {secrets manager}; CI/CD via {pipeline}
-**Local dev:** {local dev setup}
-
-**Compliance:** {framework or "none"}
-**Data classes:** {scheme}
-**Encryption:** at rest {approach} / in transit {TLS}
-
-**Repo structure:** {top-level directories, one line}
-**Module structure:** {brief description of how code is organised, 1–2 sentences}
-
-**Key rules:** `RULES.md` + `rules/{profile}.md`. Project-specific additions / overrides:
-- {additions or "_(none)_"}
-**Known divergences from rules:** {one-line summary or "_(none)_"}
-
-**External integrations:** {list or "none"}
-**Key entities:** {list with data classes, or "TBD"}
-**Known gotchas:** {list or "none"}
-**Open onboarding gaps:** {one-line summary, e.g. "12 items — see CLAUDE.md ## Onboarding Notes"}
-**Jira:** {instance url, default project keys, AC location — or "none"}
-```
-
 ---
 
 ## After Output
 
-### Step 1 — Detect local skills
+### Step 1 — Detect local skills and old Project Context blocks
 
-Check whether skills are local to the project:
+Look for `.opencode/skills/` in the project root and list the `SKILL.md` files. Skills
+no longer carry project facts
+([`RULES.md#project-facts`](../RULES.md#project-facts)); note any file that still has a
+filled-in `## Project Context` block from an older version, and read
+`.opencode/skills/.project-context-backup/*.md` (where `update-skills`, usually run
+first, keeps the blocks it removed).
 
-- Look for `.opencode/skills/` in the project root
-- If it exists, list which `SKILL.md` files are present
+### Step 2 — Move old Project Context blocks into CLAUDE.md
 
-### Step 2 — Insert Project Context into local skills
+For each block or backup found, move any fact it holds that the new `CLAUDE.md` lacks into the
+matching `CLAUDE.md` section, show the user what moved, and delete the block from the
+skill (`update-skills` also saves a copy of each under
+`.opencode/skills/.project-context-backup/`). If none was found, say so.
 
-If `.opencode/skills/` exists:
+### Step 3 — Install the process documents
 
-For each `SKILL.md` found, replace the `## Project Context` placeholder block —
-the block that begins with the `> Fill in before use:` blockquote and ends at
-the `---` rule that follows it — with the generated Project Context block from
-Output 2. Do this for every skill file present.
+From the skills' [`templates/`](../templates/README.md) (next to `rules/`), install what
+the project lacks, linking any equivalent it already has; seed the risk register with
+the Phase 7 risks the user accepts and the inventory with Phase 7's privacy findings.
+The adoption point is the newest feature-doc and proposal numbers + 1.
 
-Confirm to the user which files were updated, e.g.:
-> "Updated Project Context in: architect, developer, reviewer, infosec, create-feature"
+| Template | Install to |
+|---|---|
+| `templates/docs/corrections-log.md` | `docs/corrections-log.md` |
+| `templates/docs/risk-register.md` | `docs/risk-register.md` |
+| `templates/docs/privacy/README.md`, `TEMPLATE-pia.md`, `data-inventory.md` | `docs/privacy/` |
+| `templates/scripts/privacy-screening.guard.mjs.template` | `scripts/__tests__/privacy-screening.test.mjs` (renamed), **only if the user opted in** |
 
-If `.opencode/skills/` does not exist, tell the user:
+Never overwrite an existing file. Replace `{product owner}` with the Phase 7 name and
+the adoption-point placeholders with the numbers in CLAUDE.md (they also go in the
+guard's `FIRST_SCREENED_*`). If the guard was installed: run it; then write
+`9999-no-screening.md` (no screening) in a scratch directory, run the guard with
+`PRIVACY_FEATURES_DIR` pointing there and confirm it fails; and exclude
+`scripts/__tests__/*.test.mjs` from the project's own test runner if it would collect it. (The first run checks no document, since all predate the adoption
+point; the 9999 step is what proves it can fail.) A reopened older document goes in the
+guard's `ALSO_SCREENED_*`.
 
-> "Skills are not local to this project. The Project Context block can be pasted
-> into the `## Project Context` section of any skill file, or provided at the
-> start of a conversation: 'Here is my project context: [paste block]'.
->
-> To version skills inside this project and have the context inserted
-> automatically, copy the skills into `.opencode/skills/` — see the skills
-> README for instructions."
-
-### Step 3 — MCP Setup
+### Step 4 — MCP Setup
 
 Invoke the `mcp-setup` skill to let the user choose which MCP servers to add to
 this project. The mcp-setup skill will handle reading/writing `opencode.json` and
 explaining each option.
 
-After mcp-setup completes, continue to Step 4.
+After mcp-setup completes, continue to Step 5.
 
 ---
 
-### Step 4 — Finish
+### Step 5 — Finish
 
 Tell the user:
 
 > "Your CLAUDE.md is ready to commit to the root of your repository.
 >
 > Suggested next steps:
-> 1. Commit `CLAUDE.md`, `opencode.json`, and any updated skill files to version control
+> 1. Commit `CLAUDE.md`, `opencode.json` and the `docs/` process documents to version control
 > 2. Review the **Onboarding Notes** section — each bullet is a candidate for a
 >    proposal via the `architect` skill, or a backlog ticket
 > 3. If `docs/proposals/` and `docs/decisions/` don't exist yet, scaffold them

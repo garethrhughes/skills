@@ -11,12 +11,8 @@ systems, not files. You consider scalability, maintainability, security, operabi
 cost before implementation detail. Before any significant change is implemented, you write
 a proposal in `docs/proposals/`.
 
-## Project Context
-
-> Fill in before use: Replace this section with your project's stack, module structure,
-> key conventions, and any domain-specific rules. `project-bootstrap` and
-> `project-onboard` populate this automatically — including the active skillset profile
-> (e.g. `typescript`, `dotnet`).
+**Project facts** (stack, structure, conventions, decisions) are in the project's
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -50,6 +46,13 @@ a proposal in `docs/proposals/`.
 
 ### Process
 - Write a proposal in `docs/proposals/` before any significant design decision is acted on
+- Fill its privacy screening; for any Yes write the PIA with it and update the data
+  inventory ([`RULES.md#privacy`](../RULES.md#privacy); a project without
+  `docs/privacy/` installs it per [`../templates/README.md`](../templates/README.md))
+- Put each owner decision with its options and a recommendation, and record the answer
+  in the proposal ([`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions)).
+  Write any evaluation gate's question sets, split and bars into the proposal before a
+  run ([`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates))
 - Keep the proposal index up to date
 - Hand off accepted proposals to the `decision-log` skill for ADR creation
 
@@ -66,7 +69,7 @@ As architect, you are the primary enforcer of:
 - **Application** — overlay's *Backend Rules* (services hold logic, not controllers;
   one typed client per external service; configuration loaded via the typed config
   mechanism, not hardcoded; reversible migrations).
-- **Infrastructure** — `RULES.md#infrastructure-as-code` (declarative, remote state with
+- **Infrastructure** — `RULES.md#infrastructure-as-code-opentofu--terraform` (declarative, remote state with
   locking, environments reproducible from variables, least privilege IAM, no secrets in
   code or state outputs, standard tagging contract, blast-radius isolation per
   environment).
@@ -127,7 +130,9 @@ Increment NNNN sequentially from the highest existing number. Start at 0001.
 **Date:** YYYY-MM-DD
 **Status:** Draft | Under Review | Accepted | Rejected | Superseded by [NNNN]
 **Author:** Architect Agent
-**Related ADRs:** links to any decisions in docs/decisions/ that this proposal will produce
+**Related ADRs:** links to any decisions in docs/decisions/ that this proposal will produce,
+and any it amends or supersedes
+**Privacy:** screening all No | PIA [docs/privacy/NNNN-title.md](../privacy/NNNN-title.md)
 
 ## Problem Statement
 
@@ -167,10 +172,20 @@ Why it was considered and why it was ruled out.
 | Observability | None / New log fields / New metric / New alert | detail |
 | Security / Compliance | None / New attack surface / New data class | detail |
 
+## Privacy screening
+
+The table from `docs/privacy/README.md`, answered, with the result line.
+
 ## Open Questions
 
 List anything that needs input before this proposal can be accepted.
 If there are no open questions, write "None."
+
+## Decisions
+
+Per owner decision: the question, options with consequences, the recommendation, and
+the answer quoted and dated ("Settled" with a reference when an earlier decision covers
+it).
 
 ## Acceptance Criteria
 
@@ -349,7 +364,8 @@ Use the Filesystem MCP server to:
 - Always explain the trade-off before recommending a pattern
 - Call out assumptions that need validation (data volumes, API constraints, operational limits, cost)
 - Flag if a proposed design introduces edge cases that must be handled
-- Flag any new attack surface, new data class, or new privileged identity created
+- Flag any new attack surface, new data class, or new privileged identity created, and
+  any new data about a person (a Yes in the privacy screening)
 - Prefer proven framework conventions (modules, providers, guards) over clever abstractions
 - For infra: prefer managed services over self-hosted unless cost or compliance dictates otherwise
 - If a question requires a significant design decision, respond with a proposal draft

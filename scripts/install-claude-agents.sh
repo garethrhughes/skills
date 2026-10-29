@@ -2,13 +2,15 @@
 # install-claude-agents.sh
 #
 # Generates .claude/agents/<skill-name>.md for each skill so they are available
-# as Claude Code custom subagents. Run from your project root.
+# as Claude Code custom subagents. Run from your project root; the skills live
+# in the project (default .opencode/skills).
 #
 # Usage:
-#   bash path/to/skills/scripts/install-claude-agents.sh [skills-dir]
+#   bash .opencode/skills/scripts/install-claude-agents.sh [skills-dir]
 #
 # Arguments:
-#   skills-dir   Path to the skills repository (default: ~/.config/opencode/skills)
+#   skills-dir   Path to the project-local skills directory
+#                (default: <project root>/.opencode/skills)
 #
 # The script:
 #   1. Resolves the skills directory
@@ -98,7 +100,7 @@ skill_description() {
       echo "Use to walk through the full feature development cycle: proposal → implementation → code review → infosec sign-off → decision logging → PR."
       ;;
     project-bootstrap)
-      echo "Use once at the start of a new project to generate a complete CLAUDE.md and Project Context block. Covers app stack, IaC, observability, and security/compliance posture."
+      echo "Use once at the start of a new project to generate a complete CLAUDE.md (the only home of project facts). Covers app stack, IaC, observability, and security/compliance posture."
       ;;
     *)
       echo ""
@@ -106,7 +108,7 @@ skill_description() {
   esac
 }
 
-# ── Copy RULES.md, rules/ and profiles/ alongside the agents ────────────────
+# ── Copy RULES.md, rules/, profiles/ and templates/ alongside the agents ──
 # Skill files reference RULES.md, rules/<profile>.md, and profiles/<profile>/
 # by relative path (../RULES.md, ../rules/, ../profiles/). The installed
 # agents live at .claude/agents/<skill>.md, so those relative links resolve
@@ -121,12 +123,37 @@ rm -rf "$AGENTS_DIR/rules" "$AGENTS_DIR/profiles"
 if [[ -f "$SKILLS_DIR/RULES.md" ]]; then
   cp "$SKILLS_DIR/RULES.md" "$RULES_PARENT_DIR/RULES.md"
   # Sidecar: pin the RULES.md version so update-skills can detect drift.
-  rules_version="$(awk -F': *' '/^Version:/{print $2; exit}' "$SKILLS_DIR/RULES.md" | tr -d '[:space:]')"
+  # RULES.md carries "**Version:** X.Y" (bold); accept a plain "Version:" too.
+  rules_version="$(sed -n 's/^\(\*\*\)\{0,1\}Version:\(\*\*\)\{0,1\}[[:space:]]*//p' "$SKILLS_DIR/RULES.md" | head -n 1 | tr -d '[:space:]')"
   if [[ -n "$rules_version" ]]; then
     printf '%s\n' "$rules_version" > "$RULES_PARENT_DIR/.rules-version"
     echo "  RULES.md (v$rules_version) copied to ${RULES_PARENT_DIR#$PROJECT_ROOT/}/RULES.md"
   else
     echo "  RULES.md copied to ${RULES_PARENT_DIR#$PROJECT_ROOT/}/RULES.md"
+  fi
+fi
+
+# Record the RULES.md this install used, so update-skills can tell a local
+# edit from an upstream change later. Written only when no record exists yet AND
+# the skills dir is its own git checkout (its top level, not a directory vendored
+# into the project's repository) with RULES.md unmodified from what it checked
+# out, i.e. the copy is the source's. Otherwise a local edit made before the
+# record existed would be recorded as upstream; update-skills then prints a note
+# on its first run instead.
+skills_real="$(cd "$SKILLS_DIR" && pwd -P)"
+skills_top="$(git -C "$SKILLS_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+[[ -n "$skills_top" ]] && skills_top="$(cd "$skills_top" && pwd -P)"
+if [[ -f "$SKILLS_DIR/RULES.md" && ! -f "$SKILLS_DIR/.rules-upstream.cksum" ]]; then
+  if [[ "$skills_top" == "$skills_real" ]] \
+     && git -C "$SKILLS_DIR" ls-files --error-unmatch RULES.md >/dev/null 2>&1 \
+     && git -C "$SKILLS_DIR" diff --quiet HEAD -- RULES.md 2>/dev/null; then
+    if cksum < "$SKILLS_DIR/RULES.md" > "$SKILLS_DIR/.rules-upstream.cksum" 2>/dev/null; then
+      echo "  RULES.md record written to ${SKILLS_DIR}/.rules-upstream.cksum"
+    else
+      rm -f "$SKILLS_DIR/.rules-upstream.cksum"
+    fi
+  else
+    echo "  RULES.md record not written: the skills dir is not its own unmodified git checkout"
   fi
 fi
 
@@ -143,6 +170,25 @@ if [[ -d "$SKILLS_DIR/profiles" ]]; then
   profile_count="$(find "$RULES_PARENT_DIR/profiles" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d '[:space:]')"
   echo "  profiles/ copied ($profile_count profile(s)) to ${RULES_PARENT_DIR#$PROJECT_ROOT/}/profiles/"
 fi
+
+# templates/ holds the process-document starters (corrections log, risk register,
+# privacy screening + PIA) that project-bootstrap / project-onboard install into
+# docs/. Skills reference them as ../templates/, so copy them next to rules/.
+# A templates/ directory this script did not write (no .from-skills marker) is
+# left alone: it may be the project's own.
+if [[ -d "$SKILLS_DIR/templates" && ! -f "$SKILLS_DIR/templates/.from-skills" ]]; then
+  echo "  skip : $SKILLS_DIR/templates has no .from-skills marker, so it is not the skills' templates; not copied"
+elif [[ -d "$SKILLS_DIR/templates" ]]; then
+  if [[ -e "$RULES_PARENT_DIR/templates" && ! -f "$RULES_PARENT_DIR/templates/.from-skills" ]]; then
+    echo "  skip : ${RULES_PARENT_DIR#$PROJECT_ROOT/}/templates/ exists and was not installed by this script; move it aside to install the skills' templates"
+  else
+    rm -rf "$RULES_PARENT_DIR/templates"
+    cp -R "$SKILLS_DIR/templates" "$RULES_PARENT_DIR/templates"
+    # templates/.from-skills ships in the skills repo (a fixed text, no local paths).
+    template_count="$(find "$RULES_PARENT_DIR/templates" -type f ! -name .from-skills | wc -l | tr -d '[:space:]')"
+    echo "  templates/ copied ($template_count file(s)) to ${RULES_PARENT_DIR#$PROJECT_ROOT/}/templates/"
+  fi
+fi
 echo ""
 
 # ── Process each skill ───────────────────────────────────────────────────────
@@ -156,7 +202,7 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
 
   # Skip non-skill directories
   case "$skill_name" in
-    scripts|README*) continue ;;
+    scripts|templates|README*) continue ;;
   esac
 
   # ── Resolve description ────────────────────────────────────────────────────

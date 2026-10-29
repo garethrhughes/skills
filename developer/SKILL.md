@@ -13,11 +13,8 @@ provider versions) without calling them out explicitly.
 The exact language and framework conventions you apply depend on the project's
 **active skillset profile**, declared in `CLAUDE.md` under `## Active Skillset`.
 
-## Project Context
-
-> Fill in before use: Replace this section with your project's stack, module structure,
-> key conventions, and any domain-specific rules. `project-bootstrap` and `project-onboard`
-> populate this automatically.
+**Project facts** (stack, structure, conventions, decisions) are in the project's
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -43,6 +40,14 @@ If `CLAUDE.md` does not declare an active skillset, default to the
 [`typescript`](../rules/typescript.md) overlay for backwards compatibility.
 
 ---
+
+## Working Rules
+
+Apply [`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions)
+(read the corrections log's Patterns first). The moments that matter most here: before
+writing "done / out of scope / pre-existing", before keeping a test, before claiming a
+change, and before reporting a result. Run commands without `cd`, and push or open a PR
+only as the outward-actions rule there allows.
 
 ## Test-Driven Development (TDD)
 
@@ -76,6 +81,19 @@ write the implementation, the test is wrong.
 - **No shared mutable state between tests.** Each test sets up and tears down its own fixtures
 - **Snapshot tests** only for stable, intentional output (e.g. generated SQL, generated
   Terraform plan). Never for UI components — use semantic queries instead
+- Every test must be able to fail, every input path gets the guard, no races, realistic
+  fixtures ([`RULES.md#testing`](../RULES.md#testing)); evaluation gates follow
+  [`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates)
+
+## Privacy — the PIA Is Your Specification
+
+Per [`RULES.md#privacy`](../RULES.md#privacy): read the screening before coding. With a
+PIA, build only what it lists and test each deletion path it names; if the build must
+differ, update the PIA and the inventory in the branch. If the screening said No and the
+build now touches personal data, change it and write the PIA. **A PR with no feature
+doc:** write its screening (and any PIA) before any code, in the PR-description draft.
+A project without `docs/privacy/` installs it per
+[`../templates/README.md`](../templates/README.md).
 
 ## Design-Heavy Work — Delegate to the `design` Skill
 
@@ -198,9 +216,9 @@ against live docs, especially for framework features that change across minor ve
 ### github — Branch & PR Operations
 Use the GitHub MCP server to:
 
-- Create and push branches when starting a new feature (`feature/NNNN-short-title`)
-- Open pull requests targeting the project's default branch
-- Check CI status on a branch before considering implementation complete
+- Create branches when starting a new feature (`feature/NNNN-short-title`); push and open
+  pull requests as the outward-actions rule allows
+- Check the CI evidence as [`RULES.md#git--prs`](../RULES.md#git--prs) describes
 - Read existing PRs to understand what is already in flight before starting work
 
 ### filesystem — Source File Operations
@@ -213,13 +231,9 @@ tools are insufficient — for example:
   of the active editor session
 
 ### semgrep — Static Analysis
-Use the Semgrep MCP server to run static analysis scans before marking implementation
-complete. This catches common security and quality issues early — before the reviewer and
-infosec steps:
-
-- Run a scan on any new service or controller file before committing
-- Pay particular attention to injection risks, secrets in code, and missing validation
-- Address any High or Critical findings before handoff to the reviewer skill
+Before marking an implementation complete, run Semgrep as
+[`RULES.md#static-analysis`](../RULES.md#static-analysis) describes; fix
+CRITICAL/HIGH/ERROR findings and report the summary (or `Semgrep: NOT RUN`).
 
 ---
 
@@ -278,7 +292,11 @@ problems you could have caught yourself.
 - Update API reference docs (Swagger, Redoc, or equivalent) for any new or changed endpoint
   or field — regenerate if the project auto-generates them
 - Update the relevant runbook (`infra/README.md` or equivalent) for any infra change
-- Add a changelog entry if the project maintains a `CHANGELOG.md` or equivalent
+- Changelog entry per [`RULES.md#changelog`](../RULES.md#changelog)
+- A risk-register row for anything left open on purpose
+  ([`RULES.md#risk-register`](../RULES.md#risk-register)); removed names searched for
+- Provide the CI evidence [`RULES.md#git--prs`](../RULES.md#git--prs) requires for this
+  project (the local report where CI does not run on pull requests)
 
 ---
 

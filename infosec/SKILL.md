@@ -15,12 +15,8 @@ to controls and concrete fixes.
 trails, secrets handling, infrastructure exposure, supply-chain integrity, compliance gaps,
 and privacy violations.
 
-## Project Context
-
-> Fill in before use: replace this section with your project's compliance framework(s),
-> data classification scheme, encryption standards, auth model, and any zero-knowledge
-> or client-side-encryption guarantees. `project-bootstrap` and `project-onboard`
-> populate this automatically.
+**Project facts** (stack, structure, conventions, decisions) are in the project's
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -46,6 +42,10 @@ mechanisms — `ConfigService`/`IOptions<T>`, `pino`/`Serilog`, etc.).
 If `CLAUDE.md` does not declare an active skillset, default to the
 [`typescript`](../rules/typescript.md) overlay for backwards compatibility.
 
+Before auditing, read `docs/risk-register.md` (accepted risks), `docs/privacy/` (this
+change's PIA, the data inventory) and the Patterns in `docs/corrections-log.md`, where
+the project has them.
+
 ---
 
 ## Compliance Framework Mapping
@@ -53,7 +53,7 @@ If `CLAUDE.md` does not declare an active skillset, default to the
 By default this skill is aligned with **ISO/IEC 27001:2022 Annex A controls** (the 93
 controls organised under four themes: A.5 Organizational, A.6 People, A.7 Physical,
 A.8 Technological). If your project uses SOC2, HIPAA, PCI-DSS, or another framework,
-replace the Control column in the table below in your Project Context.
+record the framework and its controls in `CLAUDE.md`.
 
 | Control | Title | Applies To |
 |---|---|---|
@@ -71,6 +71,7 @@ replace the Control column in the table below in your Project Context.
 | A.5.25 | Assessment and decision on information security events | Detection, triage, severity classification |
 | A.5.26 | Response to information security incidents | Error handling, breach detection, response procedures |
 | A.5.27 | Learning from information security incidents | Lessons learned, post-incident remediation |
+| A.5.34 | Privacy and protection of PII | Privacy screening, PIAs, data inventory, retention of personal data |
 | A.8.2  | Privileged access rights | Admin endpoints, IAM admin scopes, break-glass accounts |
 | A.8.8  | Management of technical vulnerabilities | Dependency scanning, patch cadence |
 | A.8.15 | Logging | Audit trails, sensitive-operation logging |
@@ -87,7 +88,7 @@ replace the Control column in the table below in your Project Context.
 
 ### 1. Sensitive Field Exposure
 
-Identify the project's confidential/PII fields from the Project Context (e.g. encrypted
+Identify the project's confidential/PII fields from `CLAUDE.md` (e.g. encrypted
 payloads, password hashes, API keys, personal data). Flag any code that:
 
 - Logs these fields at any log level (including `debug`, `trace`)
@@ -327,6 +328,25 @@ Flag any code that:
 
 ---
 
+## High — Privacy
+
+Audits [`RULES.md#privacy`](../RULES.md#privacy); infosec is required on every PR with a
+PIA.
+
+- The screening (feature doc, proposal, or the PR-description draft of a PR with no
+  feature doc) is present and literal. Adoption-point exemptions apply as stated there.
+- Read the PIA against the diff: only the data it lists is recorded, logged, stored,
+  exposed or sent; each deletion path is real (cite the line) and tested; retention and
+  user notice match; the data inventory matches. A deletion claim resting on an
+  `unverified` inventory row is a finding. A `**PR:**`-headed PIA has no document to link
+  back to; read its screening in the draft.
+- Any failure of the privacy gates → **REQUIRES CHANGES** (High). Never fill *Applicable regimes and lawful basis*, and flag
+  it if an agent did.
+
+**Maps to:** A.5.34, A.5.9, A.5.10
+
+---
+
 ## Medium — Supply Chain & Dependencies
 
 Flag:
@@ -367,6 +387,8 @@ to the change under review:
 - **Access Control Matrix:** who/what has access to which systems and data
 - **Change Management Procedure:** how schema and infra changes are reviewed and deployed
 - **Privacy Policy:** what data is collected, how it's used, who can access it
+- **Data Inventory** and **Risk Register** (`docs/privacy/data-inventory.md`,
+  `docs/risk-register.md`)
 
 **Maps to:** A.5.1, A.5.27
 
@@ -405,6 +427,11 @@ Use this structured output for every review:
 - [ ] Soft-delete clears confidential fields
 **Findings:** [list, or "clear"]
 
+### Privacy
+- [ ] Screening present and literal; any Yes has a PIA written before implementation
+- [ ] The diff stays within the PIA; deletion paths real; inventory updated
+**Findings:** [list, or "clear"]
+
 ### Infrastructure & Network
 - [ ] IAM least-privilege; no `*:*`
 - [ ] No unintended public exposure
@@ -422,7 +449,10 @@ Use this structured output for every review:
 ### Documentation
 - [ ] DECISIONS / ADRs updated where needed
 - [ ] Data flow / classification updated if applicable
+- [ ] Risk-register row proposed for every accepted residual
 **Findings:** [list, or "clear"]
+
+**Semgrep:** version, rules, files; findings by rule ID, or `NOT RUN` and why.
 
 ---
 
@@ -439,20 +469,18 @@ REQUIRES CHANGES — N critical issue(s) must be resolved:
 *or*
 
 APPROVED WITH EXCEPTION — N issue(s) accepted as documented risk:
-1. [Issue + control mapping + business justification + mitigation + ADR link]
+1. [Issue + control mapping + business justification + mitigation + ADR link + the
+   proposed `R-NNN` row ([`RULES.md#risk-register`](../RULES.md#risk-register))]
 ```
 
 ## MCP Tools
 
 ### semgrep — Automated Security Scanning
-Use the Semgrep MCP server as the first step of every review. Run a scan against the
-staged diff or changed files before performing manual checks:
-
-- Run with security-focused rule sets (OWASP Top 10, secrets detection, injection)
-- Treat High / Critical findings as **REQUIRES CHANGES** — include the rule ID and
-  file location in your report
-- Treat Medium findings as individual issues to evaluate in context
-- Do not skip Semgrep output — it may surface issues not visible in a manual diff review
+The scan in [`RULES.md#static-analysis`](../RULES.md#static-analysis) is the first step
+of every review, with its infosec severities. With no shell or Semgrep tool, take the
+caller's file list, summary and JSON, and check `paths.scanned` against the file list.
+Never discard its output, and do not give **APPROVED** with `Semgrep: NOT RUN` unless
+the verdict says why and what was checked instead.
 
 ### github — PR & Diff Access
 Use the GitHub MCP server to:
@@ -474,19 +502,20 @@ Use the Filesystem MCP server to:
 - Read `docs/proposals/` to understand the full scope of the change under review,
   including the Infrastructure Addendum if present
 - Read existing data classification or access control matrix documents referenced in
-  the Project Context
+  `CLAUDE.md`
 
 ---
 
 A change reaches infosec sign-off after the reviewer skill has returned PASS or
 PASS WITH COMMENTS. Infosec is the **final gate** before merge for any change touching
-auth, data, crypto, logging, infrastructure, external integrations, or
-security-sensitive dependencies.
+auth, data, crypto, logging, infrastructure, external integrations,
+security-sensitive dependencies, or a PIA.
 
 1. Reviewer verdict is PASS / PASS WITH COMMENTS
 2. Infosec runs the review and produces the structured output above
 3. If REQUIRES CHANGES: developer fixes → infosec re-runs
-4. If APPROVED WITH EXCEPTION: each exception must be logged as an ADR
+4. If APPROVED WITH EXCEPTION: each exception must be logged as an ADR, and its proposed
+   risk-register row written, before merge
 5. Final verdict (APPROVED or APPROVED WITH EXCEPTION) is recorded in the PR description
 
 **Any change merged without infosec sign-off — when one was required by the workflow —

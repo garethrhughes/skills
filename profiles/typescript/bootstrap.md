@@ -46,7 +46,7 @@ override.
 | 3.5 | IaC layout | `infra/modules/` for reusable modules; `infra/envs/{dev,staging,prod}/` for env root configs |
 | 3.6 | Secrets manager | AWS Secrets Manager — referenced by ARN; no values in `.tf`/`.tfvars`/state |
 | 3.7 | CI/CD | GitHub Actions — `lint + test + plan` on PR; `apply` on merge to `main` for dev, manual approval for staging/prod |
-| 3.8 | Standard tags | Use `RULES.md#infrastructure-as-code` defaults |
+| 3.8 | Standard tags | Use `RULES.md#infrastructure-as-code-opentofu--terraform` defaults |
 | 3.9 | Config management | `.env` files (never committed); `.env.example` provided; backend reads via `ConfigService` only; production env vars sourced from Secrets Manager via task definition |
 | 3.10 | Task runner | Makefile — targets: `up`, `down`, `migrate`, `dev-api`, `dev-web`, `test-api`, `test-web`, `plan`, `apply` |
 

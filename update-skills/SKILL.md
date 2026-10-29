@@ -22,15 +22,10 @@ The `update.sh` script lives alongside this skill file. Resolve its path and run
 bash "$(dirname "$(realpath "$0" 2>/dev/null || echo "${BASH_SOURCE[0]}")")/update.sh"
 ```
 
-In practice, use Bash to run the script relative to this skill's directory. The
-skills directory is typically one of:
-
-- `.opencode/skills/update-skills/update.sh` (project-local install)
-- `~/.config/opencode/skills/update-skills/update.sh` (global install)
-
-Search for `update-skills/update.sh` under `.opencode/skills/` first, then
-`~/.config/opencode/skills/`, and run whichever exists. Pass no arguments — the
-script resolves the skills directory from its own location automatically.
+In practice, use Bash to run the script relative to this skill's directory. The skills
+are project-local: `.opencode/skills/update-skills/update.sh` by default, or the skills
+path the project uses. Never look outside the project. Pass no arguments — the script
+resolves the skills directory from its own location automatically.
 
 You may use Bash to run the script. Do not use `git pull` directly.
 
@@ -42,7 +37,8 @@ After the script completes, present the results using this format:
 
 **Repository:** `<remote URL>`
 **Branch:** `<branch>`
-**Status:** Up to date | Updated
+**Status:** Up to date | Updated | Needs attention (the script prints `STATUS: needs-attention`
+whenever something needs the user, and lists those items first: relay every one)
 
 If updated, for each changed skill list:
 
@@ -78,6 +74,25 @@ If any of these were modified in this update, **call it out at the top of the re
 - New profiles/overlays added — list them so the user knows new skillsets are
   selectable
 
+### templates/ and other notices
+
+- `templates/` (the process-document starters) is replaced only when it carries the
+  shipped `.from-skills` marker; the project's own `docs/` copies are never touched.
+  Summarise template changes and say which project copies the user may update by hand.
+  When every template is "(new file)", the project predates them: tell the user to
+  install them once (the `project-onboard` skill's *Install the process documents*
+  step, or `templates/README.md`) and add the `## Process` section of
+  `CLAUDE.md.template`, recording the privacy adoption point there.
+- A skill whose old `## Project Context` block held project facts is listed under
+  NEEDS ATTENTION, with a copy in `.project-context-backup/` (never overwritten: changed
+  content goes to `<skill>.2.md`, …): tell the user to move the facts into `CLAUDE.md`
+  ([`RULES.md#project-facts`](../RULES.md#project-facts)) and delete the file; every
+  update lists the backups still there.
+- `.rules-upstream.cksum` records the `RULES.md` last installed, so only a real local
+  edit triggers the "edited locally" warning. The installers write it for an
+  unmodified git checkout of the skills; otherwise the first update writes it, and
+  edits made before then are not detected.
+
 ## Rules
 
 - Do not edit any skill files yourself — the script handles everything.
@@ -86,17 +101,18 @@ If any of these were modified in this update, **call it out at the top of the re
 
 ## After updating — re-run installers if applicable
 
-The update script syncs the skills, root files, and `scripts/` directory but does
-**not** re-propagate changes into Claude Code or Copilot agent directories. After
+The update script syncs the skills, root files, and the `scripts/`, `rules/`,
+`profiles/` and `templates/` directories, but does **not** re-propagate changes into
+Claude Code or Copilot agent directories. After
 a successful update, remind the user:
 
 - **Claude Code users** — re-run `scripts/install-claude-agents.sh` from each
   project root to refresh `.claude/agents/<skill>.md` and pick up any new tool
-  restrictions, `RULES.md` changes, new stack overlays under `rules/`, or new
-  profiles under `profiles/`.
+  restrictions, `RULES.md` changes, new stack overlays under `rules/`, new
+  profiles under `profiles/`, or updated `templates/`.
 - **GitHub Copilot users** — re-run `scripts/install-copilot-agents.sh` to refresh
-  symlinks in `.github/agents/` and re-copy `RULES.md`, `rules/`, and `profiles/`
-  alongside.
+  symlinks in `.github/agents/` and re-copy `RULES.md`, `rules/`, `profiles/` and
+  `templates/` alongside.
 - **OpenCode users** — no action needed; OpenCode reads `.opencode/skills/`
   directly.
 

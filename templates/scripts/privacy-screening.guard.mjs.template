@@ -1,0 +1,552 @@
+// OPTIONAL TEMPLATE: a guard for the privacy screening and PIA process
+// (RULES.md#privacy in github.com/garethrhughes/skills).
+//
+// It ships as privacy-screening.guard.mjs.template so that no test runner collects it
+// where the skills are installed (Vitest's default include matches *.test.mjs even
+// under .claude/, .github/ and .opencode/). Install it only if the project wants a
+// mechanical check, by copying it to scripts/__tests__/privacy-screening.test.mjs, and
+// run it with
+//   node --test scripts/__tests__/privacy-screening.test.mjs
+// If the project's own runner (Vitest/Jest) would also collect that path, exclude it
+// there. It needs Node 18+ and no dependencies. Set FIRST_SCREENED_* below to the
+// adoption point recorded in CLAUDE.md, so documents written before the project adopted
+// the screening are not checked; list an older document that is reopened in
+// ALSO_SCREENED_*. Then break it once (write a feature doc with no screening in a
+// scratch directory, point PRIVACY_FEATURES_DIR at it) and watch it fail before you
+// rely on it.
+//
+// What it checks: every screened feature doc and proposal has a "## Privacy screening"
+// with the five standard questions answered Yes/No with a reason and a result line; a
+// Yes links a PIA that exists and that names the document back; each PIA has the
+// template's headings, its regimes field and a valid decision, and its header links a
+// document whose screening links it; the privacy README indexes every PIA, and every
+// index row points at a PIA that exists; no numbered file in those directories has a name
+// the patterns cannot read. A PIA for a PR with no feature doc carries the header line
+// `**PR:** <branch or PR>, screening in the PR-description draft` instead of a document
+// link; the guard accepts it and cannot check that back-link (the draft is not in the
+// repository).
+// What it cannot check: that an answer is true. Review and infosec do that.
+
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const FEATURES_DIR = process.env.PRIVACY_FEATURES_DIR
+  ? path.resolve(process.env.PRIVACY_FEATURES_DIR)
+  : path.join(ROOT, 'docs', 'features');
+const PROPOSALS_DIR = process.env.PRIVACY_PROPOSALS_DIR
+  ? path.resolve(process.env.PRIVACY_PROPOSALS_DIR)
+  : path.join(ROOT, 'docs', 'proposals');
+const PRIVACY_DIR = process.env.PRIVACY_DIR
+  ? path.resolve(process.env.PRIVACY_DIR)
+  : path.join(ROOT, 'docs', 'privacy');
+
+/** The first feature document and proposal number the rule applies to. Set these when installing. */
+export const FIRST_SCREENED_FEATURE = 1;
+export const FIRST_SCREENED_PROPOSAL = 1;
+/** Older documents reopened since the adoption point, checked like new ones (numbers as strings, e.g. '0042'). */
+export const ALSO_SCREENED_FEATURES = [];
+export const ALSO_SCREENED_PROPOSALS = [];
+
+/** The five questions, word for word as docs/privacy/README.md gives them; a test keeps the two equal. */
+export const SCREENING_QUESTIONS = [
+  'Does it collect, derive, log, store, expose or send any new data about a person (identifiers included: account ids, entity ids, key prefixes, IPs, emails, timestamps, usage or behaviour)?',
+  'Does it change who can see existing data (the user, an operator or admin, another user, a processor or sub-processor, an AI agent or integration)?',
+  'Does it change how long data is kept, or how it is deleted, exported or purged (account deletion, purge jobs, backups, archives)?',
+  'Does it add or change a third party, a region, a model, analytics, telemetry or a network call that carries user data?',
+  'Does it derive new information about people (profiling, inference, embeddings, activity summaries)?',
+];
+
+export const PIA_HEADINGS = [
+  'What changes',
+  'Data',
+  'Necessity and proportionality',
+  'Transparency',
+  'User rights',
+  'Harms to individuals',
+  'Confidentiality checks',
+  'Processors and transfers',
+  'Applicable regimes and lawful basis',
+  'Residual risk and decision',
+  'Review',
+];
+
+const PIA_NAME = /^\d{4}-[A-Za-z0-9_-]+\.md$/; // PIAs may carry a ticket key too
+const DOC_NAME = /^(\d{4})-[A-Za-z0-9_-]+\.md$/; // feature docs may carry a ticket key (0007-PLAT-12-x.md)
+const DECISIONS = ['proceed', 'proceed with conditions', 'stop'];
+
+const normalise = (s) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+
+/** The text's lines with fenced code blocks blanked, so a quoted template is never read as the document's own. */
+export function proseLines(text) {
+  let fence = null;
+  return text.split(/\r?\n/).map((line) => {
+    const marker = /^\s{0,3}(`{3,}|~{3,})/.exec(line);
+    if (fence === null) {
+      if (marker === null) return line;
+      fence = marker[1];
+      return '';
+    }
+    if (marker !== null && marker[1][0] === fence[0] && marker[1].length >= fence.length && line.trim() === marker[1]) {
+      fence = null;
+    }
+    return '';
+  });
+}
+
+/** The lines of the `## <heading>` section up to the next `## ` heading, or null when there is none. */
+export function sectionLines(text, heading) {
+  const lines = proseLines(text);
+  const start = lines.findIndex((line) => line.trim() === `## ${heading}`);
+  if (start === -1) return null;
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((line) => line.startsWith('## '));
+  return end === -1 ? rest : rest.slice(0, end);
+}
+
+/** PIA file names a line links to (`../privacy/NNNN-x.md` or `docs/privacy/NNNN-x.md`). */
+export function linkedPias(line) {
+  return [...line.matchAll(/\]\((?:(?:\.\.\/)+|docs\/)privacy\/(\d{4}-[A-Za-z0-9_-]+\.md)\)/g)].map((m) => m[1]);
+}
+
+/** Every problem with a document's `## Privacy screening`. `piaExists(name)` says whether docs/privacy/<name> exists. */
+export function screeningProblems(text, piaExists, questions = SCREENING_QUESTIONS) {
+  const section = sectionLines(text, 'Privacy screening');
+  if (section === null) return ['no "## Privacy screening" section'];
+
+  const problems = [];
+  const answers = new Map();
+  for (const line of section) {
+    if (!/^\|\s*\d+\s*\|/.test(line)) continue;
+    const cells = line.split('|').slice(1, -1).map((cell) => cell.trim());
+    if (cells.length !== 4) {
+      problems.push(`question ${cells[0]}: expected 4 cells (#, question, answer, why), found ${cells.length}`);
+      continue;
+    }
+    const [number, question, answer, why] = cells;
+    if (answers.has(number)) problems.push(`question ${number} is answered twice`);
+    if (!/^(yes|no)$/i.test(answer)) problems.push(`question ${number}: answer "${answer}" is not Yes or No`);
+    const standard = questions[Number(number) - 1];
+    if (standard === undefined) problems.push(`question ${number} is not one of the five`);
+    else if (normalise(question) !== normalise(standard)) {
+      problems.push(`question ${number} is not the standard question (copy it from docs/privacy/README.md)`);
+    }
+    if (why === '') problems.push(`question ${number}: no one-line reason`);
+    answers.set(number, answer.toLowerCase());
+  }
+  for (let n = 1; n <= questions.length; n += 1) {
+    if (!answers.has(String(n))) problems.push(`question ${n} is not answered`);
+  }
+
+  const result = section.find((line) => line.startsWith('**Result:**'));
+  if (result === undefined) return [...problems, 'no "**Result:**" line'];
+
+  const links = linkedPias(result);
+  if ([...answers.values()].includes('yes')) {
+    if (links.length === 0) problems.push('a question is answered Yes but the result links no PIA under docs/privacy/');
+    for (const name of links) {
+      if (!piaExists(name)) problems.push(`the result links docs/privacy/${name}, which does not exist`);
+    }
+  } else {
+    const why = /^\*\*Result:\*\*\s*No PIA:\s*(.*)$/.exec(result);
+    if (why === null || why[1].trim().length < 10) {
+      problems.push('every answer is No but the result is not "No PIA: <one sentence why>"');
+    }
+  }
+  return problems;
+}
+
+/** Every problem with a PIA's shape: headings, regimes field, decision. */
+export function piaProblems(text) {
+  const problems = [];
+  for (const heading of PIA_HEADINGS) {
+    if (sectionLines(text, heading) === null) problems.push(`no "## ${heading}" section`);
+  }
+  const regimes = sectionLines(text, 'Applicable regimes and lawful basis');
+  if (regimes !== null) {
+    const prose = regimes.join('\n').replace(/<!--[\s\S]*?-->/g, '').trim();
+    if (prose === '') problems.push('"Applicable regimes and lawful basis" is empty (write "legal review needed" until it is filled)');
+  }
+  const decisionSection = sectionLines(text, 'Residual risk and decision');
+  if (decisionSection !== null) {
+    const line = decisionSection.find((l) => /^\s*-\s*\*\*Decision:\*\*/.test(l));
+    const value = line === undefined ? '' : normalise(line.replace(/^\s*-\s*\*\*Decision:\*\*/, ''));
+    if (!DECISIONS.includes(value)) problems.push(`decision "${value}" is not one of: ${DECISIONS.join(', ')}`);
+  }
+  return problems;
+}
+
+/** The feature docs and proposals a PIA's header (the text before its first `## `) links to, relative to docs/. */
+export function piaSources(text) {
+  const lines = proseLines(text);
+  const first = lines.findIndex((line) => line.startsWith('## '));
+  const header = (first === -1 ? lines : lines.slice(0, first)).join('\n').replace(/<!--[\s\S]*?-->/g, '');
+  return [...header.matchAll(/\]\(\.\.\/((?:features|proposals)\/\d{4}-[A-Za-z0-9_-]+\.md)\)/g)].map((m) => m[1]);
+}
+
+/** Whether a PIA's header (before its first `## `, comments removed) names a PR origin: `**PR:** <branch or PR>`. */
+export function piaPrOrigin(text) {
+  const lines = proseLines(text.replace(/<!--[\s\S]*?-->/g, ''));
+  const first = lines.findIndex((line) => line.startsWith('## '));
+  return (first === -1 ? lines : lines.slice(0, first)).some((line) => /^\*\*PR:\*\*\s*\S/.test(line));
+}
+
+/** Numbered markdown files (`NNNN-….md`) in `dir` whose names the guard's patterns cannot read. */
+export function misnamedFiles(dir, pattern = DOC_NAME) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((name) => /^\d{4}-.*\.md$/.test(name) && !pattern.test(name));
+}
+
+/**
+ * Problems with the PIAs a document's screening result links: each one that exists must name
+ * the document in its header (`docRel` is the document's path relative to docs/, for example
+ * `features/0007-x.md`). `readPia(name)` returns a PIA's text, or null when it does not exist.
+ */
+export function forwardLinkProblems(docRel, text, readPia) {
+  const result = (sectionLines(text, 'Privacy screening') ?? []).find((l) => l.startsWith('**Result:**')) ?? '';
+  const problems = [];
+  for (const name of linkedPias(result)) {
+    const pia = readPia(name);
+    if (pia !== null && !piaSources(pia).includes(docRel)) {
+      problems.push(`docs/privacy/${name} does not name docs/${docRel} in its header`);
+    }
+  }
+  return problems;
+}
+
+/**
+ * Problems with a PIA's back-link: its header links at least one document, each exists, and each
+ * one's screening result links this PIA. `readDoc(rel)` returns the text or null.
+ */
+export function backLinkProblems(name, text, readDoc) {
+  const sources = piaSources(text);
+  if (sources.length === 0) {
+    return piaPrOrigin(text) ? [] : ['the header links no docs/features/ or docs/proposals/ document, and has no **PR:** line'];
+  }
+  const problems = [];
+  for (const source of sources) {
+    const doc = readDoc(source);
+    if (doc === null) {
+      problems.push(`docs/${source} does not exist`);
+      continue;
+    }
+    const result = (sectionLines(doc, 'Privacy screening') ?? []).find((l) => l.startsWith('**Result:**')) ?? '';
+    if (!linkedPias(result).includes(name)) problems.push(`docs/${source}'s screening result does not link ${name}`);
+  }
+  return problems;
+}
+
+/** Problems with the README's `## Index`: every PIA is listed, and every row points at a PIA that exists. */
+export function indexProblems(readme, piaNames, piaExists) {
+  const index = sectionLines(readme, 'Index') ?? [];
+  const problems = [];
+  for (const name of piaNames) {
+    if (!index.some((line) => line.includes(`](${name})`))) problems.push(`## Index does not link ${name}`);
+  }
+  for (const line of index) {
+    for (const m of line.matchAll(/\]\((\d{4}-[A-Za-z0-9_-]+\.md)\)/g)) {
+      if (!piaExists(m[1])) problems.push(`## Index links ${m[1]}, which does not exist`);
+    }
+  }
+  return problems;
+}
+
+/** The standard questions the privacy README does not state word for word (in its `| n | question |` rows). */
+export function readmeQuestionProblems(readme, questions = SCREENING_QUESTIONS) {
+  const problems = [];
+  for (const [i, question] of questions.entries()) {
+    if (!normalise(readme).includes(normalise(`| ${i + 1} | ${question} |`))) problems.push(`README is missing question ${i + 1} word for word`);
+  }
+  return problems;
+}
+
+/** The documents in `dir` the rule covers: numbered at or after `first`, or listed in `also`. */
+export function screenedDocs(dir, first, also = []) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => {
+      const m = DOC_NAME.exec(name);
+      return m !== null && (Number(m[1]) >= first || also.includes(m[1]));
+    })
+    .map((name) => ({ name, text: readFileSync(path.join(dir, name), 'utf8') }));
+}
+
+/** The PIAs in `dir`: the numbered files (the README, the template and the inventory are not numbered). */
+export function pias(dir = PRIVACY_DIR) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => PIA_NAME.test(name)) // README.md, TEMPLATE-pia.md, data-inventory.md have no number
+    .map((name) => ({ name, text: readFileSync(path.join(dir, name), 'utf8') }));
+}
+
+const piaExists = (name) => existsSync(path.join(PRIVACY_DIR, name));
+const readOrNull = (file) => (existsSync(file) ? readFileSync(file, 'utf8') : null);
+const readPia = (name) => readOrNull(path.join(PRIVACY_DIR, name));
+/**
+ * Where a document a PIA links (`features/<name>` or `proposals/<name>`, as piaSources returns)
+ * lives, honouring PRIVACY_FEATURES_DIR / PRIVACY_PROPOSALS_DIR; null for anything else.
+ */
+export function docPath(rel, dirs) {
+  const m = /^(features|proposals)\/([^/]+)$/.exec(rel);
+  return m === null ? null : path.join(dirs[m[1]], m[2]);
+}
+const DOC_DIRS = { features: FEATURES_DIR, proposals: PROPOSALS_DIR };
+const readDoc = (rel) => {
+  const file = docPath(rel, DOC_DIRS);
+  return file === null ? null : readOrNull(file);
+};
+
+// ── The checker can fail (examples that must be refused) ────────────────────
+
+const row = (n, answer, why = 'a reason') => `| ${n} | ${SCREENING_QUESTIONS[n - 1]} | ${answer} | ${why} |`;
+const screening = (answers, result) =>
+  ['## Privacy screening', '', '| # | Question | Answer | Why |', '|---|---|---|---|',
+    ...answers.map((a, i) => row(i + 1, a)), '', result].join('\n');
+
+test('the checker accepts a complete all-No screening', () => {
+  assert.deepEqual(screeningProblems(screening(['No', 'No', 'No', 'No', 'No'], '**Result:** No PIA: nothing here touches personal data.'), () => true), []);
+});
+
+test('the checker refuses a document with no screening', () => {
+  assert.deepEqual(screeningProblems('# A feature\n', () => true), ['no "## Privacy screening" section']);
+});
+
+test('the checker refuses a screening quoted only inside a code fence', () => {
+  const fenced = '```markdown\n' + screening(['No', 'No', 'No', 'No', 'No'], '**Result:** No PIA: nothing here.') + '\n```\n';
+  assert.deepEqual(screeningProblems(fenced, () => true), ['no "## Privacy screening" section']);
+});
+
+test('the checker refuses a Yes with no PIA link, and a link to a missing PIA', () => {
+  const noLink = screening(['Yes', 'No', 'No', 'No', 'No'], '**Result:** No PIA: but question 1 said yes.');
+  assert.ok(screeningProblems(noLink, () => true).some((p) => p.includes('links no PIA')));
+  const missing = screening(['Yes', 'No', 'No', 'No', 'No'], '**Result:** PIA: [docs/privacy/0001-x.md](../privacy/0001-x.md)');
+  assert.ok(screeningProblems(missing, () => false).some((p) => p.includes('does not exist')));
+});
+
+test('the checker refuses a reworded question, a missing answer and an empty reason', () => {
+  const text = screening(['No', 'No', 'No', 'No'], '**Result:** No PIA: nothing here touches personal data.')
+    .replace(SCREENING_QUESTIONS[1], 'Does anyone new see data?')
+    .replace('| 3 | ' + SCREENING_QUESTIONS[2] + ' | No | a reason |', '| 3 | ' + SCREENING_QUESTIONS[2] + ' | No |  |');
+  const problems = screeningProblems(text, () => true);
+  assert.ok(problems.some((p) => p.includes('question 2 is not the standard question')));
+  assert.ok(problems.some((p) => p.includes('question 3: no one-line reason')));
+  assert.ok(problems.some((p) => p.includes('question 5 is not answered')));
+});
+
+const NO_PIA = '**Result:** No PIA: nothing here touches personal data.';
+
+test('the checker refuses a row without four cells, and reads nothing else from it', () => {
+  const text = screening(['No', 'No', 'No', 'No', 'No'], NO_PIA).replace(`| 4 | ${SCREENING_QUESTIONS[3]} | No | a reason |`, `| 4 | ${SCREENING_QUESTIONS[3]} | No |`);
+  assert.deepEqual(screeningProblems(text, () => true), [
+    'question 4: expected 4 cells (#, question, answer, why), found 3',
+    'question 4 is not answered',
+  ]);
+});
+
+test('the checker refuses a question answered twice', () => {
+  const text = screening(['No', 'No', 'No', 'No', 'No'], NO_PIA).replace(row(5, 'No'), `${row(5, 'No')}\n${row(5, 'No')}`);
+  assert.ok(screeningProblems(text, () => true).some((p) => p.includes('question 5 is answered twice')));
+});
+
+test('the checker refuses an answer that is not Yes or No', () => {
+  const text = screening(['No', 'Maybe', 'No', 'No', 'No'], NO_PIA);
+  assert.ok(screeningProblems(text, () => true).some((p) => p.includes('question 2: answer "Maybe" is not Yes or No')));
+});
+
+test('the checker refuses a question that is not one of the five', () => {
+  const text = screening(['No', 'No', 'No', 'No', 'No'], NO_PIA).replace(row(5, 'No'), `${row(5, 'No')}\n| 6 | Anything else? | No | a reason |`);
+  assert.ok(screeningProblems(text, () => true).some((p) => p.includes('question 6 is not one of the five')));
+});
+
+test('the checker refuses a screening with no Result line', () => {
+  const text = screening(['No', 'No', 'No', 'No', 'No'], 'No result here.');
+  assert.ok(screeningProblems(text, () => true).includes('no "**Result:**" line'));
+});
+
+test('the checker refuses an all-No result that does not say "No PIA: <why>"', () => {
+  for (const result of ['**Result:** fine', '**Result:** No PIA: ok']) {
+    const problems = screeningProblems(screening(['No', 'No', 'No', 'No', 'No'], result), () => true);
+    assert.ok(problems.some((p) => p.includes('every answer is No')), result);
+  }
+});
+
+test('the checker refuses an empty regimes field', () => {
+  const problems = piaProblems('## Applicable regimes and lawful basis\n\n<!-- owner fills this -->\n\n## Review\n');
+  assert.ok(problems.some((p) => p.includes('"Applicable regimes and lawful basis" is empty')));
+});
+
+test('the checker refuses a linked PIA that does not name the document, and accepts one that does', () => {
+  const doc = screening(['Yes', 'No', 'No', 'No', 'No'], '**Result:** PIA: [docs/privacy/0001-x.md](../privacy/0001-x.md)');
+  const other = '**Proposal:** [0009](../proposals/0009-other.md)\n\n## What changes\n';
+  const named = '**Feature:** [0007](../features/0007-a.md)\n\n## What changes\n';
+  assert.ok(forwardLinkProblems('features/0007-a.md', doc, () => other).some((p) => p.includes('does not name docs/features/0007-a.md')));
+  assert.deepEqual(forwardLinkProblems('features/0007-a.md', doc, () => named), []);
+});
+
+test('the checker refuses a PIA whose linked document does not link it back', () => {
+  const pia = '**Feature:** [0007](../features/0007-a.md)\n\n## What changes\n';
+  const allNo = screening(['No', 'No', 'No', 'No', 'No'], NO_PIA);
+  assert.ok(backLinkProblems('0001-x.md', pia, () => allNo).some((p) => p.includes('does not link 0001-x.md')));
+  assert.ok(backLinkProblems('0001-x.md', pia, () => null).some((p) => p.includes('does not exist')));
+  assert.deepEqual(backLinkProblems('0001-x.md', '## What changes\n', () => allNo), ['the header links no docs/features/ or docs/proposals/ document, and has no **PR:** line']);
+});
+
+test('a PIA for a PR with no feature doc is accepted by its **PR:** header line, and only by that', () => {
+  const pr = '**PR:** fix/login-timeout, screening in the PR-description draft\n**Date:** 2026-10-29\n\n## What changes\n';
+  assert.equal(piaPrOrigin(pr), true);
+  assert.equal(piaPrOrigin('**PR:** fix/x, screening in the PR-description draft'), true); // header only, no heading
+  assert.deepEqual(backLinkProblems('0001-x.md', pr, () => null), []);
+  for (const text of ['**PR:**\n\n## What changes\n', '<!-- **PR:** x -->\n\n## What changes\n', '## What changes\n\n**PR:** x\n']) {
+    assert.equal(piaPrOrigin(text), false, JSON.stringify(text));
+    assert.deepEqual(backLinkProblems('0001-x.md', text, () => null), ['the header links no docs/features/ or docs/proposals/ document, and has no **PR:** line']);
+  }
+});
+
+test('numbered files the patterns cannot read are reported, underscores are accepted', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'privacy-guard-names-'));
+  try {
+    for (const name of ['0005-has space.md', '0006-dot.v2.md', '0007-ok_name.md', '0008-PLAT-1-ok.md', 'README.md', '12-x.md']) {
+      writeFileSync(path.join(dir, name), '# x\n');
+    }
+    assert.deepEqual(misnamedFiles(dir).sort(), ['0005-has space.md', '0006-dot.v2.md']);
+    assert.deepEqual(misnamedFiles(dir, PIA_NAME).sort(), ['0005-has space.md', '0006-dot.v2.md']);
+    assert.deepEqual(screenedDocs(dir, 1).map((d) => d.name).sort(), ['0007-ok_name.md', '0008-PLAT-1-ok.md']);
+    assert.deepEqual(pias(dir).map((d) => d.name).sort(), ['0007-ok_name.md', '0008-PLAT-1-ok.md']);
+    assert.deepEqual(misnamedFiles(path.join(dir, 'missing')), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the checker refuses an index that misses a PIA or points at a missing one', () => {
+  const readme = '## Index\n\n| # | Title |\n|---|---|\n| [0001](0001-a.md) | A |\n| [0002](0002-gone.md) | B |\n';
+  const problems = indexProblems(readme, ['0001-a.md', '0003-new.md'], (n) => n !== '0002-gone.md');
+  assert.ok(problems.includes('## Index does not link 0003-new.md'));
+  assert.ok(problems.includes('## Index links 0002-gone.md, which does not exist'));
+});
+
+test('the checker refuses a README that rewords a standard question', () => {
+  const good = SCREENING_QUESTIONS.map((q, i) => row(i + 1, 'No').replace(' | No | a reason |', ' |')).join('\n');
+  assert.deepEqual(readmeQuestionProblems(good), []);
+  assert.deepEqual(readmeQuestionProblems(good.replace(SCREENING_QUESTIONS[4], 'Does it profile people?')), ['README is missing question 5 word for word']);
+});
+
+test('the checker accepts each of the three decisions, word for word', () => {
+  const head = PIA_HEADINGS.map((h) => `## ${h}\n\nx\n`).join('\n');
+  for (const decision of ['proceed', 'proceed with conditions', 'stop']) {
+    const text = head.replace('## Residual risk and decision\n\nx\n', `## Residual risk and decision\n\n- **Decision:** ${decision}\n`);
+    assert.deepEqual(piaProblems(text), [], decision);
+  }
+  const bad = head.replace('## Residual risk and decision\n\nx\n', '## Residual risk and decision\n\n- **Decision:** maybe\n');
+  assert.deepEqual(piaProblems(bad), ['decision "maybe" is not one of: proceed, proceed with conditions, stop']);
+});
+
+test("the PIA headings are exactly the template's headings", () => {
+  const template = readFileSync(path.join(PRIVACY_DIR, 'TEMPLATE-pia.md'), 'utf8');
+  const headings = proseLines(template.replace(/<!--[\s\S]*?-->/g, '')).filter((l) => l.startsWith('## ')).map((l) => l.slice(3).trim());
+  assert.deepEqual(headings, [
+    'What changes', 'Data', 'Necessity and proportionality', 'Transparency', 'User rights',
+    'Harms to individuals', 'Confidentiality checks', 'Processors and transfers',
+    'Applicable regimes and lawful basis', 'Residual risk and decision', 'Review',
+  ]);
+  assert.deepEqual(PIA_HEADINGS, headings);
+});
+
+test('a bare code fence hides a quoted screening too', () => {
+  const fenced = '```\n' + screening(['No', 'No', 'No', 'No', 'No'], NO_PIA) + '\n```\n';
+  assert.deepEqual(screeningProblems(fenced, () => true), ['no "## Privacy screening" section']);
+});
+
+test('only the PIA header (before the first ## heading) names its documents', () => {
+  assert.deepEqual(piaSources('**Feature:** [0007](../features/0007-a.md)'), ['features/0007-a.md']);
+  assert.deepEqual(piaSources('**Proposal:** none\n\n## Data\n\nsee [0007](../features/0007-a.md)\n'), []);
+});
+
+test('a linked document is read from the configured directories', () => {
+  const dirs = { features: path.join('x', 'f'), proposals: path.join('x', 'p') };
+  assert.equal(docPath('features/0007-a.md', dirs), path.join('x', 'f', '0007-a.md'));
+  assert.equal(docPath('proposals/0002-B-1-b.md', dirs), path.join('x', 'p', '0002-B-1-b.md'));
+  assert.equal(docPath('other/0001-a.md', dirs), null);
+});
+
+test('the checker refuses a PIA with an empty or missing decision', () => {
+  const head = PIA_HEADINGS.map((h) => `## ${h}\n\nx\n`).join('\n');
+  for (const decision of ['- **Decision:**', '- **Decision:**   ', '']) {
+    const text = head.replace('## Residual risk and decision\n\nx\n', `## Residual risk and decision\n\n${decision}\n`);
+    assert.ok(piaProblems(text).some((p) => p.startsWith('decision "" is not one of')), JSON.stringify(decision));
+  }
+  const ok = head.replace('## Residual risk and decision\n\nx\n', '## Residual risk and decision\n\n- **Decision:** stop\n');
+  assert.deepEqual(piaProblems(ok), []);
+});
+
+test('discovery selects exactly the screened documents and the PIAs', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'privacy-guard-'));
+  try {
+    for (const name of ['0001-old.md', '0003-PLAT-12-keyed.md', '0004-new.md', '0002-reopened.md', 'README.md', 'TEMPLATE-pia.md', 'data-inventory.md', 'notes.md', '12-short.md']) {
+      writeFileSync(path.join(dir, name), '# x\n');
+    }
+    assert.deepEqual(screenedDocs(dir, 3).map((d) => d.name).sort(), ['0003-PLAT-12-keyed.md', '0004-new.md']);
+    assert.deepEqual(screenedDocs(dir, 3, ['0002']).map((d) => d.name).sort(), ['0002-reopened.md', '0003-PLAT-12-keyed.md', '0004-new.md']);
+    assert.deepEqual(screenedDocs(dir, 1).map((d) => d.name).sort(), ['0001-old.md', '0002-reopened.md', '0003-PLAT-12-keyed.md', '0004-new.md']);
+    assert.deepEqual(pias(dir).map((d) => d.name).sort(), ['0001-old.md', '0002-reopened.md', '0003-PLAT-12-keyed.md', '0004-new.md']);
+    assert.deepEqual(screenedDocs(path.join(dir, 'missing'), 1), []);
+    assert.deepEqual(pias(path.join(dir, 'missing')), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the checker refuses a PIA without a decision or a heading', () => {
+  const problems = piaProblems('## What changes\n\nx\n\n## Residual risk and decision\n\n- **Decision:** proceed | stop\n');
+  assert.ok(problems.some((p) => p.includes('no "## Data" section')));
+  assert.ok(problems.some((p) => p.includes('is not one of')));
+});
+
+// ── The repository ──────────────────────────────────────────────────────────
+
+test('the privacy README states the same five questions as this guard', () => {
+  assert.deepEqual(readmeQuestionProblems(readFileSync(path.join(PRIVACY_DIR, 'README.md'), 'utf8')), []);
+});
+
+for (const [label, kind, dir, first, also] of [
+  ['feature document', 'features', FEATURES_DIR, FIRST_SCREENED_FEATURE, ALSO_SCREENED_FEATURES],
+  ['proposal', 'proposals', PROPOSALS_DIR, FIRST_SCREENED_PROPOSAL, ALSO_SCREENED_PROPOSALS],
+]) {
+  for (const doc of screenedDocs(dir, first, also)) {
+    test(`${label} ${doc.name} has a complete privacy screening`, () => {
+      assert.deepEqual(screeningProblems(doc.text, piaExists), []);
+    });
+    test(`${label} ${doc.name}: every PIA it links names it back`, () => {
+      assert.deepEqual(forwardLinkProblems(`${kind}/${doc.name}`, doc.text, readPia), []);
+    });
+  }
+}
+
+for (const pia of pias()) {
+  test(`PIA ${pia.name} has the template's headings, a regimes field and a decision`, () => {
+    assert.deepEqual(piaProblems(pia.text), []);
+  });
+
+  test(`PIA ${pia.name} links a feature doc or proposal whose screening links it back`, () => {
+    assert.deepEqual(backLinkProblems(pia.name, pia.text, readDoc), []);
+  });
+}
+
+for (const [label, dir, pattern] of [
+  ['docs/features', FEATURES_DIR, DOC_NAME],
+  ['docs/proposals', PROPOSALS_DIR, DOC_NAME],
+  ['docs/privacy', PRIVACY_DIR, PIA_NAME],
+]) {
+  test(`${label} has no numbered file the guard cannot read`, () => {
+    assert.deepEqual(misnamedFiles(dir, pattern), []);
+  });
+}
+
+test('the privacy README index lists every PIA and only PIAs that exist', () => {
+  const readme = readFileSync(path.join(PRIVACY_DIR, 'README.md'), 'utf8');
+  assert.deepEqual(indexProblems(readme, pias().map((p) => p.name), piaExists), []);
+});

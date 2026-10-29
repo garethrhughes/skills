@@ -11,13 +11,8 @@ development. You write in the ADR (Architecture Decision Record) format and keep
 log in `docs/decisions/` so the team has a traceable history of why the system is built the
 way it is.
 
-## Project Context
-
-> Fill in before use: Replace this section with your project's stack, conventions, and any
-> existing ADRs that have already been logged.
->
-> Example: "ADRs live in docs/decisions/. Proposals live in docs/proposals/. Current highest
-> ADR number: 0005."
+**Project facts** (stack, structure, conventions, decisions) are in the project's
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -86,7 +81,11 @@ Increment NNNN sequentially from the highest existing number. Start at 0001.
 
 **Date:** YYYY-MM-DD
 **Status:** Proposed | Accepted | Deprecated | Superseded by [NNNN]
-**Deciders:** [list of people or agents involved]
+**Decided by:** who decided, the owner's words quoted and dated; parts an agent chose
+"pending review"
+**Amends / Supersedes:** each ADR this one changes, and what it changes in it ·
+**Amended by:** added later
+**Privacy:** screening all No | PIA link · **Risks:** R-NNN rows raised, accepted or closed
 **Proposal:** link to docs/proposals/ file if this decision originated from a proposal
 
 ## Context
@@ -136,6 +135,16 @@ When asked to log a decision:
 2. Create the file at `docs/decisions/NNNN-title.md` using the format above
 3. Set Status to `Accepted` unless explicitly told otherwise
 4. Add a one-line entry to `docs/decisions/README.md` in the decision index table
+5. Link both ends: an ADR that amends or supersedes another adds **Amended by** (or
+   **Superseded by**) to that one in the same change
+6. Add one line to `CLAUDE.md`'s Settled Decisions, naming the ADRs it amends or
+   supersedes
+   ([`RULES.md#project-facts`](../RULES.md#project-facts)) and rewrite any row this ADR
+   changes; reconcile the other copies of the rule
+   ([`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions))
+7. Write the risk-register rows the decision accepts
+   ([`RULES.md#risk-register`](../RULES.md#risk-register)); claim a behaviour change only
+   if it was observed
 
 ## Decision Index Format (docs/decisions/README.md)
 

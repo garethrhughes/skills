@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # update.sh - fetch the latest skills from upstream and merge into installed location
 #
-# The skills directory does NOT need to be a git repository. Clones upstream
-# to a temp dir, diffs each SKILL.md against the installed version, copies
-# in changes while preserving existing ## Project Context sections.
+# The skills directory is project-local (default <project>/.opencode/skills)
+# and does NOT need to be a git repository. Clones upstream to a temp dir,
+# diffs each SKILL.md against the installed version and copies in changes.
+# Skills carry no per-project block any more (project facts live in the
+# project's CLAUDE.md): a customised "## Project Context" block found in an
+# installed skill is saved under .project-context-backup/ and reported, never
+# silently dropped.
 #
 # Compatible with bash 3 (macOS default).
 
@@ -28,41 +32,52 @@ echo "Upstream   : $UPSTREAM"
 echo "Skills dir : $SKILLS_DIR"
 echo ""
 
-# Write awk programs to temp files to avoid quoting issues
+# Write the awk program to a temp file to avoid quoting issues
 AWK_EXTRACT="$(mktemp)"
-AWK_REPLACE="$(mktemp)"
 
+# Extract a skill's own "## Project Context" section: from its heading to the
+# next "## " heading outside a fenced code block, or to the end of the file (the
+# same span older versions of this script preserved). A heading inside a fence,
+# in the block or elsewhere, neither starts nor ends it.
 cat > "$AWK_EXTRACT" << 'AWK'
-/^## Project Context/ { b=1 }
-b && /^## / && !/^## Project Context/ { b=0 }
+/^[[:space:]]*(```|~~~)/ { fence = !fence; if (b) print; next }
+!fence && /^## / { b = ($0 ~ /^## Project Context[[:space:]]*$/) }
 b { print }
-AWK
-
-cat > "$AWK_REPLACE" << 'AWK'
-/^## Project Context/ {
-  b=1
-  while ((getline ln < ctx_file) > 0) print ln
-  close(ctx_file)
-  next
-}
-b && /^## / && !/^## Project Context/ { b=0 }
-!b { print }
 AWK
 
 extract_project_context() {
   awk -f "$AWK_EXTRACT" "$1"
 }
 
-replace_project_context() {
-  local file="$1"
-  local ctx_file="$2"
-  local tmp
-  tmp="$(mktemp)"
-  awk -v ctx_file="$ctx_file" -f "$AWK_REPLACE" "$file" > "$tmp"
-  mv "$tmp" "$file"
+# A block is only the old placeholder when nothing is left after removing its
+# heading, ">" blockquote lines, "---" rules and blank lines.
+block_has_facts() {
+  grep -v -e '^## Project Context' -e '^>' -e '^---[[:space:]]*$' -e '^[[:space:]]*$' "$1" | grep -q .
 }
 
-# Root-level files that are copied verbatim (no Project Context merging).
+# Keep a copy of a block that holds facts. Never overwrite or delete a backup:
+# identical content already kept is not written again; different content goes
+# to the next free numbered sibling (<skill>.2.md, <skill>.3.md, ...).
+PC_NEW=""
+backup_project_context() {
+  local skill="$1" ctx="$2" dir target n
+  dir="$SKILLS_DIR/.project-context-backup"
+  mkdir -p "$dir"
+  target="$dir/$skill.md"
+  if [ -f "$target" ]; then
+    cmp -s "$ctx" "$target" && return 0
+    n=2
+    while [ -f "$dir/$skill.$n.md" ]; do
+      cmp -s "$ctx" "$dir/$skill.$n.md" && return 0
+      n=$((n+1))
+    done
+    target="$dir/$skill.$n.md"
+  fi
+  cp "$ctx" "$target"
+  PC_NEW="$PC_NEW $(basename "$target")"
+}
+
+# Root-level files that are copied verbatim.
 # RULES.md is the canonical rules file — overrides live in per-project ADRs,
 # never in RULES.md itself, so it is safe to copy verbatim. A warning is
 # emitted below if the installed RULES.md has been locally modified.
@@ -87,7 +102,7 @@ AFTER_DIR="$(mktemp -d)"
 CONTEXT_DIR="$(mktemp -d)"
 cleanup() {
   [ "$OWN_CLONE_DIR" = "1" ] && rm -rf "$CLONE_DIR"
-  rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT" "$AWK_REPLACE"
+  rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT"
 }
 trap cleanup EXIT
 
@@ -171,6 +186,9 @@ if [ -d "$SKILLS_DIR/profiles" ]; then
   done
 fi
 
+# Snapshot templates/ before update (process-document starters)
+[ -d "$SKILLS_DIR/templates" ] && cp -R "$SKILLS_DIR/templates" "$BEFORE_DIR/__templates__"
+
 for upstream_skill_dir in "$CLONE_DIR"/*/; do
   [ -d "$upstream_skill_dir" ] || continue
   skill="$(basename "$upstream_skill_dir")"
@@ -192,9 +210,12 @@ for upstream_skill_dir in "$CLONE_DIR"/*/; do
     done
   fi
 
+  # Skills no longer carry project facts. A block that holds any (including
+  # facts added under the old placeholder) is backed up and reported, so the
+  # user moves it into CLAUDE.md; a pure placeholder is simply dropped.
   ctx_file="$CONTEXT_DIR/$skill.ctx"
-  if [ -f "$ctx_file" ] && [ -s "$ctx_file" ]; then
-    replace_project_context "$installed_file" "$ctx_file"
+  if [ -s "$ctx_file" ] && block_has_facts "$ctx_file"; then
+    backup_project_context "$skill" "$ctx_file"
   fi
 done
 
@@ -210,6 +231,10 @@ if [ -f "$INSTALLED_README" ]; then
     skill="$(basename "$installed_skill_dir")"
     [ -f "$installed_skill_dir/SKILL.md" ] || continue
     if grep -q "\[$skill\](" "$INSTALLED_README" 2>/dev/null && [ ! -d "$CLONE_DIR/$skill" ]; then
+      # Keep any project facts the removed skill's block held.
+      if [ -s "$CONTEXT_DIR/$skill.ctx" ] && block_has_facts "$CONTEXT_DIR/$skill.ctx"; then
+        backup_project_context "$skill" "$CONTEXT_DIR/$skill.ctx"
+      fi
       rm -rf "$installed_skill_dir"
     fi
   done
@@ -219,24 +244,31 @@ fi
 # RULES.md is the single source of truth — overrides belong in per-project
 # ADRs, never in RULES.md itself. If the installed copy diverges from the
 # upstream copy that was previously installed, surface that loudly.
+# Detect local RULES.md edits (forbidden: overrides go in ADRs). An upstream
+# change alone is not a local edit, so compare the installed file with a record
+# of the upstream copy the last update installed (.rules-upstream.cksum), not
+# with the new upstream copy. cksum is POSIX, so this works on macOS too.
 RULES_LOCAL_MODIFIED=0
-if [ -f "$BEFORE_DIR/__root__RULES.md" ] && [ -f "$CLONE_DIR/RULES.md" ]; then
-  if ! diff -q "$BEFORE_DIR/__root__RULES.md" "$CLONE_DIR/RULES.md" >/dev/null 2>&1; then
-    # Upstream changed RULES.md — that's expected. Only warn if the local
-    # copy diverges from BOTH the previous install AND the new upstream.
-    :
-  fi
-fi
-# Compare installed RULES.md against upstream RULES.md directly to detect
-# local edits (which are forbidden — overrides go in ADRs).
+RULES_RECORD="$SKILLS_DIR/.rules-upstream.cksum"
 if [ -f "$SKILLS_DIR/RULES.md" ] && [ -f "$CLONE_DIR/RULES.md" ]; then
-  if ! diff -q "$SKILLS_DIR/RULES.md" "$CLONE_DIR/RULES.md" >/dev/null 2>&1; then
-    RULES_LOCAL_MODIFIED=1
+  installed_sum="$(cksum < "$SKILLS_DIR/RULES.md")"
+  if [ -f "$RULES_RECORD" ]; then
+    if [ "$installed_sum" != "$(cat "$RULES_RECORD")" ]; then
+      RULES_LOCAL_MODIFIED=1
+    fi
+  elif ! diff -q "$SKILLS_DIR/RULES.md" "$CLONE_DIR/RULES.md" >/dev/null 2>&1; then
     echo ""
-    echo "⚠  WARNING: installed RULES.md differs from upstream RULES.md."
+    echo "Note: RULES.md differs from upstream (a local edit or an upstream change) and"
+    echo "      was replaced; re-apply any local edit in CLAUDE.md (project overrides) or"
+    echo "      an ADR, never in RULES.md. The ROOT FILES diff below shows the change."
+    echo "      (No .rules-upstream.cksum record existed; it is written from this run on.)"
+  fi
+  if [ "$RULES_LOCAL_MODIFIED" = "1" ]; then
+    echo ""
+    echo "⚠  WARNING: installed RULES.md was edited locally since the last update."
     echo "   RULES.md is the single source of truth and must not be edited"
     echo "   locally — per-project overrides belong in ADRs (decision-log)."
-    echo "   The local file will be overwritten. Diff:"
+    echo "   The local file will be overwritten. Diff (local → new upstream):"
     echo ""
     diff -u "$SKILLS_DIR/RULES.md" "$CLONE_DIR/RULES.md" || true
     echo ""
@@ -247,6 +279,10 @@ fi
 for rf in $ROOT_FILES; do
   [ -f "$CLONE_DIR/$rf" ] && cp "$CLONE_DIR/$rf" "$SKILLS_DIR/$rf"
 done
+# Record the upstream RULES.md just installed, for the next run's local-edit check
+if [ -f "$CLONE_DIR/RULES.md" ]; then
+  cksum < "$CLONE_DIR/RULES.md" > "$RULES_RECORD"
+fi
 
 # Sync scripts/ from upstream
 if [ -d "$CLONE_DIR/scripts" ]; then
@@ -290,6 +326,27 @@ if [ -d "$CLONE_DIR/profiles" ]; then
     profile="$(basename "$installed_profile_dir")"
     [ -d "$CLONE_DIR/profiles/$profile" ] || rm -rf "$installed_profile_dir"
   done
+fi
+
+TEMPLATES_SKIPPED=0
+# Sync templates/ from upstream (process-document starters that
+# project-bootstrap / project-onboard copy into a project's docs/). The
+# installed copy is upstream-owned: a project edits its own docs/ copies.
+# Only a templates/ carrying the skills' .from-skills marker is replaced or
+# removed (same rule as the agent installers); anything else is left alone.
+if [ -d "$CLONE_DIR/templates" ]; then
+  if [ -e "$SKILLS_DIR/templates" ] && [ ! -f "$SKILLS_DIR/templates/.from-skills" ]; then
+    echo ""
+    echo "⚠  templates/ in the skills dir has no .from-skills marker, so it is not the"
+    echo "   skills' copy; left alone. Move it aside and re-run to install the templates."
+    TEMPLATES_SKIPPED=1
+  else
+    rm -rf "$SKILLS_DIR/templates"
+    cp -R "$CLONE_DIR/templates" "$SKILLS_DIR/templates"
+  fi
+elif [ -f "$SKILLS_DIR/templates/.from-skills" ]; then
+  # Removed upstream: mirror the removal (reported below as REMOVED upstream)
+  rm -rf "$SKILLS_DIR/templates"
 fi
 
 for f in "$SKILLS_DIR"/*/SKILL.md; do
@@ -460,7 +517,46 @@ done
 profiles_modified_count=0
 for f in $PROFILES_MODIFIED; do profiles_modified_count=$((profiles_modified_count+1)); done
 
-TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count + rules_modified_count + profiles_modified_count ))
+# Snapshot templates/ after update and list what changed
+[ -d "$SKILLS_DIR/templates" ] && cp -R "$SKILLS_DIR/templates" "$AFTER_DIR/__templates__"
+TEMPLATES_MODIFIED=""
+tb="$BEFORE_DIR/__templates__"
+ta="$AFTER_DIR/__templates__"
+# Either side may be missing (first install of templates/, or removed upstream),
+# so build the list without a failing test inside a pipeline (set -e + pipefail).
+template_files=""
+for d in "$ta" "$tb"; do
+  [ -d "$d" ] || continue
+  template_files="$template_files
+$(cd "$d" && find . -type f | sed 's|^\./||')"
+done
+template_files="$(printf '%s\n' "$template_files" | sed '/^$/d' | sort -u)"
+for rel in $template_files; do
+  if [ ! -f "$tb/$rel" ]; then
+    TEMPLATES_MODIFIED="$TEMPLATES_MODIFIED ADDED:$rel"
+  elif [ ! -f "$ta/$rel" ]; then
+    TEMPLATES_MODIFIED="$TEMPLATES_MODIFIED REMOVED:$rel"
+  elif ! diff -q "$tb/$rel" "$ta/$rel" > /dev/null 2>&1; then
+    TEMPLATES_MODIFIED="$TEMPLATES_MODIFIED $rel"
+  fi
+done
+templates_modified_count=0
+for f in $TEMPLATES_MODIFIED; do templates_modified_count=$((templates_modified_count+1)); done
+
+# Every backup still in .project-context-backup/ needs moving into CLAUDE.md,
+# whichever run wrote it; each is listed once until the user deletes it.
+PC_PENDING=""
+if [ -d "$SKILLS_DIR/.project-context-backup" ]; then
+  for b in "$SKILLS_DIR/.project-context-backup/"*.md; do
+    [ -f "$b" ] || continue
+    PC_PENDING="$PC_PENDING $(basename "$b")"
+  done
+fi
+pc_pending_count=0
+for b in $PC_PENDING; do pc_pending_count=$((pc_pending_count+1)); done
+ATTENTION=$(( TEMPLATES_SKIPPED + pc_pending_count ))
+
+TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count + rules_modified_count + profiles_modified_count + templates_modified_count + ATTENTION ))
 
 if [ $TOTAL -eq 0 ]; then
   echo "STATUS: up-to-date"
@@ -468,9 +564,44 @@ if [ $TOTAL -eq 0 ]; then
   exit 0
 fi
 
-echo "STATUS: updated"
-echo "CHANGES: $TOTAL skill(s) affected"
+# Anything that needs the user (project facts to move, a templates/ left alone)
+# sets the status and is reported first, before the diffs, so it is never lost
+# at the bottom of a long report.
+if [ "$ATTENTION" -gt 0 ]; then
+  echo "STATUS: needs-attention"
+  if [ "$TOTAL" -gt "$ATTENTION" ]; then
+    echo "CHANGES: $TOTAL item(s) affected, $ATTENTION of them need your action (first below)"
+  else
+    echo "Nothing was updated, but $ATTENTION item(s) need your action (below)."
+  fi
+else
+  echo "STATUS: updated"
+  echo "CHANGES: $TOTAL item(s) affected"
+fi
 echo ""
+
+if [ "$ATTENTION" -gt 0 ]; then
+  echo "--- NEEDS ATTENTION ($ATTENTION) ---"
+  if [ "$TEMPLATES_SKIPPED" = "1" ]; then
+    echo "  templates/ was not updated: it has no .from-skills marker (see the warning above)."
+  fi
+  for b in $PC_PENDING; do
+    case " $PC_NEW " in
+      *" $b "*)
+        echo "  .project-context-backup/$b: a skill's ## Project Context block held project"
+        echo "    facts. Skills no longer carry them: move them into CLAUDE.md, then delete"
+        echo "    this file (it is listed on every update until you do). Saved this run:"
+        sed 's/^/      /' "$SKILLS_DIR/.project-context-backup/$b"
+        ;;
+      *)
+        echo "  .project-context-backup/$b: saved by an earlier update, still to move into"
+        echo "    CLAUDE.md (delete the file once done)."
+        ;;
+    esac
+  done
+  echo ""
+fi
+
 
 if [ $added_count -gt 0 ]; then
   echo "--- ADDED ($added_count) ---"
@@ -489,7 +620,7 @@ if [ $modified_count -gt 0 ]; then
   for skill in $MODIFIED; do
     echo ""
     echo "  skill: $skill"
-    echo "  diff (## Project Context excluded):"
+    echo "  diff:"
     diff --unified=3 \
       --label "before/$skill/SKILL.md" \
       --label "after/$skill/SKILL.md" \
@@ -617,4 +748,36 @@ if [ $profiles_modified_count -gt 0 ]; then
     esac
   done
   echo ""
+fi
+
+
+if [ $templates_modified_count -gt 0 ]; then
+  echo "--- TEMPLATES UPDATED ($templates_modified_count) ---"
+  echo "  (starters only: re-copy into the project's docs/ by hand if you want a change)"
+  for entry in $TEMPLATES_MODIFIED; do
+    case "$entry" in
+      ADDED:*)
+        echo ""
+        echo "  file: templates/${entry#ADDED:}  (new file)"
+        ;;
+      REMOVED:*)
+        echo ""
+        echo "  file: templates/${entry#REMOVED:}  (REMOVED upstream)"
+        ;;
+      *)
+        echo ""
+        echo "  file: templates/$entry"
+        diff --unified=3 \
+          --label "before/templates/$entry" \
+          --label "after/templates/$entry" \
+          "$tb/$entry" "$ta/$entry" \
+          | sed 's/^/    /' || true
+        ;;
+    esac
+  done
+  echo ""
+fi
+
+if [ "$ATTENTION" -gt 0 ]; then
+  echo "NEEDS ATTENTION: $ATTENTION item(s) need your action; see the top of this report."
 fi

@@ -88,7 +88,10 @@ conventions to this project.
 │   ├── features/
 │   ├── proposals/
 │   ├── decisions/
-│   └── design/          # UI design plans (frontend projects)
+│   ├── design/          # UI design plans (frontend projects)
+│   ├── privacy/         # screening rules, PIA template, PIAs, data inventory
+│   ├── corrections-log.md
+│   └── risk-register.md
 └── .env.example
 ```
 
@@ -150,7 +153,29 @@ plan, and ADR formats.
 
 ---
 
+## Process
+
+Agents follow `RULES.md`: [evidence, corrections and decisions](.opencode/skills/RULES.md#evidence-corrections--decisions)
+(including never `cd`), [Git & PRs](.opencode/skills/RULES.md#git--prs), [static analysis](.opencode/skills/RULES.md#static-analysis),
+[changelog](.opencode/skills/RULES.md#changelog), [privacy](.opencode/skills/RULES.md#privacy), [risk register](.opencode/skills/RULES.md#risk-register).
+This file is the only home of project facts ([project facts](.opencode/skills/RULES.md#project-facts)).
+
+| Setting | Value |
+|---|---|
+| CI on pull requests | [yes / no / no CI] |
+| Local CI command | [command, or "not required"] |
+| Commands run instead of CI | [lint / test / build, or "n/a"] |
+| Privacy adoption point | feature docs from [NNNN], proposals from [NNNN] |
+| Privacy and risk decisions | [name] (fills a PIA's regimes and lawful basis) |
+| Privacy guard | [`node --test scripts/__tests__/privacy-screening.test.mjs` / not installed] |
+| Changelog | [path and limit (default 300 characters) / none] |
+| Process documents | `docs/corrections-log.md`, `docs/risk-register.md`, `docs/privacy/` |
+
+---
+
 ## Settled Decisions (do not revisit without a superseding ADR)
+
+One line per decision ([`RULES.md#project-facts`](.opencode/skills/RULES.md#project-facts)).
 
 | # | Decision |
 |---|---|

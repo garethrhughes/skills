@@ -1,17 +1,14 @@
 ---
 name: project-bootstrap
-description: Interactive bootstrap for new projects. Asks the user a structured set of questions and produces a complete, filled-in CLAUDE.md and Project Context block for all skills. Covers application stack, infrastructure-as-code, observability, and security/compliance posture, with sensible defaults for each. Run this once at the start of a new project before using any other skill.
+description: Interactive bootstrap for new projects. Asks the user a structured set of questions and produces a complete, filled-in CLAUDE.md. Covers application stack, infrastructure-as-code, observability, and security/compliance posture, with sensible defaults for each. Run this once at the start of a new project before using any other skill.
 compatibility: opencode
 ---
 
 # Project Bootstrap Skill
 
 You are the Project Bootstrap agent. Your job is to interview the user and produce
-two ready-to-use outputs:
-
-1. A complete, filled-in **`CLAUDE.md`** for the new project
-2. A **`## Project Context` block** that can be pasted into any skill's `SKILL.md`
-   (or referenced at the start of a conversation to load context into any skill)
+one ready-to-use output: a complete, filled-in **`CLAUDE.md`** for the new project. It is the only home of project facts; skills carry no per-project block
+([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 Work through the interview in clearly labelled phases. Ask one phase at a time.
 Do not ask all questions at once — it is overwhelming. After each phase, confirm
@@ -45,8 +42,7 @@ Available profiles (extensible — drop another directory under `profiles/` to a
 
 Before asking any questions, tell the user:
 
-> "I'll ask you a series of short questions to bootstrap your project's CLAUDE.md
-> and skill context block. There are **10 phases** covering project identity, **skillset
+> "I'll ask you a series of short questions to bootstrap your project's CLAUDE.md. There are **10 phases** covering project identity, **skillset
 > profile**, application stack, infrastructure-as-code, repository structure,
 > conventions, observability, security/compliance, domain, and Jira integration
 > (optional). Answer as much or as little as you know — I'll mark anything unknown as
@@ -153,9 +149,12 @@ corresponding row at runtime.
 - Where do IaC modules live? [**from profile 3.5**]
 - Secrets manager? [**from profile 3.6**]
 - CI/CD pipeline? [**from profile 3.7**]
-- Standard resource tags? [**from profile 3.8** — defaults from `RULES.md#infrastructure-as-code`]
+- Standard resource tags? [**from profile 3.8** — defaults from `RULES.md#infrastructure-as-code-opentofu--terraform`]
 - How is config/env managed? [**from profile 3.9**]
 - Is there a task runner? [**from profile 3.10**]
+- Does CI run on pull requests? How is CI run locally before a PR, or, with no CI, which
+  commands (lint, test, build) are run instead? [**Default:** CI on every PR; locally, the
+  commands CI runs, listed in the README]
 
 After this round, confirm:
 
@@ -165,6 +164,7 @@ Cloud:     [cloud provider + key services]
 IaC:       [tool] / state in [backend]
 Secrets:   [secrets manager]
 CI/CD:     [pipeline]
+Local CI:  [command, or "not required"] (CI on PRs: yes / no / no CI)
 ```
 
 Ask: "Does this look right?"
@@ -238,10 +238,15 @@ Phase 7.
 - Auth model details? [**from profile 7.5**]
 - Public (unauthenticated) endpoints? [**from profile 7.6**]
 - Secrets handling? [defaults from `RULES.md#configuration--secrets`]
-- IAM principle? [defaults from `RULES.md#infrastructure-as-code`]
+- IAM principle? [defaults from `RULES.md#infrastructure-as-code-opentofu--terraform`]
 - Network exposure rules? [**from profile 7.7**]
 - Vulnerability scanning? [**from profile 7.8**]
 - Audit logging requirements? [**from profile 7.9**]
+- Who makes privacy and risk decisions (fills a PIA's regimes and lawful basis, accepts
+  residual risks)? [**No default — ask for a name**]
+- Install the optional privacy-screening guard (`node --test`, Node 18+)? [**Default:** no]
+- User-facing changelog: path and entry limit? [**Default:** `CHANGELOG.md`, 300
+  characters]
 
 After this round, confirm:
 
@@ -251,6 +256,8 @@ Data classes: [scheme]
 Encryption:   at rest [approach] / in transit [TLS version]
 Secrets:      [secrets manager]
 Scanning:     [tools]
+Privacy:      decisions by [name]; guard [installed / not installed]
+Changelog:    [path, limit / none]
 ```
 
 ---
@@ -297,7 +304,7 @@ Ask: "Does this look right?"
 
 ## Output Generation
 
-Once all phases are complete, produce the following two outputs.
+Once all phases are complete, produce the following output.
 
 **Important:** When the user accepted a default answer, write the **full expanded default
 value** into the output — never write "default" or "same as reference stack". The output
@@ -478,7 +485,29 @@ plan, and ADR formats.
 
 ---
 
+## Process
+
+Agents follow `RULES.md`: [evidence, corrections and decisions](https://github.com/garethrhughes/skills/blob/main/RULES.md#evidence-corrections--decisions)
+(including never `cd`), [Git & PRs](https://github.com/garethrhughes/skills/blob/main/RULES.md#git--prs) (CI evidence, review briefs),
+[static analysis](https://github.com/garethrhughes/skills/blob/main/RULES.md#static-analysis), [changelog](https://github.com/garethrhughes/skills/blob/main/RULES.md#changelog),
+[privacy](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy) and [risk register](https://github.com/garethrhughes/skills/blob/main/RULES.md#risk-register). This project's settings:
+
+| Setting | Value |
+|---|---|
+| CI on pull requests | {yes / no / no CI — from Phase 3} |
+| Local CI command | {command, or "not required"} |
+| Commands run instead of CI | {lint / test / build commands, or "n/a"} |
+| Privacy adoption point | feature docs from {NNNN}, proposals from {NNNN} |
+| Privacy and risk decisions | {name from Phase 7} (fills a PIA's regimes and lawful basis) |
+| Privacy guard | {`node --test scripts/__tests__/privacy-screening.test.mjs` / not installed} |
+| Changelog | {path and limit (default 300 characters) / none} |
+| Process documents | `docs/corrections-log.md`, `docs/risk-register.md`, `docs/privacy/` |
+
+---
+
 ## Settled Decisions (do not revisit without a superseding ADR)
+
+One line per decision ([`RULES.md#project-facts`](https://github.com/garethrhughes/skills/blob/main/RULES.md#project-facts)).
 
 | # | Decision |
 |---|---|
@@ -494,44 +523,6 @@ plan, and ADR formats.
 
 ---
 
-### Output 2 — Project Context Block
-
-Generate a concise `## Project Context` block for pasting into any skill file,
-or for providing at the start of a conversation to load context into any skill.
-This should be a dense, scannable summary — not the full CLAUDE.md.
-
-```markdown
-## Project Context
-
-**Project:** {project name} — {one-line description}
-**Skillset profile:** `{profile}` (rules: `RULES.md` + `rules/{profile}.md`)
-
-**Backend:** {framework} / {language} / {database + ORM}
-**Frontend:** {framework} / {styling} / {state management} *(or: backend-only)*
-**Auth:** {auth approach}
-**Validation:** {validation library}
-**Logging:** {logger} → {logs backend}
-**Testing:** {backend test framework} / {frontend test framework}
-
-**Infra:** {iac tool} on {cloud}; state in {state backend}; secrets in {secrets manager}; CI/CD via {pipeline}
-**Local dev:** {local dev setup}
-
-**Compliance:** {framework or "none"}
-**Data classes:** {scheme}
-**Encryption:** at rest {approach} / in transit {TLS}
-
-**Repo structure:** {top-level directories, one line}
-**Module structure:** {brief description of how code is organised, 1–2 sentences}
-
-**Key rules:** Standard rules from `RULES.md`. Project-specific additions:
-- {any project-specific additions/overrides from Phase 5, or "_(none)_"}
-
-**External integrations:** {list or "none"}
-**Key entities:** {list with data classes, or "TBD"}
-**Known gotchas:** {list or "none"}
-**Jira:** {instance url, default project keys, AC location — or "none"}
-```
-
 ---
 
 ## After Output
@@ -540,31 +531,21 @@ The post-output workflow has seven steps. Run them strictly in order. If any ste
 stop and report the failure to the user before continuing — do not paper over a broken
 scaffold by moving on.
 
-### Step 1 — Detect local skills
+### Step 1 — Detect local skills and old Project Context blocks
 
-Check whether skills are local to the project:
+Look for `.opencode/skills/` in the project root and list the `SKILL.md` files. Skills
+no longer carry project facts
+([`RULES.md#project-facts`](../RULES.md#project-facts)); note any file that still has a
+filled-in `## Project Context` block from an older version, and read
+`.opencode/skills/.project-context-backup/*.md` (where `update-skills`, usually run
+first, keeps the blocks it removed).
 
-- Look for `.opencode/skills/` in the project root
-- If it exists, list which SKILL.md files are present
+### Step 2 — Move old Project Context blocks into CLAUDE.md
 
-### Step 2 — Insert Project Context into local skills
-
-If `.opencode/skills/` exists, for each SKILL.md found, replace the `## Project Context`
-placeholder block — the block that begins with the `> Fill in before use:` blockquote
-and ends at the `---` rule that follows it — with the generated Project Context block
-from Output 2. Do this for every skill file present.
-
-Confirm to the user which files were updated, e.g.:
-> "Updated Project Context in: architect, developer, reviewer, infosec, create-feature"
-
-If `.opencode/skills/` does not exist, tell the user:
-
-> "Skills are not local to this project. The Project Context block can be pasted into
-> the `## Project Context` section of any skill file, or provided at the start of a
-> conversation: 'Here is my project context: [paste block]'.
->
-> To version skills inside this project and have the context inserted automatically,
-> copy the skills into `.opencode/skills/` — see the skills README for instructions."
+For each block or backup found, move any fact it holds that the new `CLAUDE.md` lacks into the
+matching `CLAUDE.md` section, show the user what moved, and delete the block from the
+skill (`update-skills` also saves a copy of each under
+`.opencode/skills/.project-context-backup/`). If none was found, say so.
 
 ### Step 3 — Scaffold the Project
 
@@ -643,7 +624,7 @@ Only create IaC directories if Phase 3 specified an IaC tool. If yes:
   - OpenTofu / Terraform: `.terraform/`, `*.tfstate`, `*.tfstate.backup`, `*.tfvars` (except `*.example.tfvars`), `.terraform.lock.hcl` is **kept** (committed)
   - Pulumi: `Pulumi.*.yaml` secrets, `node_modules/`
   - AWS CDK: `cdk.out/`, `*.js` (if TypeScript), `node_modules/`
-- Pin provider versions where the chosen tool supports it (per `RULES.md#infrastructure-as-code`)
+- Pin provider versions where the chosen tool supports it (per `RULES.md#infrastructure-as-code-opentofu--terraform`)
 
 #### 3.4 Local dev
 
@@ -732,6 +713,23 @@ Also create `docs/features/` (written by `create-feature` / `jira-feature`) and,
 project has a frontend, `docs/design/` (written by the `design` skill) — same `.gitkeep`
 treatment.
 
+Then install the process documents from the skills' [`templates/`](../templates/README.md)
+(next to `rules/`), with the adoption point `0001`:
+
+| Template | Install to |
+|---|---|
+| `templates/docs/corrections-log.md` | `docs/corrections-log.md` |
+| `templates/docs/risk-register.md` | `docs/risk-register.md` |
+| `templates/docs/privacy/README.md`, `TEMPLATE-pia.md`, `data-inventory.md` | `docs/privacy/` |
+| `templates/scripts/privacy-screening.guard.mjs.template` | `scripts/__tests__/privacy-screening.test.mjs` (renamed), **only if the user opted in** |
+
+Never overwrite an existing file. Replace `{product owner}` with the Phase 7 name and
+the adoption-point placeholders with the numbers in CLAUDE.md (they also go in the
+guard's `FIRST_SCREENED_*`). If the guard was installed: run it; then write
+`9999-no-screening.md` (no screening) in a scratch directory, run the guard with
+`PRIVACY_FEATURES_DIR` pointing there and confirm it fails; and exclude
+`scripts/__tests__/*.test.mjs` from the project's own test runner if it would collect it.
+
 #### 3.9 Install / restore dependencies
 
 Run the install command appropriate to the active profile:
@@ -795,7 +793,7 @@ its one-line description.}
 
 ## Architecture
 
-{1–2 sentences derived from the Project Context block.}
+{1–2 sentences from Phase 1.}
 
 ## Documentation
 
@@ -804,6 +802,8 @@ its one-line description.}
 - [`docs/proposals/`](./docs/proposals/) — technical design proposals
 - [`docs/decisions/`](./docs/decisions/) — architecture decision records (ADRs)
 - [`docs/design/`](./docs/design/) — UI design plans *(frontend projects)*
+- [`docs/privacy/`](./docs/privacy/), [`docs/risk-register.md`](./docs/risk-register.md),
+  [`docs/corrections-log.md`](./docs/corrections-log.md) — process documents
 
 ## Contributing
 
@@ -850,7 +850,7 @@ Tell the user:
 > "Your project is bootstrapped, installed, and verified.
 >
 > Suggested next steps:
-> 1. Commit `CLAUDE.md`, `README.md`, `opencode.json`, and any updated skill files to version control
+> 1. Commit `CLAUDE.md`, `README.md`, `opencode.json` and the `docs/` process documents to version control
 > 2. Start developing — the dev command is `{actual dev command from the scaffold}`
 > 3. If you have existing architectural decisions, run: `use the decision-log skill to seed the initial ADRs`
 > 4. For your first feature, run: `use the create-feature skill`"
