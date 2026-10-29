@@ -11,17 +11,11 @@ The skills are organised in two layers so they can target multiple stacks:
   overlay refines the core for a specific stack (language conventions, framework
   rules, ORM, logger, test runner).
 
-The core rules also carry the **process** the skills follow on every project: the
-evidence checks every agent runs before claiming something (`RULES.md` *Evidence,
-Corrections & Decisions*), CI evidence on every PR (a local CI report where CI does not
-run on pull requests, in which a SKIPPED job is NOT VERIFIED),
-review briefs that carry the original request, the diff and existing evidence but never a
-list of fixes, changelog discipline,
-a risk register for anything left open on purpose, evaluation-gate methodology, and a
-five-question **privacy screening** with a privacy impact assessment (PIA) before any
-change that touches personal data. Starter files for these process documents live in
-[`templates/`](templates/), and `project-bootstrap` / `project-onboard` install them
-into a project's `docs/`.
+`RULES.md` also holds the process every skill follows (evidence before claims, CI
+evidence and review briefs, Semgrep, changelog, privacy screening with PIAs, risk
+register, evaluation gates). Starter files for the process documents are in
+[`templates/`](templates/README.md). Project facts live only in the project's
+`CLAUDE.md`; skills carry no per-project block.
 
 Selectable skillset profiles:
 
@@ -57,8 +51,8 @@ async-all-the-way, no `dynamic` for `dotnet`).
 | [decision-log](decision-log/SKILL.md) | Sole owner of ADR creation. Captures and maintains architectural decisions in `docs/decisions/` with a running index; invoked by `architect` after a proposal is accepted |
 | [create-feature](create-feature/SKILL.md) | Full feature development cycle: proposal → design plan (UI work) → implementation → review → infosec sign-off → decision logging → PR |
 | [jira-feature](jira-feature/SKILL.md) | Loads a Jira ticket by URL or issue key, extracts description and acceptance criteria, and drives the full create-feature cycle with that ticket as the requirement source |
-| [project-bootstrap](project-bootstrap/SKILL.md) | Interactive bootstrap for new projects — asks structured questions covering app stack, IaC, observability, security/compliance, domain, and Jira integration, then produces a complete `CLAUDE.md` and populates the Project Context block in all local skills |
-| [project-onboard](project-onboard/SKILL.md) | Interactive onboarding for an existing codebase — investigates the repo to fill in `CLAUDE.md` and the Project Context block, asking the user only what the code can't answer; covers the same 9 phases as project-bootstrap including optional Jira integration |
+| [project-bootstrap](project-bootstrap/SKILL.md) | Interactive bootstrap for new projects — asks structured questions covering app stack, IaC, observability, security/compliance, domain, and Jira integration, then produces a complete `CLAUDE.md` and installs the process documents |
+| [project-onboard](project-onboard/SKILL.md) | Interactive onboarding for an existing codebase — investigates the repo to fill in `CLAUDE.md`, asking the user only what the code can't answer; covers the same 9 phases as project-bootstrap including optional Jira integration |
 | [mcp-setup](mcp-setup/SKILL.md) | Interactive MCP server setup — presents a menu of available MCP servers (Context7, GitHub, Filesystem, Memory, Squirrel Notes, Semgrep, Jira, Playwright) and writes the chosen config into `opencode.json`; invoked automatically by `project-bootstrap` and `project-onboard` |
 | [create-skill](create-skill/SKILL.md) | Interactively creates or updates OpenCode skills — asks structured questions about purpose, workflow, MCP tools, and output format, then produces a complete SKILL.md and updates the README |
 | [update-skills](update-skills/SKILL.md) | Pulls the latest skills from the upstream repository and reports what changed (added, removed, modified) with a unified diff per skill |
@@ -79,22 +73,22 @@ directory tracked by your own repository rather than a nested git repo.
 
 ### Claude Code
 
-After cloning the skills repo (anywhere — defaults to `~/.config/opencode/skills`), run
-from your project root:
+With the skills in the project (`.opencode/skills/`, as above), run from the project
+root:
 
 ```bash
-~/.config/opencode/skills/scripts/install-claude-agents.sh
+.opencode/skills/scripts/install-claude-agents.sh
 ```
 
 This writes one agent file per skill into `.claude/agents/<skill>.md` with the
 appropriate per-skill tool restrictions, copies `RULES.md`, `rules/`, `profiles/` and
-`templates/` into `.claude/`, and is safe to re-run after `update-skills` pulls upstream
-changes.
+`templates/` into `.claude/`, and is safe to re-run after `update-skills`. Pass another
+project-local path as the first argument if the skills live elsewhere in the project.
 
 ### GitHub Copilot
 
 ```bash
-~/.config/opencode/skills/scripts/install-copilot-agents.sh
+.opencode/skills/scripts/install-copilot-agents.sh
 ```
 
 Symlinks each `SKILL.md` into `.github/agents/<skill>.md` and copies `RULES.md`,
@@ -107,8 +101,8 @@ Once installed, configure the skills for your project by running either:
 - **New project:** `Use the project-bootstrap skill to set up this project.`
 - **Existing project:** `Use the project-onboard skill to onboard this existing codebase.`
 
-Both skills will interview you (or read your codebase), produce a `CLAUDE.md`, populate
-the `## Project Context` block in every skill, and guide you through MCP server setup.
+Both skills will interview you (or read your codebase), produce a `CLAUDE.md`, install
+the process documents into `docs/`, and guide you through MCP server setup.
 
 ## Usage
 
@@ -235,7 +229,7 @@ optional Jira integration. Accept the opinionated defaults by saying "yes" or "d
 at any phase, or provide your own values. At the end it produces:
 
 - A fully populated `CLAUDE.md` in the project root
-- A `## Project Context` block automatically inserted into each skill in `.opencode/skills/`
+- The process documents (`docs/corrections-log.md`, `docs/risk-register.md`, `docs/privacy/`)
 - MCP server config written to `opencode.json` via `mcp-setup`
 
 ```
@@ -250,7 +244,7 @@ for what the code cannot answer. It covers the same 9 phases as `project-bootstr
 including optional Jira integration, and produces the same outputs:
 
 - A fully populated `CLAUDE.md` in the project root
-- A `## Project Context` block automatically inserted into each skill in `.opencode/skills/`
+- The process documents the project lacks, with the data inventory seeded from the code
 - MCP server config written to `opencode.json` via `mcp-setup`
 - An **Onboarding Notes** section in `CLAUDE.md` listing gaps between the current code and the standard rules
 
@@ -260,26 +254,14 @@ Use the project-onboard skill to onboard this existing codebase.
 
 ## Customisation
 
-Each skill contains a `## Project Context` section near the top. Running `project-bootstrap`
-or `project-onboard` populates this automatically for every skill in `.opencode/skills/`.
-
-To update it manually, edit the `## Project Context` section of the relevant SKILL.md
-directly — changes are tracked in version control alongside your code.
-
-> **Note:** in OpenCode, your project's `CLAUDE.md` is already loaded into every
-> conversation automatically. The `## Project Context` section in each skill is for
-> skill-specific overrides or additions beyond what `CLAUDE.md` already provides.
+Project facts (stack, structure, conventions, decisions, overrides) live only in the
+project's `CLAUDE.md`; skills read it first and carry no per-project block. Edit
+`CLAUDE.md` to change them. An older install whose skills have filled-in
+`## Project Context` blocks: `update-skills` keeps a copy of each in
+`.opencode/skills/.project-context-backup/` and asks you to move the facts into
+`CLAUDE.md`.
 
 ## CLAUDE.md Template
 
 See [`CLAUDE.md.template`](CLAUDE.md.template) for a generic `CLAUDE.md` structure you can
 copy into any new project and fill in manually, without running `project-bootstrap`.
-
-## Process Document Templates
-
-[`templates/`](templates/) holds the starters for the documents the skills read and write:
-`docs/corrections-log.md`, `docs/risk-register.md`, and `docs/privacy/` (screening
-README, PIA template, data inventory), plus an optional dependency-free `node --test`
-guard for the privacy screening. See [`templates/README.md`](templates/README.md) for
-where each one is installed. A project owns its installed copies, and `update-skills`
-refreshes only the starters.

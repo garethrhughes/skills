@@ -43,7 +43,7 @@ the user selects the **dotnet** profile. The user can accept the default or over
 | 3.5 | IaC layout | `infra/modules/` for reusable modules; `infra/envs/{dev,staging,prod}/` for env root configs |
 | 3.6 | Secrets manager | AWS Secrets Manager (or Azure Key Vault); loaded via the matching `IConfiguration` provider. `dotnet user-secrets` for local dev |
 | 3.7 | CI/CD | GitHub Actions — `dotnet restore --locked-mode && dotnet build && dotnet test` on PR; container build + `apply` on merge to `main` for dev, manual approval for staging/prod |
-| 3.8 | Standard tags | Use `RULES.md#infrastructure-as-code` defaults |
+| 3.8 | Standard tags | Use `RULES.md#infrastructure-as-code-opentofu--terraform` defaults |
 | 3.9 | Config management | `appsettings.json` for non-secret defaults; `appsettings.{Environment}.json` for per-env overrides; `dotnet user-secrets` in dev; production config sourced from the secrets manager. Backend reads via `IOptions<T>` only |
 | 3.10 | Task runner | Makefile delegating to the `dotnet` CLI — targets: `up`, `down`, `migrate`, `dev-api`, `test-api`, `build`, `plan`, `apply` |
 

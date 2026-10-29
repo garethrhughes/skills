@@ -23,13 +23,9 @@ choices about palette, typography, and layout that are specific to *this* brief,
 aesthetic risk when it is justified. Then implement them to the same standard as any other
 production code in the repo — TDD, typed, accessible, no shortcuts.
 
-## Project Context
-
-> Fill in before use: Replace this section with your project's stack, styling system
-> (e.g. Tailwind v4 `@theme` in `globals.css`, CSS modules, Blazor + Bootstrap), existing
-> design system or component library, brand palette and typefaces, and any accessibility
-> target (e.g. WCAG 2.2 AA). `project-bootstrap` and `project-onboard` populate this
-> automatically.
+**Project facts** (stack, structure, conventions, decisions) are in the project's
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)). `CLAUDE.md` names the styling system, design system,
+brand and accessibility target.
 
 ---
 

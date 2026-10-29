@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # update.sh - fetch the latest skills from upstream and merge into installed location
 #
-# The skills directory does NOT need to be a git repository. Clones upstream
-# to a temp dir, diffs each SKILL.md against the installed version, copies
-# in changes while preserving existing ## Project Context sections.
+# The skills directory is project-local (default <project>/.opencode/skills)
+# and does NOT need to be a git repository. Clones upstream to a temp dir,
+# diffs each SKILL.md against the installed version and copies in changes.
+# Skills carry no per-project block any more (project facts live in the
+# project's CLAUDE.md): a customised "## Project Context" block found in an
+# installed skill is saved under .project-context-backup/ and reported, never
+# silently dropped.
 #
 # Compatible with bash 3 (macOS default).
 
@@ -28,41 +32,24 @@ echo "Upstream   : $UPSTREAM"
 echo "Skills dir : $SKILLS_DIR"
 echo ""
 
-# Write awk programs to temp files to avoid quoting issues
+# Write the awk program to a temp file to avoid quoting issues
 AWK_EXTRACT="$(mktemp)"
-AWK_REPLACE="$(mktemp)"
 
+# Extract a skill's own "## Project Context" section, ignoring any example of one
+# inside a fenced code block (project-bootstrap/onboard used to carry one).
 cat > "$AWK_EXTRACT" << 'AWK'
-/^## Project Context/ { b=1 }
-b && /^## / && !/^## Project Context/ { b=0 }
+/^```/ { fence = !fence }
+!fence && /^## Project Context/ { b=1; print; next }
+b && !fence && /^## / { b=0 }
+b && !fence && /^---$/ { b=0 }
 b { print }
-AWK
-
-cat > "$AWK_REPLACE" << 'AWK'
-/^## Project Context/ {
-  b=1
-  while ((getline ln < ctx_file) > 0) print ln
-  close(ctx_file)
-  next
-}
-b && /^## / && !/^## Project Context/ { b=0 }
-!b { print }
 AWK
 
 extract_project_context() {
   awk -f "$AWK_EXTRACT" "$1"
 }
 
-replace_project_context() {
-  local file="$1"
-  local ctx_file="$2"
-  local tmp
-  tmp="$(mktemp)"
-  awk -v ctx_file="$ctx_file" -f "$AWK_REPLACE" "$file" > "$tmp"
-  mv "$tmp" "$file"
-}
-
-# Root-level files that are copied verbatim (no Project Context merging).
+# Root-level files that are copied verbatim.
 # RULES.md is the canonical rules file — overrides live in per-project ADRs,
 # never in RULES.md itself, so it is safe to copy verbatim. A warning is
 # emitted below if the installed RULES.md has been locally modified.
@@ -87,7 +74,7 @@ AFTER_DIR="$(mktemp -d)"
 CONTEXT_DIR="$(mktemp -d)"
 cleanup() {
   [ "$OWN_CLONE_DIR" = "1" ] && rm -rf "$CLONE_DIR"
-  rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT" "$AWK_REPLACE"
+  rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT"
 }
 trap cleanup EXIT
 
@@ -174,6 +161,7 @@ fi
 # Snapshot templates/ before update (process-document starters)
 [ -d "$SKILLS_DIR/templates" ] && cp -R "$SKILLS_DIR/templates" "$BEFORE_DIR/__templates__"
 
+PC_MOVED=""
 for upstream_skill_dir in "$CLONE_DIR"/*/; do
   [ -d "$upstream_skill_dir" ] || continue
   skill="$(basename "$upstream_skill_dir")"
@@ -195,9 +183,16 @@ for upstream_skill_dir in "$CLONE_DIR"/*/; do
     done
   fi
 
+  # A filled-in Project Context block (not the old placeholder) holds project
+  # facts: keep a copy and report it, so the user moves them into CLAUDE.md.
   ctx_file="$CONTEXT_DIR/$skill.ctx"
-  if [ -f "$ctx_file" ] && [ -s "$ctx_file" ]; then
-    replace_project_context "$installed_file" "$ctx_file"
+  if [ -s "$ctx_file" ] && ! grep -q 'Fill in before use' "$ctx_file"; then
+    mkdir -p "$SKILLS_DIR/.project-context-backup"
+    backup="$SKILLS_DIR/.project-context-backup/$skill.md"
+    if [ ! -f "$backup" ]; then
+      cp "$ctx_file" "$backup"
+    fi
+    PC_MOVED="$PC_MOVED $skill"
   fi
 done
 
@@ -521,7 +516,11 @@ done
 templates_modified_count=0
 for f in $TEMPLATES_MODIFIED; do templates_modified_count=$((templates_modified_count+1)); done
 
-TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count + rules_modified_count + profiles_modified_count + templates_modified_count + TEMPLATES_SKIPPED ))
+pc_moved_count=0
+for s in $PC_MOVED; do pc_moved_count=$((pc_moved_count+1)); done
+ATTENTION=$(( TEMPLATES_SKIPPED + pc_moved_count ))
+
+TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count + rules_modified_count + profiles_modified_count + templates_modified_count + ATTENTION ))
 
 if [ $TOTAL -eq 0 ]; then
   echo "STATUS: up-to-date"
@@ -529,7 +528,7 @@ if [ $TOTAL -eq 0 ]; then
   exit 0
 fi
 
-if [ "$TOTAL" -eq "$TEMPLATES_SKIPPED" ]; then
+if [ "$TOTAL" -eq "$ATTENTION" ]; then
   echo "STATUS: needs-attention"
   echo "Nothing was updated, but an item needs attention (below)."
 else
@@ -555,7 +554,7 @@ if [ $modified_count -gt 0 ]; then
   for skill in $MODIFIED; do
     echo ""
     echo "  skill: $skill"
-    echo "  diff (## Project Context excluded):"
+    echo "  diff:"
     diff --unified=3 \
       --label "before/$skill/SKILL.md" \
       --label "after/$skill/SKILL.md" \
@@ -685,9 +684,16 @@ if [ $profiles_modified_count -gt 0 ]; then
   echo ""
 fi
 
-if [ "$TEMPLATES_SKIPPED" = "1" ]; then
-  echo "--- NEEDS ATTENTION (1) ---"
-  echo "  templates/ was not updated: it has no .from-skills marker (see the warning above)."
+if [ "$ATTENTION" -gt 0 ]; then
+  echo "--- NEEDS ATTENTION ($ATTENTION) ---"
+  if [ "$TEMPLATES_SKIPPED" = "1" ]; then
+    echo "  templates/ was not updated: it has no .from-skills marker (see the warning above)."
+  fi
+  for s in $PC_MOVED; do
+    echo "  $s: its ## Project Context block held project facts. Skills no longer carry"
+    echo "    them; move them into CLAUDE.md. Copy kept at .project-context-backup/$s.md:"
+    sed 's/^/      /' "$SKILLS_DIR/.project-context-backup/$s.md"
+  done
   echo ""
 fi
 

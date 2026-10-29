@@ -15,12 +15,8 @@ to controls and concrete fixes.
 trails, secrets handling, infrastructure exposure, supply-chain integrity, compliance gaps,
 and privacy violations.
 
-## Project Context
-
-> Fill in before use: replace this section with your project's compliance framework(s),
-> data classification scheme, encryption standards, auth model, and any zero-knowledge
-> or client-side-encryption guarantees. `project-bootstrap` and `project-onboard`
-> populate this automatically.
+**Project facts** (stack, structure, conventions, decisions) are in the project's
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -46,10 +42,9 @@ mechanisms — `ConfigService`/`IOptions<T>`, `pino`/`Serilog`, etc.).
 If `CLAUDE.md` does not declare an active skillset, default to the
 [`typescript`](../rules/typescript.md) overlay for backwards compatibility.
 
-Before auditing, read `docs/risk-register.md` (risks already accepted, so they are not
-re-raised and their conditions are re-checked), `docs/privacy/` (the PIA for this change
-and the data inventory), and the **Patterns** section of `docs/corrections-log.md` (what
-has slipped past a review before), where the project keeps them.
+Before auditing, read `docs/risk-register.md` (accepted risks), `docs/privacy/` (this
+change's PIA, the data inventory) and the Patterns in `docs/corrections-log.md`, where
+the project has them.
 
 ---
 
@@ -58,7 +53,7 @@ has slipped past a review before), where the project keeps them.
 By default this skill is aligned with **ISO/IEC 27001:2022 Annex A controls** (the 93
 controls organised under four themes: A.5 Organizational, A.6 People, A.7 Physical,
 A.8 Technological). If your project uses SOC2, HIPAA, PCI-DSS, or another framework,
-replace the Control column in the table below in your Project Context.
+record the framework and its controls in `CLAUDE.md`.
 
 | Control | Title | Applies To |
 |---|---|---|
@@ -76,7 +71,7 @@ replace the Control column in the table below in your Project Context.
 | A.5.25 | Assessment and decision on information security events | Detection, triage, severity classification |
 | A.5.26 | Response to information security incidents | Error handling, breach detection, response procedures |
 | A.5.27 | Learning from information security incidents | Lessons learned, post-incident remediation |
-| A.5.34 | Privacy and protection of PII | Privacy screening, PIAs, data inventory, purpose and retention of personal data |
+| A.5.34 | Privacy and protection of PII | Privacy screening, PIAs, data inventory, retention of personal data |
 | A.8.2  | Privileged access rights | Admin endpoints, IAM admin scopes, break-glass accounts |
 | A.8.8  | Management of technical vulnerabilities | Dependency scanning, patch cadence |
 | A.8.15 | Logging | Audit trails, sensitive-operation logging |
@@ -93,7 +88,7 @@ replace the Control column in the table below in your Project Context.
 
 ### 1. Sensitive Field Exposure
 
-Identify the project's confidential/PII fields from the Project Context (e.g. encrypted
+Identify the project's confidential/PII fields from `CLAUDE.md` (e.g. encrypted
 payloads, password hashes, API keys, personal data). Flag any code that:
 
 - Logs these fields at any log level (including `debug`, `trace`)
@@ -335,42 +330,18 @@ Flag any code that:
 
 ## High — Privacy
 
-Audits against [`RULES.md#privacy`](../RULES.md#privacy). Infosec sign-off is
-**required on every PR that has a PIA**, whatever else it touches.
+Audits [`RULES.md#privacy`](../RULES.md#privacy); infosec is required on every PR with a
+PIA.
 
-- The feature doc or proposal has the five-question `## Privacy screening`, each
-  answered Yes or No with a reason. For a PR with no feature doc (a fix, dependency,
-  configuration, infrastructure or CI change), the developer writes the screening
-  **before coding**, as the first action of implementation (create-feature Step 2), in a
-  "Privacy screening" section of a **PR-description draft**, which is handed to the
-  reviewer and infosec as evidence and later becomes the PR description verbatim. Any
-  Yes: the developer writes the PIA then, before any code, with the header line `**PR:**
-  <branch or PR>, screening in the PR-description draft`, and infosec (create-feature
-  Step 4) is required. Read it there. Docs-only and tests-only PRs, and documents
-  numbered before the adoption point recorded in `CLAUDE.md` (unless reopened), are
-  exempt. **If `CLAUDE.md` records no adoption point**, the newest feature-doc and
-  proposal numbers that existed when the rule was adopted, and every number below them,
-  count as before it: neither the reviewer nor infosec blocks them, and the reviewer
-  asks the product owner to record the "first screened" numbers (newest + 1) in
-  `CLAUDE.md`.
-- Answers are literal. A new identifier, audit field, log line with a route or count,
-  existing value on a new screen, or new processor call answered "No" is a finding.
-- Any Yes has a PIA in `docs/privacy/`, written before implementation: with the
-  proposal, in the feature-document step, or, for a PR with no feature doc, by the
-  developer before any code (header line `**PR:** <branch or PR>, screening in the
-  PR-description draft`). A PIA with the `**PR:**` header has no document to link back
-  to; read its screening in the PR-description draft.
-- **Read the PIA against the diff.** The change records, logs, stores, exposes and sends
-  only what the PIA's data table lists. Each deletion path it names is real (cite the
-  line that touches the new table or field) and tested, and retention matches. The user
-  is told where the PIA says they will be. `docs/privacy/data-inventory.md` matches the
-  change.
-- A claim of deletion or retention that rests on an inventory row marked `unverified` is
-  a finding until the code has been read to the end.
-- A missing screening, a Yes with no PIA, or a data table that does not match the diff →
-  **REQUIRES CHANGES** (High).
-- *Applicable regimes and lawful basis* is the product owner's field. Never fill it and
-  never state a legal conclusion. Flag it if it is filled by an agent.
+- The screening (feature doc, proposal, or the PR-description draft of a PR with no
+  feature doc) is present and literal. Adoption-point exemptions apply as stated there.
+- Read the PIA against the diff: only the data it lists is recorded, logged, stored,
+  exposed or sent; each deletion path is real (cite the line) and tested; retention and
+  user notice match; the data inventory matches. A deletion claim resting on an
+  `unverified` inventory row is a finding. A `**PR:**`-headed PIA has no document to link
+  back to; read its screening in the draft.
+- Any failure of the privacy gates → **REQUIRES CHANGES** (High). Never fill *Applicable regimes and lawful basis*, and flag
+  it if an agent did.
 
 **Maps to:** A.5.34, A.5.9, A.5.10
 
@@ -416,9 +387,8 @@ to the change under review:
 - **Access Control Matrix:** who/what has access to which systems and data
 - **Change Management Procedure:** how schema and infra changes are reviewed and deployed
 - **Privacy Policy:** what data is collected, how it's used, who can access it
-- **Data Inventory** (`docs/privacy/data-inventory.md`): the personal data held, where,
-  who can read it, retention and deletion path, with a source file per row
-- **Risk Register** (`docs/risk-register.md`): every residual accepted or deferred
+- **Data Inventory** and **Risk Register** (`docs/privacy/data-inventory.md`,
+  `docs/risk-register.md`)
 
 **Maps to:** A.5.1, A.5.27
 
@@ -458,11 +428,8 @@ Use this structured output for every review:
 **Findings:** [list, or "clear"]
 
 ### Privacy
-- [ ] Privacy screening present and literal
-- [ ] Any Yes has a PIA written before implementation (before any code, for a PR with no
-  feature doc)
-- [ ] The diff stores, logs, exposes and sends only what the PIA lists; deletion paths real
-- [ ] Data inventory updated
+- [ ] Screening present and literal; any Yes has a PIA written before implementation
+- [ ] The diff stays within the PIA; deletion paths real; inventory updated
 **Findings:** [list, or "clear"]
 
 ### Infrastructure & Network
@@ -482,11 +449,10 @@ Use this structured output for every review:
 ### Documentation
 - [ ] DECISIONS / ADRs updated where needed
 - [ ] Data flow / classification updated if applicable
-- [ ] Risk register rows for every accepted residual
+- [ ] Risk-register row proposed for every accepted residual
 **Findings:** [list, or "clear"]
 
-**Semgrep:** version, rules run, files scanned; findings by rule ID and severity, or
-`NOT RUN` and why.
+**Semgrep:** version, rules, files; findings by rule ID, or `NOT RUN` and why.
 
 ---
 
@@ -503,45 +469,18 @@ REQUIRES CHANGES — N critical issue(s) must be resolved:
 *or*
 
 APPROVED WITH EXCEPTION — N issue(s) accepted as documented risk:
-1. [Issue + control mapping + business justification + mitigation + ADR link +
-   the risk-register row to add, with a proposed ID (the next free `R-NNN` in
-   `docs/risk-register.md`) and its text; the row is written in the decision-log step
-   and must exist before merge]
+1. [Issue + control mapping + business justification + mitigation + ADR link + the
+   proposed `R-NNN` row ([`RULES.md#risk-register`](../RULES.md#risk-register))]
 ```
 
 ## MCP Tools
 
 ### semgrep — Automated Security Scanning
-A Semgrep scan of the changed files is the **first step of every review**, before
-manual checks. Scan `git diff --name-only --diff-filter=d origin/main...HEAD`, with
-documentation included. Use the Semgrep MCP server if it is available to you.
-
-**This skill is read-only and may have no shell.** In that case the caller runs the CLI
-and hands over three things: the diff's file list, the text summary (Semgrep version,
-rules run, files scanned) and the JSON from
-
-```sh
-git -C <repo> diff -z --name-only --diff-filter=d origin/main...HEAD | sed -z 's|^|<repo>/|' \
-  | xargs -0 -r semgrep scan --metrics=off --json-output=<scratch>/semgrep.json \
-      --max-target-bytes=0 --config p/owasp-top-ten --config p/secrets <stack packs> \
-      [--config p/github-actions]
-```
-
-(stack packs from the active overlay; `p/github-actions` when workflows change; GNU
-`sed`/`xargs`, `gsed`/`gxargs` on macOS). A pack the registry cannot serve can make the
-scan run nothing, and without `--max-target-bytes=0` files over 1 MB are dropped
-silently; the `paths.scanned` check below catches both.
-
-- Check that the JSON's `paths.scanned` equals the diff's file list, with no file missing
-  and none extra. A file missing from it must appear under `paths.skipped` with a reason
-  (for example a size limit, if the caller left the default on); anything else means the
-  scan is not of this change.
-- CRITICAL / HIGH / ERROR → **REQUIRES CHANGES**, with the rule ID and `file:line`
-- MEDIUM / WARNING → an issue in your findings, evaluated in context
-- LOW / INFO → a Low finding, or noted
-- Never skip or discard its output. If no scan was handed over, write
-  `Semgrep: NOT RUN` in the verdict. Do not give **APPROVED** with it unless the verdict
-  says why it could not run and what was checked instead. It is never a clean scan.
+The scan in [`RULES.md#static-analysis`](../RULES.md#static-analysis) is the first step
+of every review, with its infosec severities. With no shell or Semgrep tool, take the
+caller's file list, summary and JSON, and check `paths.scanned` against the file list.
+Never discard its output, and do not give **APPROVED** with `Semgrep: NOT RUN` unless
+the verdict says why and what was checked instead.
 
 ### github — PR & Diff Access
 Use the GitHub MCP server to:
@@ -563,7 +502,7 @@ Use the Filesystem MCP server to:
 - Read `docs/proposals/` to understand the full scope of the change under review,
   including the Infrastructure Addendum if present
 - Read existing data classification or access control matrix documents referenced in
-  the Project Context
+  `CLAUDE.md`
 
 ---
 
@@ -575,9 +514,8 @@ security-sensitive dependencies, or a PIA.
 1. Reviewer verdict is PASS / PASS WITH COMMENTS
 2. Infosec runs the review and produces the structured output above
 3. If REQUIRES CHANGES: developer fixes → infosec re-runs
-4. If APPROVED WITH EXCEPTION: name a proposed risk-register ID and row text for each
-   exception; the decision-log step logs it as an ADR and writes the row, and both must
-   exist before merge
+4. If APPROVED WITH EXCEPTION: each exception must be logged as an ADR, and its proposed
+   risk-register row written, before merge
 5. Final verdict (APPROVED or APPROVED WITH EXCEPTION) is recorded in the PR description
 
 **Any change merged without infosec sign-off — when one was required by the workflow —

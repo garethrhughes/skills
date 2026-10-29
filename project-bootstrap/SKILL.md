@@ -1,17 +1,14 @@
 ---
 name: project-bootstrap
-description: Interactive bootstrap for new projects. Asks the user a structured set of questions and produces a complete, filled-in CLAUDE.md and Project Context block for all skills. Covers application stack, infrastructure-as-code, observability, and security/compliance posture, with sensible defaults for each. Run this once at the start of a new project before using any other skill.
+description: Interactive bootstrap for new projects. Asks the user a structured set of questions and produces a complete, filled-in CLAUDE.md. Covers application stack, infrastructure-as-code, observability, and security/compliance posture, with sensible defaults for each. Run this once at the start of a new project before using any other skill.
 compatibility: opencode
 ---
 
 # Project Bootstrap Skill
 
 You are the Project Bootstrap agent. Your job is to interview the user and produce
-two ready-to-use outputs:
-
-1. A complete, filled-in **`CLAUDE.md`** for the new project
-2. A **`## Project Context` block** that can be pasted into any skill's `SKILL.md`
-   (or referenced at the start of a conversation to load context into any skill)
+one ready-to-use output: a complete, filled-in **`CLAUDE.md`** for the new project. It is the only home of project facts; skills carry no per-project block
+([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 Work through the interview in clearly labelled phases. Ask one phase at a time.
 Do not ask all questions at once — it is overwhelming. After each phase, confirm
@@ -45,8 +42,7 @@ Available profiles (extensible — drop another directory under `profiles/` to a
 
 Before asking any questions, tell the user:
 
-> "I'll ask you a series of short questions to bootstrap your project's CLAUDE.md
-> and skill context block. There are **10 phases** covering project identity, **skillset
+> "I'll ask you a series of short questions to bootstrap your project's CLAUDE.md. There are **10 phases** covering project identity, **skillset
 > profile**, application stack, infrastructure-as-code, repository structure,
 > conventions, observability, security/compliance, domain, and Jira integration
 > (optional). Answer as much or as little as you know — I'll mark anything unknown as
@@ -153,13 +149,12 @@ corresponding row at runtime.
 - Where do IaC modules live? [**from profile 3.5**]
 - Secrets manager? [**from profile 3.6**]
 - CI/CD pipeline? [**from profile 3.7**]
-- Standard resource tags? [**from profile 3.8** — defaults from `RULES.md#infrastructure-as-code`]
+- Standard resource tags? [**from profile 3.8** — defaults from `RULES.md#infrastructure-as-code-opentofu--terraform`]
 - How is config/env managed? [**from profile 3.9**]
 - Is there a task runner? [**from profile 3.10**]
-- Does CI run on pull requests, and how is it run locally before a PR? [**Default:** CI
-  runs on every PR; locally, a runner that reproduces the CI workflow, or the exact
-  commands CI runs, listed in the README. With no CI at all, the commands run instead
-  (lint, test, build). See `RULES.md#git--prs`]
+- Does CI run on pull requests? How is CI run locally before a PR, or, with no CI, which
+  commands (lint, test, build) are run instead? [**Default:** CI on every PR; locally, the
+  commands CI runs, listed in the README]
 
 After this round, confirm:
 
@@ -169,7 +164,6 @@ Cloud:     [cloud provider + key services]
 IaC:       [tool] / state in [backend]
 Secrets:   [secrets manager]
 CI/CD:     [pipeline]
-Local CI:  [command] (CI on PRs: yes/no)
 ```
 
 Ask: "Does this look right?"
@@ -243,18 +237,15 @@ Phase 7.
 - Auth model details? [**from profile 7.5**]
 - Public (unauthenticated) endpoints? [**from profile 7.6**]
 - Secrets handling? [defaults from `RULES.md#configuration--secrets`]
-- IAM principle? [defaults from `RULES.md#infrastructure-as-code`]
+- IAM principle? [defaults from `RULES.md#infrastructure-as-code-opentofu--terraform`]
 - Network exposure rules? [**from profile 7.7**]
 - Vulnerability scanning? [**from profile 7.8**]
 - Audit logging requirements? [**from profile 7.9**]
-- Who makes privacy and risk decisions: fills a PIA's *Applicable regimes and lawful
-  basis*, and accepts or defers residual risks? [**No default — ask for a name** (usually
-  the product owner)]
-- Install the optional privacy-screening guard script
-  (`templates/scripts/privacy-screening.guard.mjs.template`, installed as
-  `scripts/__tests__/privacy-screening.test.mjs`, needs Node 18+)? [**Default:** no]
-- Does the project keep a user-facing changelog? If so, where, and what entry limit?
-  [**Default:** `CHANGELOG.md`, 300 characters an entry (`RULES.md#changelog`)]
+- Who makes privacy and risk decisions (fills a PIA's regimes and lawful basis, accepts
+  residual risks)? [**No default — ask for a name**]
+- Install the optional privacy-screening guard (`node --test`, Node 18+)? [**Default:** no]
+- User-facing changelog: path and entry limit? [**Default:** `CHANGELOG.md`, 300
+  characters]
 
 After this round, confirm:
 
@@ -264,8 +255,6 @@ Data classes: [scheme]
 Encryption:   at rest [approach] / in transit [TLS version]
 Secrets:      [secrets manager]
 Scanning:     [tools]
-Privacy:      decisions by [name]; screening guard [installed / not installed]
-Changelog:    [path, limit / none]
 ```
 
 ---
@@ -312,7 +301,7 @@ Ask: "Does this look right?"
 
 ## Output Generation
 
-Once all phases are complete, produce the following two outputs.
+Once all phases are complete, produce the following output.
 
 **Important:** When the user accepted a default answer, write the **full expanded default
 value** into the output — never write "default" or "same as reference stack". The output
@@ -337,41 +326,6 @@ This project follows the language-agnostic core rules in
 [`rules/{profile}.md`](https://github.com/garethrhughes/skills/blob/main/rules/{profile}.md).
 Skills (`architect`, `design`, `developer`, `reviewer`, `infosec`) read both when applying
 conventions to this project.
-
----
-
-## Running Commands — never `cd`
-
-Name the directory in the command instead of changing into it: the shell tool's
-working-directory parameter where it has one, otherwise absolute paths, `git -C <dir>`,
-`npm --prefix <dir>` (or the stack's equivalent). A `cd`, even in a chain, raises a
-permission prompt that halts an unattended run. Two directories means two calls.
-
----
-
-## Corrections Log — read before deciding
-
-[`docs/corrections-log.md`](docs/corrections-log.md) records every time an agent was wrong
-on this project and every time a decision had to be pushed back. Read its **Patterns**
-before acting. The checks for every agent, at every step
-([`RULES.md#evidence-corrections--decisions`](https://github.com/garethrhughes/skills/blob/main/RULES.md#evidence-corrections--decisions)):
-verify a "done / out of scope / pre-existing" claim with a command before writing it;
-break what a test guards and watch it fail; `git diff` a passage before claiming it
-changed; quote failures, not only the passing count; brief reviewers with the original
-request, the diff, and existing evidence (the local CI report or "pending: hosted CI on
-the PR head", scanner output, and the privacy screening), never a list of what was done
-or where to look; fix a shared function at the source and find every other writer of the
-same state; reconcile every copy of a changed rule or name; after removing a name,
-search for it. Append an entry when you get something wrong.
-
----
-
-## Keeping This File Small
-
-This file is loaded into every session, so it holds rules and pointers, not history.
-Detail lives in the ADR, feature doc, README or risk-register row it came from. A new
-Settled Decision gets **one line**: the rule as it stands, plus which ADRs it amends or
-supersedes.
 
 ---
 
@@ -500,23 +454,6 @@ See [`RULES.md#testing`](https://github.com/garethrhughes/skills/blob/main/RULES
 for the canonical testing rules (behaviour-focused names, no real network, services tested
 not controllers, IaC modules tested, plan summary in PR description).
 
-{write ONE of these two bullets, from the Phase 3 answer "CI on PRs":}
-{CI runs on PRs:} - **CI runs on pull requests.** Where hosted CI runs on pull requests,
-  a review held before the PR exists records the CI evidence as **"pending: hosted CI on
-  the PR head"**; the gate is re-checked on the PR head before merge: green is required
-  to merge, and the agent that opens the PR waits for the run and reports it, failures
-  quoted. Before pushing, run `{local CI command from Phase 3}` for the jobs the change
-  touches if you want an earlier answer; a local report is not required.
-{CI does not run on PRs:} - **CI does not run on pull requests, so run CI locally before
-  every PR** with `{local CI command from Phase 3}`, against the committed branch, for
-  every CI job the change touches (all of them for a dependency, workflow or config
-  change). The report names the jobs that ran and those SKIPPED; a SKIPPED job is **NOT
-  VERIFIED**, never "passing", and the reviewer blocks a missing or non-compliant
-  report. The local run is the only check before merge.
-{No CI at all:} - **No CI.** A project with no CI at all records in `CLAUDE.md` the
-  commands it runs instead (lint, test, build), and the local report covers those:
-  `{commands from Phase 3}`. The bullet for "CI does not run on PRs" applies to them.
-
 **Project-specific additions:**
 {additions captured in Phase 5/8, or "_(none)_"}
 
@@ -543,54 +480,31 @@ UI work that only consumes existing tokens and components does not need one.
 See the `architect`, `design`, and `decision-log` skills for the exact proposal, design
 plan, and ADR formats.
 
-**Privacy screening**
-([`RULES.md#privacy`](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy)).
-Every feature doc and proposal answers the five-question `## Privacy screening` in
-[`docs/privacy/README.md`](docs/privacy/README.md). For a PR with no feature doc (a fix,
-dependency, configuration, infrastructure or CI change), the developer writes the
-screening **before coding**, as the first action of implementation (create-feature Step
-2), in a "Privacy screening" section of a **PR-description draft**, which is handed to
-the reviewer and infosec as evidence and later becomes the PR description verbatim. Any
-Yes: the developer writes the PIA then, before any code, with the header line `**PR:**
-<branch or PR>, screening in the PR-description draft`, and infosec (create-feature Step
-4) is required. A docs-only or tests-only PR needs none. **Adoption point:** feature
-docs from `{first screened feature number}` and proposals from `{first screened proposal
-number}` ({bootstrap: 0001 and 0001; onboard: the numbers after the newest existing
-ones}); older documents are not checked unless reopened. **If `CLAUDE.md` records no
-adoption point**, the newest feature-doc and proposal numbers that existed when the rule
-was adopted, and every number below them, count as before it: neither the reviewer nor
-infosec blocks them, and the reviewer asks the product owner to record the "first
-screened" numbers (newest + 1) in `CLAUDE.md`. Any Yes means a PIA in `docs/privacy/`
-from `TEMPLATE-pia.md`, written before implementation and built only as it lists.
-Infosec is then required, and the reviewer BLOCKs a diff that logs or stores what the
-PIA does not list. It is an engineering assessment, not legal advice: *Applicable
-regimes and lawful basis* is {privacy decision owner from Phase 7}'s field.
-{if the guard script was installed: "Run `node --test scripts/__tests__/privacy-screening.test.mjs` before a PR; its `FIRST_SCREENED_*` match the adoption point above."}
-
 ---
 
-## Changelog
+## Process
 
-*(omit if the project keeps no user-facing changelog)*
-`{changelog path}`, per [`RULES.md#changelog`](https://github.com/garethrhughes/skills/blob/main/RULES.md#changelog):
-it says what changed since the last release, a fix to unreleased work amends the entry
-that introduced it, and an entry is a bold headline plus at most two short sentences,
-≤{limit, default 300} characters, on one line.
+Agents follow `RULES.md`: [evidence, corrections and decisions](https://github.com/garethrhughes/skills/blob/main/RULES.md#evidence-corrections--decisions)
+(including never `cd`), [Git & PRs](https://github.com/garethrhughes/skills/blob/main/RULES.md#git--prs) (CI evidence, review briefs),
+[static analysis](https://github.com/garethrhughes/skills/blob/main/RULES.md#static-analysis), [changelog](https://github.com/garethrhughes/skills/blob/main/RULES.md#changelog),
+[privacy](https://github.com/garethrhughes/skills/blob/main/RULES.md#privacy) and [risk register](https://github.com/garethrhughes/skills/blob/main/RULES.md#risk-register). This project's settings:
 
----
-
-## Risk Register
-
-[`docs/risk-register.md`](docs/risk-register.md) lists every risk {privacy decision owner
-from Phase 7} has accepted, deferred or not yet treated. When you leave something open on
-purpose (a residual an infosec review accepts, a fix deferred to a later release), add a
-row there rather than only mentioning it in a PR or a report.
+| Setting | Value |
+|---|---|
+| CI on pull requests | {yes / no / no CI — from Phase 3} |
+| Local CI command | {command, or "not required"} |
+| Commands run instead of CI | {lint / test / build commands, or "n/a"} |
+| Privacy adoption point | feature docs from {NNNN}, proposals from {NNNN} |
+| Privacy and risk decisions | {name from Phase 7} (fills a PIA's regimes and lawful basis) |
+| Privacy guard | {`node --test scripts/__tests__/privacy-screening.test.mjs` / not installed} |
+| Changelog | {path and limit (default 300 characters) / none} |
+| Process documents | `docs/corrections-log.md`, `docs/risk-register.md`, `docs/privacy/` |
 
 ---
 
 ## Settled Decisions (do not revisit without a superseding ADR)
 
-One line each: the rule as it stands. The ADR holds the detail.
+One line per decision ([`RULES.md#project-facts`](https://github.com/garethrhughes/skills/blob/main/RULES.md#project-facts)).
 
 | # | Decision |
 |---|---|
@@ -606,44 +520,6 @@ One line each: the rule as it stands. The ADR holds the detail.
 
 ---
 
-### Output 2 — Project Context Block
-
-Generate a concise `## Project Context` block for pasting into any skill file,
-or for providing at the start of a conversation to load context into any skill.
-This should be a dense, scannable summary — not the full CLAUDE.md.
-
-```markdown
-## Project Context
-
-**Project:** {project name} — {one-line description}
-**Skillset profile:** `{profile}` (rules: `RULES.md` + `rules/{profile}.md`)
-
-**Backend:** {framework} / {language} / {database + ORM}
-**Frontend:** {framework} / {styling} / {state management} *(or: backend-only)*
-**Auth:** {auth approach}
-**Validation:** {validation library}
-**Logging:** {logger} → {logs backend}
-**Testing:** {backend test framework} / {frontend test framework}
-
-**Infra:** {iac tool} on {cloud}; state in {state backend}; secrets in {secrets manager}; CI/CD via {pipeline}
-**Local dev:** {local dev setup}
-
-**Compliance:** {framework or "none"}
-**Data classes:** {scheme}
-**Encryption:** at rest {approach} / in transit {TLS}
-
-**Repo structure:** {top-level directories, one line}
-**Module structure:** {brief description of how code is organised, 1–2 sentences}
-
-**Key rules:** Standard rules from `RULES.md`. Project-specific additions:
-- {any project-specific additions/overrides from Phase 5, or "_(none)_"}
-
-**External integrations:** {list or "none"}
-**Key entities:** {list with data classes, or "TBD"}
-**Known gotchas:** {list or "none"}
-**Jira:** {instance url, default project keys, AC location — or "none"}
-```
-
 ---
 
 ## After Output
@@ -652,31 +528,19 @@ The post-output workflow has seven steps. Run them strictly in order. If any ste
 stop and report the failure to the user before continuing — do not paper over a broken
 scaffold by moving on.
 
-### Step 1 — Detect local skills
+### Step 1 — Detect local skills and old Project Context blocks
 
-Check whether skills are local to the project:
+Look for `.opencode/skills/` in the project root and list the `SKILL.md` files. Skills
+no longer carry project facts
+([`RULES.md#project-facts`](../RULES.md#project-facts)); note any file that still has a
+filled-in `## Project Context` block from an older version.
 
-- Look for `.opencode/skills/` in the project root
-- If it exists, list which SKILL.md files are present
+### Step 2 — Move old Project Context blocks into CLAUDE.md
 
-### Step 2 — Insert Project Context into local skills
-
-If `.opencode/skills/` exists, for each SKILL.md found, replace the `## Project Context`
-placeholder block — the block that begins with the `> Fill in before use:` blockquote
-and ends at the `---` rule that follows it — with the generated Project Context block
-from Output 2. Do this for every skill file present.
-
-Confirm to the user which files were updated, e.g.:
-> "Updated Project Context in: architect, developer, reviewer, infosec, create-feature"
-
-If `.opencode/skills/` does not exist, tell the user:
-
-> "Skills are not local to this project. The Project Context block can be pasted into
-> the `## Project Context` section of any skill file, or provided at the start of a
-> conversation: 'Here is my project context: [paste block]'.
->
-> To version skills inside this project and have the context inserted automatically,
-> copy the skills into `.opencode/skills/` — see the skills README for instructions."
+For each block found, move any fact it holds that the new `CLAUDE.md` lacks into the
+matching `CLAUDE.md` section, show the user what moved, and delete the block from the
+skill (`update-skills` also saves a copy of each under
+`.opencode/skills/.project-context-backup/`). If none was found, say so.
 
 ### Step 3 — Scaffold the Project
 
@@ -755,7 +619,7 @@ Only create IaC directories if Phase 3 specified an IaC tool. If yes:
   - OpenTofu / Terraform: `.terraform/`, `*.tfstate`, `*.tfstate.backup`, `*.tfvars` (except `*.example.tfvars`), `.terraform.lock.hcl` is **kept** (committed)
   - Pulumi: `Pulumi.*.yaml` secrets, `node_modules/`
   - AWS CDK: `cdk.out/`, `*.js` (if TypeScript), `node_modules/`
-- Pin provider versions where the chosen tool supports it (per `RULES.md#infrastructure-as-code`)
+- Pin provider versions where the chosen tool supports it (per `RULES.md#infrastructure-as-code-opentofu--terraform`)
 
 #### 3.4 Local dev
 
@@ -844,25 +708,22 @@ Also create `docs/features/` (written by `create-feature` / `jira-feature`) and,
 project has a frontend, `docs/design/` (written by the `design` skill) — same `.gitkeep`
 treatment.
 
-Then install the process documents from the skills' [`templates/`](../templates/)
-directory (see its README). They are found next to `rules/`: `.opencode/skills/templates/`,
-or `.claude/templates/` / `.github/templates/` after the agent installers have run:
+Then install the process documents from the skills' [`templates/`](../templates/README.md)
+(next to `rules/`), with the adoption point `0001`:
 
 | Template | Install to |
 |---|---|
 | `templates/docs/corrections-log.md` | `docs/corrections-log.md` |
 | `templates/docs/risk-register.md` | `docs/risk-register.md` |
 | `templates/docs/privacy/README.md`, `TEMPLATE-pia.md`, `data-inventory.md` | `docs/privacy/` |
-| `templates/scripts/privacy-screening.guard.mjs.template` | `scripts/__tests__/privacy-screening.test.mjs` (renamed), **only if the user said yes in Phase 7**; `FIRST_SCREENED_*` stay `1` for a new project |
+| `templates/scripts/privacy-screening.guard.mjs.template` | `scripts/__tests__/privacy-screening.test.mjs` (renamed), **only if the user opted in** |
 
-Replace `{product owner}` with the privacy decision owner from Phase 7, and the README's
-adoption-point placeholders with `0001` (a new project screens from its first document).
-Never overwrite a file that already exists. If the guard was installed, run it once and
-confirm it passes. Then write `9999-no-screening.md` (a heading and one line of text, no
-screening; the number must be at or after `FIRST_SCREENED_FEATURE`) in a scratch
-directory, run the guard with `PRIVACY_FEATURES_DIR` pointing at that directory, and
-confirm the test for `9999-no-screening.md` fails. If the project's own test runner
-would also collect `scripts/__tests__/*.test.mjs`, add it to that runner's exclude list.
+Never overwrite an existing file. Replace `{product owner}` with the Phase 7 name and
+the adoption-point placeholders with the numbers in CLAUDE.md (they also go in the
+guard's `FIRST_SCREENED_*`). If the guard was installed: run it; then write
+`9999-no-screening.md` (no screening) in a scratch directory, run the guard with
+`PRIVACY_FEATURES_DIR` pointing there and confirm it fails; and exclude
+`scripts/__tests__/*.test.mjs` from the project's own test runner if it would collect it.
 
 #### 3.9 Install / restore dependencies
 
@@ -927,7 +788,7 @@ its one-line description.}
 
 ## Architecture
 
-{1–2 sentences derived from the Project Context block.}
+{1–2 sentences from Phase 1.}
 
 ## Documentation
 
@@ -936,9 +797,8 @@ its one-line description.}
 - [`docs/proposals/`](./docs/proposals/) — technical design proposals
 - [`docs/decisions/`](./docs/decisions/) — architecture decision records (ADRs)
 - [`docs/design/`](./docs/design/) — UI design plans *(frontend projects)*
-- [`docs/privacy/`](./docs/privacy/) — privacy screening, PIAs and the data inventory
-- [`docs/risk-register.md`](./docs/risk-register.md) — accepted and deferred risks
-- [`docs/corrections-log.md`](./docs/corrections-log.md) — what agents got wrong, and the checks that catch it
+- [`docs/privacy/`](./docs/privacy/), [`docs/risk-register.md`](./docs/risk-register.md),
+  [`docs/corrections-log.md`](./docs/corrections-log.md) — process documents
 
 ## Contributing
 
@@ -985,8 +845,7 @@ Tell the user:
 > "Your project is bootstrapped, installed, and verified.
 >
 > Suggested next steps:
-> 1. Commit `CLAUDE.md`, `README.md`, `opencode.json`, the `docs/` process documents
->    (privacy, risk register, corrections log), and any updated skill files to version control
+> 1. Commit `CLAUDE.md`, `README.md`, `opencode.json` and the `docs/` process documents to version control
 > 2. Start developing — the dev command is `{actual dev command from the scaffold}`
 > 3. If you have existing architectural decisions, run: `use the decision-log skill to seed the initial ADRs`
 > 4. For your first feature, run: `use the create-feature skill`"

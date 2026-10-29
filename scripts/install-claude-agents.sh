@@ -2,13 +2,15 @@
 # install-claude-agents.sh
 #
 # Generates .claude/agents/<skill-name>.md for each skill so they are available
-# as Claude Code custom subagents. Run from your project root.
+# as Claude Code custom subagents. Run from your project root; the skills live
+# in the project (default .opencode/skills).
 #
 # Usage:
-#   bash path/to/skills/scripts/install-claude-agents.sh [skills-dir]
+#   bash .opencode/skills/scripts/install-claude-agents.sh [skills-dir]
 #
 # Arguments:
-#   skills-dir   Path to the skills repository (default: ~/.config/opencode/skills)
+#   skills-dir   Path to the project-local skills directory
+#                (default: <project root>/.opencode/skills)
 #
 # The script:
 #   1. Resolves the skills directory
@@ -98,7 +100,7 @@ skill_description() {
       echo "Use to walk through the full feature development cycle: proposal → implementation → code review → infosec sign-off → decision logging → PR."
       ;;
     project-bootstrap)
-      echo "Use once at the start of a new project to generate a complete CLAUDE.md and Project Context block. Covers app stack, IaC, observability, and security/compliance posture."
+      echo "Use once at the start of a new project to generate a complete CLAUDE.md (the only home of project facts). Covers app stack, IaC, observability, and security/compliance posture."
       ;;
     *)
       echo ""
@@ -121,7 +123,8 @@ rm -rf "$AGENTS_DIR/rules" "$AGENTS_DIR/profiles"
 if [[ -f "$SKILLS_DIR/RULES.md" ]]; then
   cp "$SKILLS_DIR/RULES.md" "$RULES_PARENT_DIR/RULES.md"
   # Sidecar: pin the RULES.md version so update-skills can detect drift.
-  rules_version="$(awk -F': *' '/^Version:/{print $2; exit}' "$SKILLS_DIR/RULES.md" | tr -d '[:space:]')"
+  # RULES.md carries "**Version:** X.Y" (bold); accept a plain "Version:" too.
+  rules_version="$(sed -n 's/^\(\*\*\)\{0,1\}Version:\(\*\*\)\{0,1\}[[:space:]]*//p' "$SKILLS_DIR/RULES.md" | head -n 1 | tr -d '[:space:]')"
   if [[ -n "$rules_version" ]]; then
     printf '%s\n' "$rules_version" > "$RULES_PARENT_DIR/.rules-version"
     echo "  RULES.md (v$rules_version) copied to ${RULES_PARENT_DIR#$PROJECT_ROOT/}/RULES.md"

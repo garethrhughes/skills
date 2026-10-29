@@ -13,11 +13,8 @@ provider versions) without calling them out explicitly.
 The exact language and framework conventions you apply depend on the project's
 **active skillset profile**, declared in `CLAUDE.md` under `## Active Skillset`.
 
-## Project Context
-
-> Fill in before use: Replace this section with your project's stack, module structure,
-> key conventions, and any domain-specific rules. `project-bootstrap` and `project-onboard`
-> populate this automatically.
+**Project facts** (stack, structure, conventions, decisions) are in the project's
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -44,53 +41,13 @@ If `CLAUDE.md` does not declare an active skillset, default to the
 
 ---
 
-## Corrections Log — Check at These Moments
+## Working Rules
 
-If the project keeps `docs/corrections-log.md`, read its **Patterns** section before
-starting. These checks apply whether or not it exists
-([`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions)):
-
-1. **Before writing "already done / out of scope / resolved / unaffected /
-   pre-existing"**, run the command that proves it and cite the output. Narrowing scope
-   is the product owner's call.
-2. **Before keeping a new test**, break what it guards and watch it fail. Break every
-   line that enforces the control, not one per control.
-3. **Before claiming you changed something**, `git diff` the passage. A refused write is
-   a requirement **not met**: say so everywhere, and never claim a substitute.
-4. **Before reporting a result**, quote the whole line, failures included, and say
-   whether you caused them and how you know.
-
-Standing rules:
-
-- If a probe, browser or command settles a question in under a minute, run it instead
-  of reasoning.
-- **Fix at the source.** When a shared function returns a wrong answer, reproduce it at
-  that function and fix it there, not at the caller that noticed. After fixing a write,
-  find every other writer of the same state and fix or rule out each one.
-- **Guard the twins.** A guard added to one input path (keys) goes on every other path
-  that writes the same state (pointer, paste, API, import), each with its own test. A
-  guard that skips a write also restores what the operation already changed.
-- **Reconcile every copy.** After changing a rule, claim or name, grep the branch's
-  added and changed files for the old wording and the names it travels with, and fix or
-  rule out each hit. After removing a name, search the docs, `CLAUDE.md` and the
-  agent/skill files.
-- **After each review round**, re-run every earlier round's mutations on the new head.
-
-Append an entry to the log when you get something wrong.
-
----
-
-## Running Commands
-
-**Never `cd`, not even in a chain.** Use the shell tool's working-directory parameter
-where it has one. Otherwise name the directory in the command: absolute paths, `git -C
-<dir>`, `npm --prefix <dir>`, `dotnet test <path>`. A `cd` can raise a permission prompt
-that halts an unattended run. If a command needs two directories, it needs two calls.
-Push, open a PR, trigger a workflow or deploy only when the product owner asked for it
-(a feature cycle they started that ends in a PR counts). Never deploy on your own
-initiative.
-
----
+Apply [`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions)
+(read the corrections log's Patterns first). The moments that matter most here: before
+writing "done / out of scope / pre-existing", before keeping a test, before claiming a
+change, and before reporting a result. Run commands without `cd`, and push or open a PR
+only as the outward-actions rule there allows.
 
 ## Test-Driven Development (TDD)
 
@@ -124,15 +81,19 @@ write the implementation, the test is wrong.
 - **No shared mutable state between tests.** Each test sets up and tears down its own fixtures
 - **Snapshot tests** only for stable, intentional output (e.g. generated SQL, generated
   Terraform plan). Never for UI components — use semantic queries instead
-- **No races with the machine.** After an action that settles asynchronously (a frame, a
-  timer, an effect, a focus hand-off), assert that it settled before you drive the next
-  input. Pin the clock in any test file whose code reads it. A test that passes only on
-  an idle machine fails on CI
-- **Evaluation and recall gates** follow
-  [`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates):
-  fixed committed question sets, a written deterministic calibration/gate split,
-  calibration on the held-out half only, and bars fixed before the first run. A bar that
-  fails its first run goes to the product owner, never to a re-tune
+- Every test must be able to fail, every input path gets the guard, no races, realistic
+  fixtures ([`RULES.md#testing`](../RULES.md#testing)); evaluation gates follow
+  [`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates)
+
+## Privacy — the PIA Is Your Specification
+
+Per [`RULES.md#privacy`](../RULES.md#privacy): read the screening before coding. With a
+PIA, build only what it lists and test each deletion path it names; if the build must
+differ, update the PIA and the inventory in the branch. If the screening said No and the
+build now touches personal data, change it and write the PIA. **A PR with no feature
+doc:** write its screening (and any PIA) before any code, in the PR-description draft.
+A project without `docs/privacy/` installs it per
+[`../templates/README.md`](../templates/README.md).
 
 ## Design-Heavy Work — Delegate to the `design` Skill
 
@@ -162,32 +123,6 @@ Two hard rules that apply to you even when `design` is not involved:
 
 Routine UI work that consumes existing tokens and components — adding a field to a form,
 wiring a new endpoint into an existing table — does **not** need the `design` skill.
-
-## Privacy — the PIA Is Your Specification
-
-Read the feature doc's (or proposal's) `## Privacy screening` before coding
-([`RULES.md#privacy`](../RULES.md#privacy)):
-
-- If any answer is Yes, the PIA in `docs/privacy/` is your specification for personal
-  data. Record, log, store, expose and send only what its data table lists. Keep it
-  where and as long as it says. Make, and test, each deletion path it names.
-- If the build has to differ, update the PIA and `docs/privacy/data-inventory.md` in the
-  same branch before review, and say so in the PR.
-- If the screening said No and the build now touches personal data, change the answer
-  and write the PIA before continuing.
-- For a PR with no feature doc (a fix, dependency, configuration, infrastructure or CI
-  change), the developer writes the screening **before coding**, as the first action of
-  implementation (create-feature Step 2), in a "Privacy screening" section of a
-  **PR-description draft**, which is handed to the reviewer and infosec as evidence and
-  later becomes the PR description verbatim. Any Yes: the developer writes the PIA then,
-  before any code, with the header line `**PR:** <branch or PR>, screening in the
-  PR-description draft`, and infosec (create-feature Step 4) is required. Write that
-  draft now, before review. A docs-only or tests-only PR says "Privacy screening: not
-  applicable (docs/tests only)" in the draft.
-- If `docs/privacy/` does not exist yet (a project set up before these rules), install it
-  from the skills' `../templates/` as [`../templates/README.md`](../templates/README.md)
-  describes (replace `{product owner}` and the adoption-point placeholders), and say so
-  in the PR.
 
 ## Language, Backend, Frontend, IaC, and Observability Conventions
 
@@ -281,12 +216,9 @@ against live docs, especially for framework features that change across minor ve
 ### github — Branch & PR Operations
 Use the GitHub MCP server to:
 
-- Create branches when starting a new feature (`feature/NNNN-short-title`); push them and
-  open pull requests only when the product owner asked for it (a feature cycle they
-  started that ends in a PR counts; see *Running Commands*)
-- Open pull requests targeting the project's default branch, under the same condition
-- Check the hosted CI result on the PR head where CI runs on pull requests; quote it,
-  failures included
+- Create branches when starting a new feature (`feature/NNNN-short-title`); push and open
+  pull requests as the outward-actions rule allows
+- Check the CI evidence as [`RULES.md#git--prs`](../RULES.md#git--prs) describes
 - Read existing PRs to understand what is already in flight before starting work
 
 ### filesystem — Source File Operations
@@ -299,16 +231,9 @@ tools are insufficient — for example:
   of the active editor session
 
 ### semgrep — Static Analysis
-Run Semgrep on the changed files before marking an implementation complete. This
-catches common security and quality issues before the reviewer and infosec steps. Use
-the Semgrep MCP server if it is available, otherwise the CLI command in the `reviewer`
-skill (changed files from `git diff --name-only --diff-filter=d origin/main...HEAD`,
-documentation included, absolute paths, no `cd`):
-
-- Pay particular attention to injection risks, secrets in code, and missing validation
-- Fix CRITICAL / HIGH / ERROR findings before handoff to the reviewer skill
-- Report the summary (version, rules run, files scanned) and the findings, or
-  `Semgrep: NOT RUN` and why
+Before marking an implementation complete, run Semgrep as
+[`RULES.md#static-analysis`](../RULES.md#static-analysis) describes; fix
+CRITICAL/HIGH/ERROR findings and report the summary (or `Semgrep: NOT RUN`).
 
 ---
 
@@ -367,41 +292,11 @@ problems you could have caught yourself.
 - Update API reference docs (Swagger, Redoc, or equivalent) for any new or changed endpoint
   or field — regenerate if the project auto-generates them
 - Update the relevant runbook (`infra/README.md` or equivalent) for any infra change
-- Changelog (if the project keeps one), per [`RULES.md#changelog`](../RULES.md#changelog).
-  A fix to, or change in, work merged after the last release tag **amends that work's
-  entry** (`git log <last tag>..HEAD` tells you). Only shipped behaviour gets
-  `Changed` / `Fixed`. Internal-only work gets no entry. An entry is a bold one-sentence
-  headline plus at most two short sentences, on one line, within the project's limit
-  (default 300 characters), written for a user. Run the project's changelog check if it
-  has one
-- Add a row to `docs/risk-register.md` for anything left open on purpose
-- After removing a dependency, file or name, search the docs, `CLAUDE.md` and the
-  agent/skill files for it
-
-### CI evidence before handing off
-
-`CLAUDE.md` says whether CI runs on pull requests
-([`RULES.md#git--prs`](../RULES.md#git--prs)):
-
-- **CI runs on PRs:** Where hosted CI runs on pull requests, a review held before the PR
-  exists records the CI evidence as **"pending: hosted CI on the PR head"**; the gate is
-  re-checked on the PR head before merge: green is required to merge, and the agent that
-  opens the PR waits for the run and reports it, failures quoted. A local run first is
-  optional.
-- **CI does not run on PRs** (or `CLAUDE.md` requires a local report): run the project's
-  local CI (whatever reproduces the CI workflow: a runner script that reads the workflow
-  file, `act`, or the documented list of CI commands) **on the committed branch**, for
-  every job the change touches, and all of them for a dependency, workflow or config
-  change. A project with no CI at all records in `CLAUDE.md` the commands it runs
-  instead (lint, test, build), and the local report covers those. Then:
-  - Pass the commit explicitly (`--ref <sha>` or equivalent) when the runner resolves
-    the repository from the working directory. Read the line that names the commit
-    before you trust the summary.
-  - Report the jobs that ran, their results with failures quoted, and the jobs SKIPPED.
-    A SKIPPED job is **NOT VERIFIED**, never "passing".
-  - Never push to the default branch to find out whether the change passes.
-  - The runner executes the branch's code and install scripts as you. Run a ref you do
-    not trust only as a separate user or in a VM.
+- Changelog entry per [`RULES.md#changelog`](../RULES.md#changelog)
+- A risk-register row for anything left open on purpose
+  ([`RULES.md#risk-register`](../RULES.md#risk-register)); removed names searched for
+- Provide the CI evidence [`RULES.md#git--prs`](../RULES.md#git--prs) requires for this
+  project (the local report where CI does not run on pull requests)
 
 ---
 

@@ -16,21 +16,10 @@ through setting it up before proceeding.
 
 ---
 
-## Project Context
-
-> Fill in before use, or run `project-bootstrap` / `project-onboard` to populate this automatically.
->
-> This skill expects the following Jira-specific fields (populated by the bootstrap/onboard Phase 9):
->
-> - **Jira instance URL** — e.g. `https://your-org.atlassian.net`
-> - **Default project key(s)** — e.g. `PLAT, API, FE`
-> - **Acceptance criteria location** — the search order in Step 3 is: (1) custom field
->   'Acceptance Criteria', (2) `## Acceptance Criteria` heading in the Description, (3)
->   bulleted list after "AC:" / "Done when:". Note in your Project Context which of
->   these your team uses primarily.
->
-> Example (paste the Jira line from your Project Context block here):
-> `Jira: https://acme.atlassian.net — projects: PLAT, API — AC: custom field 'Acceptance Criteria' (fallback to ## heading)`
+**Project facts** (stack, structure, conventions, decisions) are in the project's
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+Jira settings (instance URL, project keys, where acceptance criteria live) are in
+`CLAUDE.md`'s `## Jira Integration` section.
 
 ---
 
@@ -181,9 +170,7 @@ Include the Jira issue key and link as the authoritative source.}
 
 ## Privacy screening
 
-{Copy the table from `docs/privacy/README.md` (`| # | Question | Answer | Why |`, the five
-questions word for word), answer each Yes or No with a one-line reason, then the result line. Any Yes: the PIA is written before
-implementation; see the create-feature skill's Feature Document step.}
+{The table from `docs/privacy/README.md`, answered, with the result line.}
 
 ## Open Questions
 

@@ -15,11 +15,8 @@ proceed to code checks until both the feature doc and proposal reviews are compl
 either has blocking issues, state them and stop — there is no value reviewing code that
 implements a flawed or misaligned design.
 
-## Project Context
-
-> Fill in before use: Replace this section with your project's stack, module structure,
-> key conventions, and any domain-specific rules. `project-bootstrap` and
-> `project-onboard` populate this automatically.
+**Project facts** (stack, structure, conventions, decisions) are in the project's
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -45,40 +42,27 @@ If `CLAUDE.md` does not declare an active skillset, default to the
 
 ---
 
-## Before Forming a Verdict — Corrections Log
+## Before Forming a Verdict
 
-If the project keeps `docs/corrections-log.md`, read its **Patterns** section first. Each
-pattern there is something that shipped past a review. Whether or not the log exists,
-check these against the diff
-([`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions)):
+Read the Patterns in `docs/corrections-log.md`, if the project has one, and apply
+[`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions).
+Your brief is set by [`RULES.md#git--prs`](../RULES.md#git--prs): a list of fixes you
+are handed is a set of claims to verify, not the scope. Check in particular:
 
-1. **"Already done / out of scope / pre-existing / unaffected" claims.** Verify them
-   yourself. Reproduce a "pre-existing" failure on the merge base.
-2. **Tests that cannot fail.** Look for conditional assertions, artefacts compared with
-   their own input, fakes that ignore what they were asked, and harnesses missing the new
-   surface. Mutate the code (every line that enforces the control) and watch the test
-   go red.
-3. **Mitigations that cover less than they claim.** Construct each failure an ADR,
-   PIA or docblock says a control prevents, and check that it fires.
-4. **Documents claimed amended.** `git show` the passage. A refused write is a
-   requirement **not met**.
-5. **Reported results.** If the author quotes a passing count, ask for the failing one.
-6. **Regressions from the previous round's fix.** Re-run every earlier round's
-   mutations on the final head. A later guard can make an earlier guard's test unable to
-   fail.
-7. **One-sided changes.** A guard on one input path with none on its twin. A fixed
-   writer of some state with other writers left alone. A rule or name changed in one
-   document and not in its copies (proposal, ADR, PIA, risk register, `CLAUDE.md`).
-   A removed name still in the docs or agent files.
-8. **Acceptance Criteria with no covering test.** Trace every one to `file:line`.
+1. "Done / out of scope / pre-existing" claims: reproduce them (merge base for
+   pre-existing failures).
+2. Tests that cannot fail: mutate the enforcing lines and watch them go red
+   ([`RULES.md#testing`](../RULES.md#testing)), including earlier rounds' mutations on
+   this head.
+3. Mitigations: construct each failure the change says it prevents.
+4. Documents claimed amended (`git show` the passage) and reported results (ask for the
+   failing count).
+5. One-sided changes: a guard on one path but not its twin, a rule changed in one copy,
+   a removed name still referenced.
+6. Every Acceptance Criterion traced to a test.
 
-**Your brief** ([`RULES.md#git--prs`](../RULES.md#git--prs)): Brief reviewers with the
-original request, the diff, and existing evidence (the local CI report or "pending:
-hosted CI on the PR head", scanner output, and the privacy screening), never a list of
-what was done or where to look. If you were also handed a list of what was fixed or
-where to look, treat each item as a claim to verify, not as the scope of the review.
-Where you and the author disagree on a measurable fact, measure it. If the review finds
-something the log has not seen, say so in the verdict so it can be added.
+Measure disagreements on measurable facts. Report anything the corrections log has not
+seen so it can be added.
 
 ---
 
@@ -114,15 +98,10 @@ Read the full feature document and check the following.
   `Implemented` — if it is still `Draft`, flag as **Minor**.
 - The `Related proposal` field should be populated — if blank, flag as **Minor**.
 
-**Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy))
-- The `## Privacy screening` section is present, with all five questions answered Yes or
-  No with a reason. Skip a feature doc numbered before the project's **adoption point**
-  (recorded in `CLAUDE.md`) unless it was reopened in this PR.
-- Any Yes links a PIA in `docs/privacy/` that exists.
-- The diff logs, stores, exposes or sends nothing the PIA's data table does not list,
-  and each deletion path the PIA names is built and tested.
-- Any failure here → **BLOCK** (Blocker). If the project installed a privacy-screening
-  guard script, run it.
+**Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy)): present and complete
+(unless the doc predates the adoption point in `CLAUDE.md`), any Yes links an existing
+PIA, and the diff stays within the PIA's data table. Any failure → **Blocker**. Run the
+project's privacy-screening guard if it has one.
 
 If the feature doc has **Blocker** findings, state the verdict and stop. Do not proceed
 to Phase 2 or Phase 3.
@@ -167,9 +146,9 @@ using the standard severity levels before touching the code.
   and request rewrite
 
 **Security & privacy considerations**
-- Does the proposal carry a `## Privacy screening`, and does any Yes link a PIA written
-  with the proposal? Missing → **Blocker**, unless the proposal is numbered before the
-  project's adoption point (recorded in `CLAUDE.md`) and was not reopened.
+- Does the proposal carry its privacy screening, and a PIA for any Yes
+  ([`RULES.md#privacy`](../RULES.md#privacy))? Missing → **Blocker** (unless it predates
+  the adoption point).
 - Does the proposal identify any new data being collected, stored, or transmitted?
 - Are auth/authorisation implications called out?
 - If the proposal introduces new external integrations or public surface area, are the
@@ -235,56 +214,18 @@ Read the diff and flag any deviation. Severity is determined as follows:
 - Rules under core [Testing](../RULES.md#testing) and [Git & PRs](../RULES.md#git--prs)
   (and overlay testing primitives) → **Major** when violated.
 
-### Process Checks — each → **BLOCK**
+### Process Checks — each failure → **BLOCK**
 
-- **CI evidence** ([`RULES.md#git--prs`](../RULES.md#git--prs)). If `CLAUDE.md` does not
-  say whether CI runs on pull requests, read the workflows' `on:` triggers (for example
-  `pull_request` in `.github/workflows/*.yml`), apply the matching case, and ask the
-  product owner to record the answer in `CLAUDE.md`. Where hosted CI runs on pull
-  requests, a review held before the PR exists records the CI evidence as **"pending:
-  hosted CI on the PR head"**; the gate is re-checked on the PR head before merge: green
-  is required to merge, and the agent that opens the PR waits for the run and reports
-  it, failures quoted. A review of an open PR checks that run: red or missing on the
-  head blocks; still running is recorded as pending. Where CI does not run on pull
-  requests (or the project's `CLAUDE.md` requires a local report), the local CI report
-  is required at review time. A project with no CI at all records in `CLAUDE.md` the
-  commands it runs instead (lint, test, build), and the local report covers those. It
-  names the jobs that ran, with failures quoted, and the jobs SKIPPED; covers every CI
-  job the change touches (all of them for a dependency, workflow or config change); says
-  it ran against the committed head; and calls a SKIPPED job **NOT VERIFIED**, never
-  passing. A missing or non-compliant report then blocks. `CLAUDE.md` says which case
-  the project is in.
-- **Changelog** ([`RULES.md#changelog`](../RULES.md#changelog), projects with a
-  changelog). A fix to, or change in, work merged after the last release tag amends
-  that work's entry. A separate entry for unreleased work blocks, and so does a missing
-  entry for a user-visible change to shipped behaviour. An unreleased entry also blocks
-  if it is over the project's limit (default 300 characters), has no opening bold
-  headline, has a second paragraph or nested list, or carries implementation detail.
-  Internal-only work needs no entry.
-- **Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy)). Every PR the rule
-  covers has one, in the feature doc or proposal. For a PR with no feature doc (a fix,
-  dependency, configuration, infrastructure or CI change), the developer writes the
-  screening **before coding**, as the first action of implementation (create-feature
-  Step 2), in a "Privacy screening" section of a **PR-description draft**, which is
-  handed to the reviewer and infosec as evidence and later becomes the PR description
-  verbatim. Any Yes: the developer writes the PIA then, before any code, with the header
-  line `**PR:** <branch or PR>, screening in the PR-description draft`, and infosec
-  (create-feature Step 4) is required. Check it there (Phase 1 is skipped for such a
-  PR); a PR without the draft section blocks. A docs-only or tests-only PR needs none
-  and says so. Documents numbered before the adoption point in `CLAUDE.md` are exempt
-  unless reopened. **If `CLAUDE.md` records no adoption point**, the newest feature-doc
-  and proposal numbers that existed when the rule was adopted, and every number below
-  them, count as before it: neither the reviewer nor infosec blocks them, and the
-  reviewer asks the product owner to record the "first screened" numbers (newest + 1) in
-  `CLAUDE.md`. Any Yes links an existing PIA, and the diff logs, stores, exposes or
-  sends nothing its data table does not list.
-- **Risk register** ([`RULES.md#risk-register`](../RULES.md#risk-register)). A residual
-  left open on purpose (an accepted exception, a deferred fix, a gap the PIA leaves) has
-  a row in `docs/risk-register.md`.
-- **Evaluation gates** ([`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates)).
-  A gate whose question sets are shuffled or sampled, whose split is not written and
-  re-derived by a test, that is calibrated on the questions it grades, or whose bar or
-  threshold was moved after its first run.
+- **CI evidence** per [`RULES.md#git--prs`](../RULES.md#git--prs). If `CLAUDE.md` does
+  not say whether CI runs on pull requests, read the workflows' `on:` triggers, apply
+  the matching case and ask the owner to record it. On an open PR, red or missing on the
+  head blocks; still running is recorded as pending.
+- **Changelog** per [`RULES.md#changelog`](../RULES.md#changelog) (projects with one).
+- **Privacy screening** per [`RULES.md#privacy`](../RULES.md#privacy), for every PR it
+  covers. A PR with no feature doc (Phase 1 skipped) has it in its PR-description draft.
+- **Risk register** per [`RULES.md#risk-register`](../RULES.md#risk-register).
+- **Evaluation gates** per
+  [`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates).
 
 ### Design Principles — Clean Code, SOLID, DRY
 
@@ -489,30 +430,10 @@ Use the GitHub MCP server to:
 - Review comments from previous review rounds to ensure findings have been addressed
 
 ### semgrep — Automated Security Scanning
-Run Semgrep on **every** review, before you complete it, over the changed files
-(`git diff --name-only --diff-filter=d origin/main...HEAD`, documentation included).
-Use the Semgrep MCP server if it is available. Otherwise use the CLI, with absolute
-paths and no `cd` (`sed -z` and `xargs -r` are GNU; on macOS use `gsed` / `gxargs`
-from GNU coreutils/findutils):
-
-```sh
-git -C <repo> diff -z --name-only --diff-filter=d origin/main...HEAD | sed -z 's|^|<repo>/|' \
-  | xargs -0 -r semgrep scan --metrics=off --json-output=<scratch>/semgrep.json \
-      --max-target-bytes=0 --config p/owasp-top-ten --config p/secrets <stack packs> \
-      [--config p/github-actions]
-```
-
-`--max-target-bytes=0` lifts Semgrep's 1 MB default, which otherwise drops large files
-from the scan without an error. The stack packs are in the active overlay (for example
-`p/typescript p/javascript`, or `p/csharp`). Add `p/github-actions` when workflows
-change. Replace `origin/main` with the project's default branch.
-
-- Severity (each finding's `extra.severity` in the JSON): CRITICAL / HIGH / ERROR →
-  **Blocker**; MEDIUM / WARNING → **Major**; LOW / INFO → **Minor**
-- Note the rule ID and `file:line` with each finding so the developer can reproduce it
-- Quote the summary line (Semgrep version, rules run, files scanned) in the verdict
-- If it could not run, write `Semgrep: NOT RUN` and why. Never report a scan that did
-  not happen as clean
+Run Semgrep on every review, before completing it, as
+[`RULES.md#static-analysis`](../RULES.md#static-analysis) describes (MCP server or the
+CLI command there), and use its review severities. Give each finding's rule ID and
+`file:line`.
 
 ### filesystem — Feature Doc, Proposal, Design & Decision Cross-Reference
 Use the Filesystem MCP server to:
@@ -546,14 +467,12 @@ Use the Filesystem MCP server to:
 - Any new public API endpoint is reflected in the OpenAPI / API docs
 - If a new API endpoint or field is added, the API reference docs (Swagger, Redoc, or
   equivalent) are regenerated or manually updated to reflect it
-- If the project has a changelog (`CHANGELOG.md` or equivalent), the entry follows
-  [`RULES.md#changelog`](../RULES.md#changelog) (see *Process Checks*)
-- A removed dependency, file or name is gone from the docs, `CLAUDE.md` and the
-  agent/skill files
-- Every copy of a rule or claim the change touches says the same thing (proposal, ADR,
-  PIA, risk register, `CLAUDE.md`, the PR description or its draft)
-- `docs/privacy/data-inventory.md` is updated for any personal-data row the change adds,
-  changes or removes
+- If the project has a changelog, the entry follows
+  [`RULES.md#changelog`](../RULES.md#changelog)
+- Removed names, and every copy of a changed rule, are reconciled
+  ([`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions)),
+  including the PR description (or its draft)
+- `docs/privacy/data-inventory.md` reflects any personal-data row the change touches
 
 ## Review Output Format
 
@@ -612,14 +531,13 @@ Phase 3.
 ## Verdict: PASS | PASS WITH COMMENTS | BLOCK
 ```
 
-Below the verdict line, state the Semgrep summary (or `Semgrep: NOT RUN` and why) and
-the CI evidence (the PR's hosted CI result, or the local report where one is required)
-and whether it was present and compliant.
+State the Semgrep summary (or `Semgrep: NOT RUN` and why) and the CI evidence below the
+verdict line.
 
 - **PASS** — no issues found
 - **PASS WITH COMMENTS** — Minor/Suggestion items only; can merge after author acknowledges
 - **BLOCK** — one or more Blocker or Major findings (including any Unverified Acceptance
-  Criterion, proposal quality issue, or failed *Process Check*); must be resolved before
+  Criterion, proposal quality issue, or failed Process Check); must be resolved before
   merge
 
 Then list each finding (from all phases) using this structure:

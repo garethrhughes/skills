@@ -108,6 +108,6 @@ implementation:
 - **Process guards** (for example the optional privacy-screening guard from `templates/`,
   or a changelog-shape check) are dependency-free `node --test` scripts under
   `scripts/__tests__/`.
-- **Semgrep rule packs** for this stack: `p/typescript`, `p/javascript` (plus the core
-  packs listed in the `reviewer` skill).
+- **Semgrep rule packs** for this stack: `p/typescript`, `p/javascript` (with the core packs in
+  [`RULES.md#static-analysis`](../RULES.md#static-analysis)).
 

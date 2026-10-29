@@ -7,8 +7,9 @@ Single source of truth for the **language-agnostic** conventions enforced across
 skills. Every skill references the sections below by anchor (e.g.
 `RULES.md#configuration--secrets`) rather than restating the rules locally.
 
-If you need to override a rule for your project, do so in your `CLAUDE.md` and the
-`## Project Context` block of the relevant skill — never weaken the rule here.
+If you need to override a rule for your project, do so in your `CLAUDE.md` — never
+weaken the rule here. See [Project Facts](#project-facts) for what else `CLAUDE.md`
+holds.
 
 ---
 
@@ -110,58 +111,34 @@ These rules apply regardless of the application language.
 - Mocks at boundaries only (HTTP, DB, filesystem). Do not mock the system under test.
 - Concrete test runner, assertion library, and integration-test harness are
   stack-specific (see your overlay).
-- **A test that cannot fail is worse than no test.** Before keeping a test, break what it
-  guards and watch it fail. Break **every** line that enforces the control, not one per
-  control. Conditional assertions (`if (x) expect(...)`), a check of generated output
-  against the input it was generated from, and a fake that returns the expected answer
-  whatever it was asked are the usual ways a test cannot fail.
-- **A guard on one input path needs its twin.** When a guard is added to one path that
-  writes some state (keyboard), list every other path that writes the same state
-  (pointer, paste, API, import, a background job). Give each one the same guard and its
-  own test. A guard that skips a write also restores anything the operation already
-  changed before it decided.
-- **Re-run earlier rounds' mutations on the final head.** A later fix can make an
-  earlier guard's test unable to fail. After each review round, re-run every earlier
-  round's break-the-guard mutations on the final commit and report that tally. Assert at
-  the point where the guard acts, not only at the end.
-- **Tests must not depend on an idle machine.** After an action that hands work or focus
-  over asynchronously (a frame, a timer, an effect, a transition), assert that it settled
-  before you drive the next input. Never focus an element and press a key in the same
-  breath. A test whose code under test reads the clock (windows, expiry, staleness, TTLs)
-  pins the clock for the whole file. Run it once with the clock moved forward before
-  you keep it.
-- **Test on fixtures shaped like real data.** A tool that rewrites part of a document is
-  tested on documents with blank lines, lists and nesting, and asserts a round trip
-  (writing back what was read changes nothing).
+- **A test must be able to fail.** Before keeping it, break every line that enforces the
+  control and watch the test go red. Conditional assertions, comparing output with the
+  input it was generated from, and fakes that ignore their arguments cannot fail.
+- **Guard every path.** A guard on one input path (keys) goes on every other path that
+  writes the same state (pointer, paste, API, import, jobs), each with its own test. A
+  guard that skips a write also restores what the operation already changed.
+- **Re-run earlier mutations.** After each review round, re-run every earlier round's
+  break-the-guard mutations on the final head; assert where the guard acts.
+- **No races with the machine.** Assert that asynchronous work or focus has settled
+  before the next input. Pin the clock in any file whose code reads it.
+- **Realistic fixtures.** A tool that rewrites a document is tested on real-shaped
+  documents and with a round trip (writing back what was read changes nothing).
 
-### Evaluation and recall gates
+### Evaluation and Recall Gates
 
-Applies to any gate that scores a model, ranker, search or classifier against a question
-set:
+For any gate that scores a model, ranker, search or classifier against questions:
 
-- **Fixed, committed question sets.** Every run uses the same questions and gives the
-  same result. Never shuffle or sample a set. Resampling (for example a bootstrap
-  interval) uses a fixed, committed seed and is reported, never gated.
-- **A written, deterministic calibration/gate split.** Write the split rule down before
-  any score is seen (for example "every 3rd question per topic is calibration"). A test
-  re-derives the split from the committed order and fails if the files differ.
-  Questions are written, and committed, before the calibration output exists, ideally
-  by someone other than the person who calibrates. The commit order is the evidence.
-- **Calibrate on the held-out calibration split only.** Never fit thresholds on the
-  questions the gate grades. The calibration measures **the same statistic the bar
-  gates** (a per-query maximum, a rank, a share). A per-pair distribution does not size
-  a per-query bar.
-- **Size bars for their counts.** On 10–30 questions a rate moves in large steps, so
-  state bars as counts ("24 of 30") or paired tests, and size each set so the split
-  divides it exactly.
-- **Bars are fixed before the first run.** A bar that fails its first run goes to the
-  product owner. It may be a real problem or a set that is too strict, and only a person
-  can tell which. The only fixes allowed are a changed question set or split rule. Each
-  one is recorded in an amendment the product owner approves, and a person who has not
-  seen the per-query results writes the replacement set. Never move a threshold or
-  count by hand to make a bar pass.
-- When a rule empties or moves part of a set (for example making it gate-only), search
-  every use of that part and make each agree.
+- Question sets are fixed and committed; never shuffled or sampled (seeded resampling
+  may be reported, never gated).
+- The calibration/gate split is a written, deterministic rule, set before any score is
+  seen and re-derived by a test. Questions are committed before calibration output,
+  preferably by someone other than the calibrator.
+- Calibrate on the calibration half only, measuring the same statistic the bar gates.
+- Bars are counts (`24 of 30`) sized for their sets, and fixed before the first run. A
+  bar that fails its first run goes to the product owner; the only allowed fixes are a
+  changed question set or split rule, in an amendment the owner approves, with new
+  questions written by someone who has not seen the results. Never move a threshold.
+- When a rule empties or moves part of a set, check every use of that part.
 
 ---
 
@@ -173,72 +150,69 @@ set:
   testing performed.
 - CI must pass before merge: lint, typecheck/build, unit + integration tests,
   `tofu plan` for infra changes, dependency / SAST scan.
-- **CI evidence on every PR.** Where hosted CI runs on pull requests, a review held
-  before the PR exists records the CI evidence as **"pending: hosted CI on the PR
-  head"**; the gate is re-checked on the PR head before merge: green is required to
-  merge, and the agent that opens the PR waits for the run and reports it, failures
-  quoted. Where CI does not run on pull requests (or the project's `CLAUDE.md` requires
-  a local report), the local CI report is required at review time. A project with no CI
-  at all records in `CLAUDE.md` the commands it runs instead (lint, test, build), and
-  the local report covers those. Run it before the PR (it is then the only check before
-  merge), for every CI job the change touches, and all of them for a dependency,
-  workflow or config change. Run against the **committed** branch: pass the commit
-  explicitly (for example `--ref <sha>`) when the runner resolves the repository from
-  the working directory, and check that its output names the commit you meant (a
-  worktree run can otherwise test the main checkout). The PR carries the report: the
-  jobs that ran, their results with failures quoted, and the jobs **SKIPPED**. A SKIPPED
-  job is **NOT VERIFIED**, never "passing". Never push to the default branch to find out
-  whether a change passes.
-- **Review briefs.** Brief reviewers with the original request, the diff, and existing
-  evidence (the local CI report or "pending: hosted CI on the PR head", scanner output,
-  and the privacy screening), never a list of what was done or where to look. A reviewer
-  given the fixes confirms the fixes. A re-review gets the same brief as the first
-  review.
-- The PR description is another writer of the change's claims. After each fix round,
-  re-read it, the report and the changelog entry against the files as they now are.
+- **CI evidence.** `CLAUDE.md` records whether CI runs on pull requests.
+  - *CI runs on PRs:* a review held before the PR exists records **"pending: hosted CI
+    on the PR head"**; before merge the head must be green, and whoever opens the PR
+    waits for the run and reports it, failures quoted.
+  - *CI does not run on PRs* (or `CLAUDE.md` asks for a local report): a local CI report
+    is required at review time. A project with no CI records in `CLAUDE.md` the
+    commands it runs instead (lint, test, build); the report covers those.
+  - A local report covers every CI job the change touches (all of them for a
+    dependency, workflow or config change), runs against the committed head (pass the
+    commit, e.g. `--ref <sha>`, and check the output names it), lists jobs run, failures
+    and jobs SKIPPED. **A SKIPPED job is NOT VERIFIED.** Never push to the default branch
+    to find out; run an untrusted ref only as a separate user or in a VM.
+- **Review briefs** carry the original request, the diff and existing evidence (CI
+  report or "pending", scanner output, privacy screening), never a list of what was
+  done or where to look. A re-review gets the same brief.
+- After each fix round, re-read the PR description against the files as they now are.
+
+### Static Analysis
+
+Semgrep runs on the changed files (`git diff --name-only --diff-filter=d
+<base>...HEAD`, docs included) before a developer hands off, before a reviewer
+finishes, and first in an infosec review. Use the Semgrep MCP server if available,
+otherwise:
+
+```sh
+git -C <repo> diff -z --name-only --diff-filter=d origin/main...HEAD | sed -z 's|^|<repo>/|' \
+  | xargs -0 -r semgrep scan --metrics=off --max-target-bytes=0 \
+      --json-output=<scratch>/semgrep.json --config p/owasp-top-ten --config p/secrets \
+      <stack packs from the overlay> [--config p/github-actions]
+```
+
+(`sed -z`/`xargs -r` are GNU: `gsed`/`gxargs` on macOS.) Quote the summary (version,
+rules, files). The JSON's `paths.scanned` must equal the diff's files (anything missing
+is in `paths.skipped` with a reason). Severity by `extra.severity`: CRITICAL/HIGH/ERROR →
+review Blocker / infosec REQUIRES CHANGES; MEDIUM/WARNING → Major / an issue in
+context; LOW/INFO → Minor / noted. A read-only reviewer with no shell gets the file
+list, summary and JSON from the caller. If it could not run, write `Semgrep: NOT RUN`
+and why; it is never a clean scan.
 
 ---
 
 ## Changelog
 
-For projects that keep a user-facing changelog (`CHANGELOG.md` or equivalent):
+For projects with a user-facing changelog:
 
-- **The changelog says what changed since the last release.** Its reader is a user of
-  that release. A fix to, or a change in, something merged after the last release tag
-  gets no entry of its own: amend the entry that introduced it so it describes the final
-  behaviour. Only a change to behaviour a release shipped gets `Changed`, and only a bug
-  that shipped gets `Fixed`. Test: would a user of the last release see this as new, or
-  as a change? Check with `git log <last tag>..HEAD` over what the entry modifies.
-- **Entries are short.** A bold one-sentence headline (what the user can now do, or what
-  changed for them), plus at most one or two short sentences. Default limit **300
-  characters**, on one line, with no second paragraph and no nested list. Write it for a
-  user: no intervals, internal or component names, option lists, rationale or caveats.
-  That detail goes in the help article, feature doc or ADR. Test: would a user read this
-  to the end?
-- Internal-only work (refactors, tests, CI, docs for developers) gets no entry.
-- A rule that can be measured gets a check, not only prose: a test over the
-  unreleased section (length, headline, one line) is cheap and stops the drift.
+- It says what changed **since the last release**. A fix to work merged after the last
+  tag amends that work's entry; only shipped behaviour gets `Changed`/`Fixed`. Check
+  with `git log <last tag>..HEAD`.
+- An entry is a bold one-sentence headline plus at most two short sentences, on one
+  line, written for a user (no internal names, intervals, options, rationale). Limit:
+  **300 characters**, unless the project's `CLAUDE.md` sets another in one line.
+- Internal-only work gets no entry. A rule that can be measured gets a test.
 
 ---
 
 ## Privacy
 
-Every change that may affect the privacy of the people whose data the system holds is
-screened, and any change the screening flags gets a **privacy impact assessment (PIA)
-before it is built**.
+Every change that may affect people's privacy is screened, and a flagged change gets a
+**privacy impact assessment (PIA) before it is built**. The documents come from the
+skills' [`templates/`](templates/README.md); a project without them installs them first.
 
-- **Screening.** Every feature document and every proposal carries a `## Privacy
-  screening` section. For a PR with no feature doc (a fix, dependency, configuration,
-  infrastructure or CI change), the developer writes the screening **before coding**, as
-  the first action of implementation (create-feature Step 2), in a "Privacy screening"
-  section of a **PR-description draft**, which is handed to the reviewer and infosec as
-  evidence and later becomes the PR description verbatim. Any Yes: the developer writes
-  the PIA then, before any code, with the header line `**PR:** <branch or PR>, screening
-  in the PR-description draft`, and infosec (create-feature Step 4) is required. (A
-  dependency or config change can add a network call or telemetry.) A PR that changes
-  only documentation or tests, with no runtime effect, needs none and says "Privacy
-  screening: not applicable (docs/tests only)". The screening holds five questions, each
-  answered Yes or No with a one-line reason, and a result line:
+- **Screening.** Feature docs and proposals carry `## Privacy screening`: these five
+  questions, each answered Yes or No with a one-line reason, then a result line.
   1. Does it collect, derive, log, store, expose or send any new data about a person
      (identifiers included: account ids, entity ids, key prefixes, IPs, emails,
      timestamps, usage or behaviour)?
@@ -251,104 +225,84 @@ before it is built**.
   5. Does it derive new information about people (profiling, inference, embeddings,
      activity summaries)?
 
-  Answer for what the change does, not for what the product already did, and be
-  literal. A new column holding an account id, a new audit field, a log line with a
-  route or a count, an existing value on a new screen, or a new call to a processor is
-  a Yes.
-- **Any Yes means a PIA** in `docs/privacy/NNNN-short-title.md`, from the template,
-  indexed in `docs/privacy/README.md`. It is written before implementation: by the
-  architect with the proposal, in the feature-document step when there is no proposal,
-  or, for a PR with no feature doc, by the developer before any code (header line
-  `**PR:** <branch or PR>, screening in the PR-description draft`). All No: one sentence
-  why, and the screening is still recorded.
-- **A PIA is an engineering and product assessment, not legal advice.** No agent states a
-  legal conclusion. *Applicable regimes and lawful basis* is the product owner's field.
-  It reads `legal review needed` until they fill it.
-- **The PIA is the specification for personal data.** Build only what its data table
-  lists: record, log, store, expose and send nothing more, keep it where and for as long
-  as it says, and make and test each deletion path it names. If the build has to differ,
-  update the PIA in the same branch before review.
-- **A data inventory** (`docs/privacy/data-inventory.md`) is the standing list of
-  personal data the system holds. It cites a file for each row and says `unverified`
-  where the code could not show it. An `unverified` is an open item, not a footnote:
-  read the code to the end before any claim rests on it. The PR that changes a row
-  updates the inventory, and the privacy policy if one is kept in the repository.
-- **Adoption point.** A project records in its `CLAUDE.md` the first feature-document
-  and proposal numbers the screening applies to (the numbers after the newest existing
-  ones when it adopts the rule; `0001` for a new project; the optional guard's
-  `FIRST_SCREENED_*` use the same numbers). Documents numbered before it are not checked
-  unless they are reopened (their scope or design changes), when they are screened like
-  new ones (and added to the guard's `ALSO_SCREENED_*` if it is installed). **If
-  `CLAUDE.md` records no adoption point**, the newest feature-doc and proposal numbers
-  that existed when the rule was adopted, and every number below them, count as before
-  it: neither the reviewer nor infosec blocks them, and the reviewer asks the product
-  owner to record the "first screened" numbers (newest + 1) in `CLAUDE.md`.
-- **Gates.** A missing screening on a document or PR the rule covers, a Yes with no PIA,
-  or a diff that logs or stores something the PIA does not list is a review BLOCK and an
-  infosec REQUIRES CHANGES. Infosec sign-off is required on every PR that has a PIA.
+  Answer literally, for what the change does: a new id column, audit field, log line or
+  processor call is a Yes.
+- **A PR with no feature doc** (fix, dependency, config, infra, CI) gets its screening
+  **before coding**, in a "Privacy screening" section of a PR-description draft that
+  goes to the reviewer and infosec as evidence and becomes the PR description. A
+  docs-only or tests-only PR says "Privacy screening: not applicable".
+- **Any Yes means a PIA** in `docs/privacy/NNNN-title.md`, indexed in its README,
+  written before implementation: with the proposal, in the feature-doc step, or (no
+  feature doc) by the developer before any code, headed `**PR:** <branch or PR>`.
+  Infosec is then required. All No: one sentence why.
+- **A PIA is not legal advice.** *Applicable regimes and lawful basis* is the product
+  owner's field and reads `legal review needed` until filled.
+- **The PIA is the specification** for personal data: build only what it lists, and
+  update it (and the inventory) in the branch if the build differs.
+- **The data inventory** (`docs/privacy/data-inventory.md`) cites a file per row;
+  `unverified` is an open item to resolve before a claim rests on it. A PR that changes
+  a row updates it (and a privacy policy kept in the repository).
+- **Adoption point.** `CLAUDE.md` records the first feature-doc and proposal numbers
+  screened (newest + 1 when adopting; `0001` for a new project; the guard's
+  `FIRST_SCREENED_*`). Older documents are exempt unless reopened (then listed in
+  `ALSO_SCREENED_*`). If none is recorded, documents that existed at adoption are
+  exempt (neither reviewer nor infosec blocks them) and the reviewer asks the owner to
+  record it.
+- **Gates.** A missing screening, a Yes without a PIA, or a diff beyond the PIA is a
+  review BLOCK and an infosec REQUIRES CHANGES.
 
 ---
 
 ## Risk Register
 
-- `docs/risk-register.md` lists every risk the product owner has **accepted, deferred
-  or not yet treated**: ID, risk, likelihood, impact, owner, mitigation or treatment,
-  status (with who decided, when, and their words), when raised, and when to review.
-- **Leaving something open on purpose means a row**: a residual an infosec review
-  accepts, an `APPROVED WITH EXCEPTION`, a fix deferred to a later release, or a gap a
-  PIA leaves. Mentioning it in a PR or a report is not enough.
-- A fixed finding does not belong there. A row is closed by moving it to *Closed* with
-  the commit or ADR that closed it. IDs are never reused.
+- `docs/risk-register.md` lists risks the product owner **accepted, deferred or has not
+  treated**, with likelihood, impact, owner, treatment, status (who decided, when, their
+  words) and a review date. IDs are `R-NNN`, never reused.
+- **Anything left open on purpose gets a row**: an accepted infosec residual, an
+  `APPROVED WITH EXCEPTION` (infosec proposes the ID and text; the row is written with
+  the ADR and must exist before merge), a deferred fix, a gap a PIA leaves.
+- Fixed findings do not belong there; close a row by moving it to *Closed* with its
+  commit or ADR.
 
 ---
 
 ## Evidence, Corrections & Decisions
 
-Process rules for every agent, at every step. Each is here because the opposite shipped
-past review more than once.
+For every agent, at every step:
 
-- **Check before you claim.** Before you write *already done*, *out of scope*,
-  *resolved*, *pre-existing* or *not affected*, run the command that proves it and cite
-  the output. Reproduce a "pre-existing" failure on the merge base. Narrowing scope is
-  the product owner's call, never the agent's.
-- **Read the diff back.** Before you claim a document or file was changed, `git diff`
-  the passage. A refused write is a requirement **not met**: say so wherever status is
-  reported, and never claim a substitute.
-- **Report failures, not the passing count.** Quote the whole result line. If something
-  fails, say whether you caused it and how you know.
-- **Fix a shared function at the source.** When a shared function returns a wrong
-  answer, reproduce it at that function and fix it there, not at the caller that
-  noticed. After fixing a write, find every other writer of the same state and fix or
-  rule out each one. To rule out another caller of a shared defect, test every symptom
-  the fix addresses at that caller.
-- **Reconcile every copy.** When a rule, claim or name changes, grep every file the
-  branch adds or changes (proposal, ADR, PIA, risk register, `CLAUDE.md`, agent and
-  skill files) for the old wording and the names it travels with. Fix or rule out each
-  hit. When a guard checks a link, check both ends of it.
-- **After removing a dependency, file or name**, search the docs, `CLAUDE.md` and the
-  agent/skill files for it.
-- **State what a mitigation does not cover.** For each risk a control is said to
-  mitigate, construct the failure and confirm the control fires. Before a record says a
-  change alters a behaviour, run the old and the new code against that case.
-- **Cheap confirmation beats confident reasoning.** If a probe, browser or command can
-  settle a question in under a minute, run it instead of reasoning, and that includes
-  disagreeing with a reviewer. Before you investigate a failure that contradicts an
-  earlier pass, list your own background processes and ports, and never kill
-  processes by pattern.
-- **Never `cd` in an agent's shell command.** Name the directory in the command: the
-  shell tool's working-directory parameter where it has one, otherwise absolute paths,
-  `git -C <dir>`, `npm --prefix <dir>` or `dotnet test <path>`. A `cd`, even in a
-  chain, can raise a permission prompt that halts an unattended run. Use one directory
-  per call. After any stash or checkout, run `git status` and confirm the tree is what
-  you think it is.
-- **Do not act outward without asking.** Pushing, opening PRs, triggering workflows and
-  deploying are the product owner's calls. Do them only when asked (a feature cycle the
-  owner started that ends in a PR counts), and offer the lighter option.
-- **Record decisions with their options.** A question for the product owner sets out the
-  options with their consequences and a recommendation. Record the answer quoted, with
-  the date. Mark a decision an agent took on the owner's behalf as "pending review".
-- **Keep a corrections log** (`docs/corrections-log.md`). Its **Patterns** section is read
-  before deciding. Its ledger records each time an agent was wrong or a decision was
-  pushed back: what was claimed, what was true, and the cheapest check that would have
-  caught it. Append an entry when you get something wrong, and file a recurrence under
-  its existing pattern.
+- **Check before you claim.** Before writing *done*, *out of scope*, *resolved*,
+  *pre-existing* or *not affected*, run the command that proves it and cite it.
+  Narrowing scope is the product owner's call.
+- **Read the diff back** before claiming a change. A refused write is a requirement
+  **not met**.
+- **Report failures**, not only the passing count, and say whether you caused them.
+- **Fix at the source.** Fix a shared function where it is wrong, then find every other
+  writer of the same state. Rule out another caller by testing each symptom there.
+- **Reconcile every copy.** When a rule, claim or name changes (or is removed), search
+  every file the branch touches, `CLAUDE.md` and the agent/skill files, and check both
+  ends of every link.
+- **State what a mitigation does not cover**, and observe (old vs new code) before
+  claiming a behaviour changed.
+- **Cheap confirmation beats reasoning**: run the minute-long probe. Check your own
+  background processes before diagnosing a contradicting failure; never kill by pattern.
+- **Never `cd`** in an agent's shell command: use the tool's working-directory
+  parameter, absolute paths, `git -C`, `npm --prefix`. One directory per call;
+  `git status` after any stash or checkout.
+- **Outward actions.** A feature cycle the product owner started is permission to push
+  its branch and open its PR. Anything else outward (triggering workflows, deploying,
+  pushing to the default branch) needs an explicit request.
+- **Decisions.** Put each owner decision with its options, consequences and a
+  recommendation; record the answer quoted and dated. A decision an agent took on the
+  owner's behalf is marked "pending review".
+- **Corrections log** (`docs/corrections-log.md`): read its Patterns before deciding;
+  append what was claimed, what was true and the check that would have caught it,
+  under the pattern it repeats.
+
+---
+
+## Project Facts
+
+- Project facts (stack, structure, conventions, decisions, overrides) live **only** in
+  the project's `CLAUDE.md`. Skills read it first; they carry no per-project block.
+- `CLAUDE.md` holds rules and pointers, not history. A settled decision is one line:
+  the rule as it stands and the ADRs it amends.

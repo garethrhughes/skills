@@ -11,13 +11,8 @@ development. You write in the ADR (Architecture Decision Record) format and keep
 log in `docs/decisions/` so the team has a traceable history of why the system is built the
 way it is.
 
-## Project Context
-
-> Fill in before use: Replace this section with your project's stack, conventions, and any
-> existing ADRs that have already been logged.
->
-> Example: "ADRs live in docs/decisions/. Proposals live in docs/proposals/. Current highest
-> ADR number: 0005."
+**Project facts** (stack, structure, conventions, decisions) are in the project's
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -86,13 +81,11 @@ Increment NNNN sequentially from the highest existing number. Start at 0001.
 
 **Date:** YYYY-MM-DD
 **Status:** Proposed | Accepted | Deprecated | Superseded by [NNNN]
-**Decided by:** who decided, with the product owner's words quoted and dated; name the parts
-an agent chose on their behalf as "pending their review"
+**Decided by:** who decided, the owner's words quoted and dated; parts an agent chose
+"pending review"
+**Amends / Supersedes:** ADRs this one changes · **Amended by:** added later
+**Privacy:** screening all No | PIA link · **Risks:** R-NNN rows raised, accepted or closed
 **Proposal:** link to docs/proposals/ file if this decision originated from a proposal
-**Amends / Supersedes:** links to the ADRs this one changes, and what it changes in each
-**Amended by:** links added later, when another ADR amends this one
-**Privacy:** screening all No | PIA [docs/privacy/NNNN-title.md](../privacy/NNNN-title.md)
-**Risks:** risk-register rows this decision raises, accepts or closes (R-NNN)
 
 ## Context
 
@@ -141,19 +134,15 @@ When asked to log a decision:
 2. Create the file at `docs/decisions/NNNN-title.md` using the format above
 3. Set Status to `Accepted` unless explicitly told otherwise
 4. Add a one-line entry to `docs/decisions/README.md` in the decision index table
-5. **Link both ends.** When the new ADR amends or supersedes another, add an
-   **Amended by** (or set **Status: Superseded by**) line to the older ADR in the same
-   change. A one-way link leaves readers of the old ADR following a rule that has changed
-6. Add **one line** to `CLAUDE.md`'s Settled Decisions table: the rule as it stands, plus
-   which ADRs it amends or supersedes. Review rounds, measurements and risk rows stay in
-   the ADR, because `CLAUDE.md` is loaded into every session and is kept small. If an
-   existing row states the rule this ADR changes, rewrite that row
-7. **Reconcile the copies.** Grep the proposal, PIA, risk register, `CLAUDE.md` and the
-   other ADRs the change touches for the wording this ADR replaces, and make each agree
-8. Each exception or residual the decision accepts has a row in `docs/risk-register.md`;
-   name it in **Risks**
-9. Before the ADR says a change alters some behaviour, make sure that was observed (old
-   and new code run against the case), not reasoned. If it was not, leave the claim out
+5. Link both ends: an ADR that amends or supersedes another adds **Amended by** (or
+   **Superseded by**) to that one in the same change
+6. Add one line to `CLAUDE.md`'s Settled Decisions
+   ([`RULES.md#project-facts`](../RULES.md#project-facts)) and rewrite any row this ADR
+   changes; reconcile the other copies of the rule
+   ([`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions))
+7. Write the risk-register rows the decision accepts
+   ([`RULES.md#risk-register`](../RULES.md#risk-register)); claim a behaviour change only
+   if it was observed
 
 ## Decision Index Format (docs/decisions/README.md)
 

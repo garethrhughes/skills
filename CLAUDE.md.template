@@ -13,54 +13,6 @@ conventions to this project.
 
 ---
 
-## Running Commands — never `cd`
-
-Name the directory in the command instead of changing into it: the shell tool's
-working-directory parameter where it has one, otherwise absolute paths, `git -C <dir>`,
-`npm --prefix <dir>` (or the stack's equivalent). A `cd`, even in a chain, raises a
-permission prompt that halts an unattended run. If a command needs two directories, it
-needs two calls.
-
----
-
-## Corrections Log — read before deciding
-
-[`docs/corrections-log.md`](docs/corrections-log.md) records every time an agent was wrong
-on this project and every time a decision had to be pushed back. Read its **Patterns**
-section before acting. The ledger is the evidence behind it. The checks that apply to
-every agent, at every step
-([`RULES.md#evidence-corrections--decisions`](.opencode/skills/RULES.md#evidence-corrections--decisions)):
-
-1. Before writing *already done / out of scope / resolved / pre-existing*, run the
-   command that proves it and cite the output. Narrowing scope is the product owner's
-   call.
-2. Before keeping a test, break what it guards and watch it fail. Break every line that
-   enforces the control.
-3. Before claiming a document was amended, `git diff` the passage.
-4. Before reporting a result, quote the failures too.
-5. Brief reviewers with the original request, the diff, and existing evidence (the local
-   CI report or "pending: hosted CI on the PR head", scanner output, and the privacy
-   screening), never a list of what was done or where to look.
-6. After fixing a write, find every other writer of the same state. When a shared
-   function is wrong, fix it at that function, not at the caller that noticed.
-7. When a rule, claim or name changes, grep every copy of it (proposal, ADR, PIA, risk
-   register, this file, agent and skill files) and make each agree. After removing a
-   name, search for it.
-
-This entry is the durable copy: `update-skills` can overwrite the skills' own pointers.
-Append an entry to the log when you get something wrong.
-
----
-
-## Keeping This File Small
-
-This file is loaded into every session, so it holds rules and pointers, not history.
-Detail lives in the ADR, feature doc, README or risk-register row it came from. A new
-Settled Decision gets **one line**: the rule as it stands, plus which ADRs it amends or
-supersedes.
-
----
-
 ## Project Overview
 
 [Short description: what does this system do, who uses it, what problem does it solve?]
@@ -137,7 +89,7 @@ supersedes.
 │   ├── proposals/
 │   ├── decisions/
 │   ├── design/          # UI design plans (frontend projects)
-│   ├── privacy/         # privacy screening rules, PIA template, PIAs, data inventory
+│   ├── privacy/         # screening rules, PIA template, PIAs, data inventory
 │   ├── corrections-log.md
 │   └── risk-register.md
 └── .env.example
@@ -199,78 +151,31 @@ UI work that only consumes existing tokens and components does not need one.
 See the `architect`, `design`, and `decision-log` skills for the exact proposal, design
 plan, and ADR formats.
 
-**Privacy screening** ([`RULES.md#privacy`](.opencode/skills/RULES.md#privacy)). Every
-feature doc and proposal answers the five-question `## Privacy screening` in
-[`docs/privacy/README.md`](docs/privacy/README.md). For a PR with no feature doc (a fix,
-dependency, configuration, infrastructure or CI change), the developer writes the
-screening **before coding**, as the first action of implementation (create-feature Step
-2), in a "Privacy screening" section of a **PR-description draft**, which is handed to
-the reviewer and infosec as evidence and later becomes the PR description verbatim. Any
-Yes: the developer writes the PIA then, before any code, with the header line `**PR:**
-<branch or PR>, screening in the PR-description draft`, and infosec (create-feature Step
-4) is required. A docs-only or tests-only PR needs none. **Adoption point:** feature
-docs from `[NNNN]` and proposals from `[NNNN]` (`0001` for a new project; the numbers
-after the newest existing ones when adopting the rule). Older documents are not checked
-unless reopened. **If `CLAUDE.md` records no adoption point**, the newest feature-doc
-and proposal numbers that existed when the rule was adopted, and every number below
-them, count as before it: neither the reviewer nor infosec blocks them, and the reviewer
-asks the product owner to record the "first screened" numbers (newest + 1) in
-`CLAUDE.md`. Any Yes means a PIA in `docs/privacy/` from `TEMPLATE-pia.md`, written
-before implementation and built only as it lists. Infosec is then required, and the
-reviewer BLOCKs a diff that logs or stores what the PIA does not list. It is an
-engineering assessment, not legal advice: *Applicable regimes and lawful basis* is
-[product owner]'s field. [If installed: run `node --test
-scripts/__tests__/privacy-screening.test.mjs` before a PR; its `FIRST_SCREENED_*` match
-the adoption point.]
-
 ---
 
-## Testing & Local CI
+## Process
 
-See [`RULES.md#testing`](.opencode/skills/RULES.md#testing). Plus:
+Agents follow `RULES.md`: [evidence, corrections and decisions](.opencode/skills/RULES.md#evidence-corrections--decisions)
+(including never `cd`), [Git & PRs](.opencode/skills/RULES.md#git--prs), [static analysis](.opencode/skills/RULES.md#static-analysis),
+[changelog](.opencode/skills/RULES.md#changelog), [privacy](.opencode/skills/RULES.md#privacy), [risk register](.opencode/skills/RULES.md#risk-register).
+This file is the only home of project facts ([project facts](.opencode/skills/RULES.md#project-facts)).
 
-- **CI on pull requests: [yes | no].** Keep the one bullet that applies:
-  - *yes:* Where hosted CI runs on pull requests, a review held before the PR exists
-    records the CI evidence as **"pending: hosted CI on the PR head"**; the gate is
-    re-checked on the PR head before merge: green is required to merge, and the agent
-    that opens the PR waits for the run and reports it, failures quoted. A local report
-    is not required.
-  - *no:* run CI locally before every PR with `[local CI command, e.g. a runner script
-    that reads the workflow file]`, against the **committed** branch (pass the commit,
-    e.g. `--ref <sha>`, when running from a worktree). Run every CI job the change
-    touches, and all of them for a dependency, workflow or config change. The report
-    names the jobs that ran and those **SKIPPED**. A SKIPPED job is **NOT VERIFIED**,
-    never "passing", and the reviewer blocks a missing or non-compliant report. It is
-    the only check before merge; never push to the default branch to find out.
-  - *no CI at all:* A project with no CI at all records in `CLAUDE.md` the commands it
-    runs instead (lint, test, build), and the local report covers those: `[commands]`.
-    The rest of the *no* case applies.
-
----
-
-## Changelog
-
-[If the project keeps a user-facing changelog: its path.] Per
-[`RULES.md#changelog`](.opencode/skills/RULES.md#changelog): the changelog says what
-changed since the last release. A fix to unreleased work amends the entry that
-introduced it. An entry is a bold one-sentence headline plus at most two short
-sentences, ≤[300] characters, on one line, written for a user.
-
----
-
-## Risk Register
-
-[`docs/risk-register.md`](docs/risk-register.md) lists every risk the product owner has
-accepted, deferred or not yet treated, with likelihood, impact, owner and a review
-date. When you leave something open on purpose (a residual an infosec review accepts, a
-fix deferred to a later release), add a row there rather than only mentioning it in a PR
-or a report.
+| Setting | Value |
+|---|---|
+| CI on pull requests | [yes / no / no CI] |
+| Local CI command | [command, or "not required"] |
+| Commands run instead of CI | [lint / test / build, or "n/a"] |
+| Privacy adoption point | feature docs from [NNNN], proposals from [NNNN] |
+| Privacy and risk decisions | [name] (fills a PIA's regimes and lawful basis) |
+| Privacy guard | [`node --test scripts/__tests__/privacy-screening.test.mjs` / not installed] |
+| Changelog | [path and limit (default 300 characters) / none] |
+| Process documents | `docs/corrections-log.md`, `docs/risk-register.md`, `docs/privacy/` |
 
 ---
 
 ## Settled Decisions (do not revisit without a superseding ADR)
 
-One line each: the rule as it stands. The ADR holds the detail.
+One line per decision ([`RULES.md#project-facts`](.opencode/skills/RULES.md#project-facts)).
 
 | # | Decision |
 |---|---|

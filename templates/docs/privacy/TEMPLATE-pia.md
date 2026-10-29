@@ -1,27 +1,14 @@
 # NNNN — Privacy impact assessment: Short title
 
 <!--
-Copy this file to docs/privacy/NNNN-short-kebab-title.md (NNNN = the next free number in
-docs/privacy/README.md), fill it in, delete these comments and add a row to the README.
+Copy to docs/privacy/NNNN-short-kebab-title.md, fill it in, delete these comments and add
+a row to docs/privacy/README.md. Who writes it, and when: RULES.md#privacy. Keep it short
+and build on data-inventory.md (update it in the same PR). Every "## " heading is required.
 
-A PIA is written when any answer in a Privacy screening is "yes", before implementation
-starts: by the architect with the proposal, in the feature-document step when there is
-no proposal, or, for a PR with no feature doc, by the developer before any code. The
-developer updates it if the build differs.
-
-Header: keep the Feature/Proposal line for a PIA that comes from a feature doc or a
-proposal. For a PR with no feature doc, replace that line with
+Header: from a feature doc or proposal, keep the line below. For a PR with no feature
+doc, replace it with
   **PR:** <branch or PR>, screening in the PR-description draft
-(the optional guard accepts it, and cannot check that back-link: the draft is not in the
-repository).
-
-This is an engineering and product assessment. It states no legal conclusion. Keep it
-short: a small change is one page and an hour's work. Build on
-docs/privacy/data-inventory.md rather than re-describing what is already there, and
-update the inventory in the same PR when a row is added, changed or removed.
-
-Every "## " heading below is required. If the project installed the optional
-privacy-screening guard, it fails a PIA that drops one.
+(the optional guard accepts this and cannot check its back-link).
 -->
 
 **Feature:** [NNNN](../features/NNNN-title.md) · **Proposal:** [NNNN](../proposals/NNNN-title.md) or none

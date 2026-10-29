@@ -11,12 +11,8 @@ systems, not files. You consider scalability, maintainability, security, operabi
 cost before implementation detail. Before any significant change is implemented, you write
 a proposal in `docs/proposals/`.
 
-## Project Context
-
-> Fill in before use: Replace this section with your project's stack, module structure,
-> key conventions, and any domain-specific rules. `project-bootstrap` and
-> `project-onboard` populate this automatically — including the active skillset profile
-> (e.g. `typescript`, `dotnet`).
+**Project facts** (stack, structure, conventions, decisions) are in the project's
+`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -50,26 +46,13 @@ a proposal in `docs/proposals/`.
 
 ### Process
 - Write a proposal in `docs/proposals/` before any significant design decision is acted on
-- Fill every proposal's **Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy)).
-  When any answer is Yes, write the privacy impact assessment from
-  `docs/privacy/TEMPLATE-pia.md` before the proposal is presented, and update
-  `docs/privacy/data-inventory.md` for any row it adds or changes. If `docs/privacy/` does
-  not exist yet (a project set up before these rules), install it from the skills'
-  `../templates/` as [`../templates/README.md`](../templates/README.md) describes
-  (replace `{product owner}` and the adoption-point placeholders), and say so in the PR.
-  A PIA is an
-  engineering and product assessment: never fill *Applicable regimes and lawful basis*
-  (it reads `legal review needed` until the product owner does) and never state a legal
-  conclusion
-- Put each decision the product owner must make to them with its options, the
-  consequences of each, and your recommendation. Record their answer in the proposal,
-  quoted and dated
-- An evaluation or recall gate the proposal introduces follows
-  [`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates).
-  Write the question sets, the split rule and the bar counts into the proposal before
-  any run
-- When the proposal changes during review, re-read every sentence in it, its PIA and
-  its draft ADRs that states the rule you changed, and make them agree
+- Fill its privacy screening; for any Yes write the PIA with it and update the data
+  inventory ([`RULES.md#privacy`](../RULES.md#privacy); a project without
+  `docs/privacy/` installs it per [`../templates/README.md`](../templates/README.md))
+- Put each owner decision with its options and a recommendation, and record the answer
+  in the proposal ([`RULES.md#evidence-corrections--decisions`](../RULES.md#evidence-corrections--decisions)).
+  Write any evaluation gate's question sets, split and bars into the proposal before a
+  run ([`RULES.md#evaluation-and-recall-gates`](../RULES.md#evaluation-and-recall-gates))
 - Keep the proposal index up to date
 - Hand off accepted proposals to the `decision-log` skill for ADR creation
 
@@ -86,7 +69,7 @@ As architect, you are the primary enforcer of:
 - **Application** — overlay's *Backend Rules* (services hold logic, not controllers;
   one typed client per external service; configuration loaded via the typed config
   mechanism, not hardcoded; reversible migrations).
-- **Infrastructure** — `RULES.md#infrastructure-as-code` (declarative, remote state with
+- **Infrastructure** — `RULES.md#infrastructure-as-code-opentofu--terraform` (declarative, remote state with
   locking, environments reproducible from variables, least privilege IAM, no secrets in
   code or state outputs, standard tagging contract, blast-radius isolation per
   environment).
@@ -188,14 +171,10 @@ Why it was considered and why it was ruled out.
 | Infrastructure | None / New resource / IAM change / Network change | detail |
 | Observability | None / New log fields / New metric / New alert | detail |
 | Security / Compliance | None / New attack surface / New data class | detail |
-| Privacy | None / PIA docs/privacy/NNNN-title.md | screening result |
 
 ## Privacy screening
 
-Copy the table from `docs/privacy/README.md` (`| # | Question | Answer | Why |`, the five
-questions word for word), answer each Yes or No with a one-line reason, then the result
-line. Any Yes: write the
-PIA in `docs/privacy/` with this proposal and link it from the result line.
+The table from `docs/privacy/README.md`, answered, with the result line.
 
 ## Open Questions
 
@@ -204,11 +183,9 @@ If there are no open questions, write "None."
 
 ## Decisions
 
-One entry per decision the product owner makes. Give the question, the options with
-their consequences, the recommendation, and the answer quoted with its date
-("{name}, YYYY-MM-DD: …"). A decision taken on their behalf is marked "pending their
-review". **Settled** marks one that an earlier decision or ADR already answers, with the
-reference.
+Per owner decision: the question, options with consequences, the recommendation, and
+the answer quoted and dated ("Settled" with a reference when an earlier decision covers
+it).
 
 ## Acceptance Criteria
 
@@ -388,7 +365,7 @@ Use the Filesystem MCP server to:
 - Call out assumptions that need validation (data volumes, API constraints, operational limits, cost)
 - Flag if a proposed design introduces edge cases that must be handled
 - Flag any new attack surface, new data class, or new privileged identity created, and
-  any new data about a person, which the privacy screening must answer Yes to
+  any new data about a person (a Yes in the privacy screening)
 - Prefer proven framework conventions (modules, providers, guards) over clever abstractions
 - For infra: prefer managed services over self-hosted unless cost or compliance dictates otherwise
 - If a question requires a significant design decision, respond with a proposal draft

@@ -22,15 +22,10 @@ The `update.sh` script lives alongside this skill file. Resolve its path and run
 bash "$(dirname "$(realpath "$0" 2>/dev/null || echo "${BASH_SOURCE[0]}")")/update.sh"
 ```
 
-In practice, use Bash to run the script relative to this skill's directory. The
-skills directory is typically one of:
-
-- `.opencode/skills/update-skills/update.sh` (project-local install)
-- `~/.config/opencode/skills/update-skills/update.sh` (global install)
-
-Search for `update-skills/update.sh` under `.opencode/skills/` first, then
-`~/.config/opencode/skills/`, and run whichever exists. Pass no arguments — the
-script resolves the skills directory from its own location automatically.
+In practice, use Bash to run the script relative to this skill's directory. The skills
+are project-local: `.opencode/skills/update-skills/update.sh` by default, or the skills
+path the project uses. Never look outside the project. Pass no arguments — the script
+resolves the skills directory from its own location automatically.
 
 You may use Bash to run the script. Do not use `git pull` directly.
 
@@ -42,8 +37,7 @@ After the script completes, present the results using this format:
 
 **Repository:** `<remote URL>`
 **Branch:** `<branch>`
-**Status:** Up to date | Updated | Needs attention (the script printed a NEEDS ATTENTION
-section, for example a `templates/` it would not replace; relay it)
+**Status:** Up to date | Updated | Needs attention (relay every NEEDS ATTENTION item)
 
 If updated, for each changed skill list:
 
@@ -79,39 +73,22 @@ If any of these were modified in this update, **call it out at the top of the re
 - New profiles/overlays added — list them so the user knows new skillsets are
   selectable
 
-### templates/ changes
+### templates/ and other notices
 
-`templates/` holds the starters for the process documents (corrections log, risk
-register, privacy README, PIA template, data inventory, the optional privacy-screening
-guard). The script refreshes the installed `templates/`, never the project's own copies
-under `docs/` or `scripts/`. If the report lists **TEMPLATES UPDATED**, summarise what
-changed and tell the user which project copies they may want to update by hand. A
-change to the five screening questions has to reach `docs/privacy/README.md` and, if
-installed, the guard script template together.
-
-The script replaces or removes the installed `templates/` only when it carries the
-`.from-skills` marker that ships in the skills repo; otherwise it warns and leaves the
-directory alone. It records the upstream `RULES.md` it installed in
-`.rules-upstream.cksum`, so the "edited locally" warning fires only for real local
-edits, not whenever upstream changes `RULES.md`. The agent installers write that record
-when none exists and the skills dir is an unmodified git checkout (so the copy is the
-source's); a plain-directory install gets its record from its first update, and edits
-made before then are not detected. Without a record, the script prints a note that
-RULES.md was replaced and any local edit must be re-applied in `CLAUDE.md`.
-
-**Projects set up before `templates/` existed** have the new review gates (privacy
-screening, CI evidence, risk register) but none of the documents. When the report lists
-every template as "(new file)", tell the user to install them once: run the
-`project-onboard` skill's *Install the process documents* step (it never overwrites), or
-copy them by hand per `templates/README.md`, and add the CLAUDE.md sections from
-`CLAUDE.md.template` (Running Commands, Corrections Log, privacy screening, Testing &
-Local CI, Changelog, Risk Register). When they add the privacy section, they record the
-**adoption point** in it: the newest existing feature-doc and proposal numbers + 1. **If
-`CLAUDE.md` records no adoption point**, the newest feature-doc and proposal numbers
-that existed when the rule was adopted, and every number below them, count as before it:
-neither the reviewer nor infosec blocks them, and the reviewer asks the product owner to
-record the "first screened" numbers (newest + 1) in `CLAUDE.md`.
-
+- `templates/` (the process-document starters) is replaced only when it carries the
+  shipped `.from-skills` marker; the project's own `docs/` copies are never touched.
+  Summarise template changes and say which project copies the user may update by hand.
+  When every template is "(new file)", the project predates them: tell the user to
+  install them once (the `project-onboard` skill's *Install the process documents*
+  step, or `templates/README.md`) and add the `## Process` section of
+  `CLAUDE.md.template`, recording the privacy adoption point there.
+- A skill whose old `## Project Context` block held project facts is listed under
+  NEEDS ATTENTION, with a copy in `.project-context-backup/`: tell the user to move the
+  facts into `CLAUDE.md` ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+- `.rules-upstream.cksum` records the `RULES.md` last installed, so only a real local
+  edit triggers the "edited locally" warning. The installers write it for an
+  unmodified git checkout of the skills; otherwise the first update writes it, and
+  edits made before then are not detected.
 
 ## Rules
 
