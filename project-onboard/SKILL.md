@@ -70,8 +70,7 @@ Available profiles:
 Before saying anything else, scan the project root for existing AI configuration files
 and directories:
 
-- `AGENTS.md`
-- `AGENTS.md`
+- `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`
 - `.claude/` (Claude Code agents, commands, settings — produced by `scripts/install-claude-agents.sh`)
 - `.github/agents/` (GitHub Copilot agents — produced by `scripts/install-copilot-agents.sh`)
 - `.github/copilot-instructions.md`

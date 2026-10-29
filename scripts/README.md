@@ -53,6 +53,24 @@ bash .opencode/skills/scripts/migrate-agents-md.sh
 
 The two installers never create or change `AGENTS.md` or `CLAUDE.md`.
 
+## Tests for update.sh and the migration
+
+[`tests/update-skills/`](../tests/update-skills/) holds a scenario harness: real scratch
+projects, the skills installed from an older commit, `update.sh` run through its
+self-update path against the commit under test, with byte-for-byte checks. It covers
+every migration case, the Project Context backups, the `templates/` marker and the
+`RULES.md` record. It needs only `python3`, `git` and `bash`, the full history (it
+installs from older commits), and writes only to a fresh temporary directory. From the
+skills repository:
+
+```bash
+python3 tests/update-skills/harness.py      # the committed HEAD; exit 0 = all pass
+python3 tests/update-skills/mutants.py      # breaks each control in turn; exit 0 = all caught
+```
+
+Run both after changing `update.sh` or `migrate-agents-md.sh`, and add a case (and a
+mutant) for every new behaviour. `--src-ref <rev>` tests another commit.
+
 ## When to re-run
 
 Re-run the installer for your assistant after every `update-skills` run so that

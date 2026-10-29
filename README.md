@@ -287,7 +287,10 @@ automatically on its next run: it backs up `CLAUDE.md` to
 `.opencode/skills/.agents-md-backup/CLAUDE.md.backup`, writes its exact content to
 `AGENTS.md` (its `@`-imports still resolve: same directory), makes `CLAUDE.md` the import,
 and reports it at the top. It changes nothing when both files already hold content,
-either is a symlink, or it cannot tell where the project root is, and lists those under
-NEEDS ATTENTION instead; it never overwrites `AGENTS.md`. The cases are in
+either is a symlink, `CLAUDE.md` is git-ignored (private) or `AGENTS.md` would be, or
+it cannot tell where the project root is, and lists those under NEEDS ATTENTION
+instead; it never overwrites `AGENTS.md`. The backup directory ignores itself in git.
+If you delete `CLAUDE.md` on purpose (Claude Code v2.1.277+ reads `AGENTS.md` itself),
+add an empty `.opencode/skills/.no-claude-md` so updates stop re-creating it. The cases are in
 [`update-skills/SKILL.md`](update-skills/SKILL.md#the-projects-agentsmd-migration). To
 run only the migration: `bash .opencode/skills/scripts/migrate-agents-md.sh`.

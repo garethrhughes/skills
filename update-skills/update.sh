@@ -24,6 +24,7 @@ if [ -z "${_UPDATE_SKILLS_SELF_COPY:-}" ]; then
   cp "$0" "$_tmp_self"
   chmod +x "$_tmp_self"
   _UPDATE_SKILLS_ORIG_DIR="$(cd "$(dirname "$0")" && pwd)" \
+  _UPDATE_SKILLS_TMP_SELF="$_tmp_self" \
   _UPDATE_SKILLS_SELF_COPY=1 exec bash "$_tmp_self" "$@"
 fi
 
@@ -110,6 +111,8 @@ MIGRATE_OUT="$(mktemp)"
 cleanup() {
   [ "$OWN_CLONE_DIR" = "1" ] && rm -rf "$CLONE_DIR"
   rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT" "$MIGRATE_OUT"
+  # The copy of this script the guard at the top runs from (bash keeps it open).
+  if [ -n "${_UPDATE_SKILLS_TMP_SELF:-}" ]; then rm -f "$_UPDATE_SKILLS_TMP_SELF"; fi
 }
 trap cleanup EXIT
 
@@ -138,7 +141,9 @@ if [ -z "${_UPDATE_SKILLS_SELF_UPDATED:-}" ] \
   chmod +x "$INSTALLED_UPDATE"
   # Hand the existing clone to the next run so we don't pay for a second
   # `git clone`. The cleanup trap won't fire because exec replaces this
-  # process; the new run will manage CLONE_DIR via its own trap.
+  # process: remove this run's own temporary files now; the new run manages
+  # CLONE_DIR (and the self-copy) via its own trap.
+  rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT" "$MIGRATE_OUT"
   _UPDATE_SKILLS_SELF_UPDATED=1 \
   _UPDATE_SKILLS_REUSE_CLONE="$CLONE_DIR" \
   _UPDATE_SKILLS_OWN_CLONE=1 \
@@ -376,7 +381,7 @@ else
 fi
 # Print the blocks of one kind (MIGRATED / ATTENTION / INFO), indented.
 migrate_blocks() {
-  awk -v tag="$1: " '
+  LC_ALL=C awk -v tag="$1: " '
     index($0, tag) == 1 { on = 1; print "  " substr($0, length(tag) + 1); next }
     /^  / && on { print "  " $0; next }
     { on = 0 }' "$MIGRATE_OUT"

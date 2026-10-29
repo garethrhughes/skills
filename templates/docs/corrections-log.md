@@ -35,8 +35,10 @@ what never applies, and add a pattern only when none fits.
    broke every generated item. **Check:** list the new failure modes first.
 8. **Parse records before matching inside them.** *Example:* a regex crossed into the
    next entry. **Check:** split first; give every parser a count it must hit.
-9. **Clean up what you start.** *Example:* a stray server made tests time out.
-   **Check:** list your own processes and ports; never kill by pattern.
+9. **Clean up what you start.** *Example:* a stray server made tests time out; a test
+   harness built a path into a shell string, and `->` in a case name redirected its
+   output into the owner's checkout. **Check:** list your own processes and ports; never
+   kill by pattern; run subprocesses with argument lists and a scratch working directory.
 10. **Cheap confirmation beats reasoning.** *Example:* three confident diagnoses, each
     refuted by a one-minute probe. **Check:** run the probe first.
 11. **Never `cd`.** *Example:* a `cd` chain halted an unattended run after the rule was
@@ -55,6 +57,13 @@ what never applies, and add a pattern only when none fits.
     `*.test.mjs` template under `.claude/`; Semgrep dropped files over 1 MB. **Check:**
     ship such files as `*.template`; compare `paths.scanned` with the diff; lift size
     limits.
+
+16. **Moving a file moves its status too.** *Example:* a migration copied a git-ignored
+    (private) `CLAUDE.md` into a new, shared `AGENTS.md` and said "commit"; a symlinked
+    directory made it migrate the repository on the other side of the link. **Check:**
+    before moving or rewriting, ask git about both ends (`git check-ignore`, tracked or
+    not) and resolve paths the way the caller sees them; refuse and report when either
+    end differs.
 
 ## Ledger
 

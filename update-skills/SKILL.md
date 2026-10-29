@@ -86,19 +86,22 @@ automatically and with a backup. Relay its items: **PROJECT MIGRATED** (a change
 project's own files, no action needed beyond committing them), the AGENTS.md items under
 **NEEDS ATTENTION**, and **PROJECT NOTES**.
 
-The project root is the directory holding the skills: `<root>` for the default
-`<root>/.opencode/skills`, or the top of the git repository that holds them. If the two
-disagree, neither exists, or the result is the home directory, nothing is changed and
-NEEDS ATTENTION says so; the user can name it with `SKILLS_PROJECT_ROOT=<root>`.
+The project root is the directory holding the skills, from the skills path as given:
+`<root>` for the default `<root>/.opencode/skills`, or the top of the git repository that
+holds them. If the two disagree, neither exists, a component of the skills path is a
+symlink, or the result is `/`, the home directory or a dot-directory in it (`~/.claude`),
+nothing is changed and NEEDS ATTENTION says so; the user can name the root with
+`SKILLS_PROJECT_ROOT=<root>` (it must contain the skills path).
 
 | At the root | What the update does |
 |---|---|
-| Only `CLAUDE.md` | Copies it to `.agents-md-backup/CLAUDE.md.backup` in the skills dir (`.backup.2`, … if a different one is there; never overwritten or deleted), writes its exact bytes to `AGENTS.md`, replaces `CLAUDE.md` with the import. Reported as migrated, with the backup path, a note if `CLAUDE.md` had uncommitted changes, and its `@`-imports (they resolve the same from `AGENTS.md`, same directory) |
-| `CLAUDE.md` is the import (first line that is not blank or an HTML comment is `@AGENTS.md`) and `AGENTS.md` exists | Nothing, not reported |
+| Only `CLAUDE.md` | Copies it to `.agents-md-backup/CLAUDE.md.backup` in the skills dir (`.backup.2`, … if a different one is there; never overwritten or deleted; the directory has a `.gitignore`, so git ignores it), writes its exact bytes to a writable `AGENTS.md`, replaces `CLAUDE.md` with the import. Reported as migrated, with the backup path, a note if the working-tree version had uncommitted changes, files that still mention `CLAUDE.md`, a reminder to re-run the installers, and its `@`-imports (they resolve the same from `AGENTS.md`, same directory; up to 20 listed, any that reach Claude Code's four-hop limit flagged) |
+| `CLAUDE.md` is the import (first content line, after a byte order mark, blank lines and HTML comments, is `@AGENTS.md`) and `AGENTS.md` exists | Nothing, not reported |
 | Both, `CLAUDE.md` not the import | Nothing changed; NEEDS ATTENTION: merge `CLAUDE.md` into `AGENTS.md`, then make `CLAUDE.md` the import (until then Claude Code ignores `AGENTS.md`) |
-| Only `AGENTS.md` | Creates `CLAUDE.md` as the import (reported), for Claude Code sessions that do not read `AGENTS.md` themselves |
+| Only `AGENTS.md` | Creates `CLAUDE.md` as the import (reported), for Claude Code sessions that do not read `AGENTS.md` themselves. Opt out with a `.no-claude-md` file in the skills dir (or `SKILLS_NO_CLAUDE_MD=1`): then it is only noted |
 | Neither | Nothing; one note (`project-bootstrap` / `project-onboard` write them) |
-| `CLAUDE.md` or `AGENTS.md` a symlink, `.claude/CLAUDE.md`, or the import with no `AGENTS.md` | Nothing changed; NEEDS ATTENTION |
+| `CLAUDE.md` or `AGENTS.md` a symlink or not a regular file; `CLAUDE.md` unreadable, git-ignored (private), or already importing `AGENTS.md`; `AGENTS.md` git-ignored; the import with no `AGENTS.md` | Nothing changed; NEEDS ATTENTION says why |
+| `.claude/CLAUDE.md` | Left alone and listed under NEEDS ATTENTION (other agents do not read it); the root's files are still handled as above |
 | `CLAUDE.local.md`, `CLAUDE.md` files in subdirectories | Never touched; a note lists them |
 
 It never overwrites `AGENTS.md` and never deletes a project file. A second run changes
