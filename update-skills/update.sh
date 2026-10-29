@@ -35,18 +35,46 @@ echo ""
 # Write the awk program to a temp file to avoid quoting issues
 AWK_EXTRACT="$(mktemp)"
 
-# Extract a skill's own "## Project Context" section, ignoring any example of one
-# inside a fenced code block (project-bootstrap/onboard used to carry one).
+# Extract a skill's own "## Project Context" section: from its heading to the
+# next "## " heading outside a fenced code block, or to the end of the file (the
+# same span older versions of this script preserved). A heading inside a fence,
+# in the block or elsewhere, neither starts nor ends it.
 cat > "$AWK_EXTRACT" << 'AWK'
-/^```/ { fence = !fence }
-!fence && /^## Project Context/ { b=1; print; next }
-b && !fence && /^## / { b=0 }
-b && !fence && /^---$/ { b=0 }
+/^[[:space:]]*(```|~~~)/ { fence = !fence; if (b) print; next }
+!fence && /^## / { b = ($0 ~ /^## Project Context[[:space:]]*$/) }
 b { print }
 AWK
 
 extract_project_context() {
   awk -f "$AWK_EXTRACT" "$1"
+}
+
+# A block is only the old placeholder when nothing is left after removing its
+# heading, ">" blockquote lines, "---" rules and blank lines.
+block_has_facts() {
+  grep -v -e '^## Project Context' -e '^>' -e '^---[[:space:]]*$' -e '^[[:space:]]*$' "$1" | grep -q .
+}
+
+# Keep a copy of a block that holds facts. Never overwrite or delete a backup:
+# identical content already kept is not written again; different content goes
+# to the next free numbered sibling (<skill>.2.md, <skill>.3.md, ...).
+PC_NEW=""
+backup_project_context() {
+  local skill="$1" ctx="$2" dir target n
+  dir="$SKILLS_DIR/.project-context-backup"
+  mkdir -p "$dir"
+  target="$dir/$skill.md"
+  if [ -f "$target" ]; then
+    cmp -s "$ctx" "$target" && return 0
+    n=2
+    while [ -f "$dir/$skill.$n.md" ]; do
+      cmp -s "$ctx" "$dir/$skill.$n.md" && return 0
+      n=$((n+1))
+    done
+    target="$dir/$skill.$n.md"
+  fi
+  cp "$ctx" "$target"
+  PC_NEW="$PC_NEW $(basename "$target")"
 }
 
 # Root-level files that are copied verbatim.
@@ -161,7 +189,6 @@ fi
 # Snapshot templates/ before update (process-document starters)
 [ -d "$SKILLS_DIR/templates" ] && cp -R "$SKILLS_DIR/templates" "$BEFORE_DIR/__templates__"
 
-PC_MOVED=""
 for upstream_skill_dir in "$CLONE_DIR"/*/; do
   [ -d "$upstream_skill_dir" ] || continue
   skill="$(basename "$upstream_skill_dir")"
@@ -183,18 +210,12 @@ for upstream_skill_dir in "$CLONE_DIR"/*/; do
     done
   fi
 
-  # A Project Context block holds project facts unless it is only the old
-  # placeholder: its heading, ">" blockquote lines and blank lines. Anything else
-  # (including facts added under the placeholder) is kept and reported, so the
-  # user moves it into CLAUDE.md.
+  # Skills no longer carry project facts. A block that holds any (including
+  # facts added under the old placeholder) is backed up and reported, so the
+  # user moves it into CLAUDE.md; a pure placeholder is simply dropped.
   ctx_file="$CONTEXT_DIR/$skill.ctx"
-  if [ -s "$ctx_file" ] && grep -v -e '^## Project Context' -e '^>' -e '^[[:space:]]*$' "$ctx_file" | grep -q .; then
-    mkdir -p "$SKILLS_DIR/.project-context-backup"
-    backup="$SKILLS_DIR/.project-context-backup/$skill.md"
-    if [ ! -f "$backup" ]; then
-      cp "$ctx_file" "$backup"
-    fi
-    PC_MOVED="$PC_MOVED $skill"
+  if [ -s "$ctx_file" ] && block_has_facts "$ctx_file"; then
+    backup_project_context "$skill" "$ctx_file"
   fi
 done
 
@@ -210,6 +231,10 @@ if [ -f "$INSTALLED_README" ]; then
     skill="$(basename "$installed_skill_dir")"
     [ -f "$installed_skill_dir/SKILL.md" ] || continue
     if grep -q "\[$skill\](" "$INSTALLED_README" 2>/dev/null && [ ! -d "$CLONE_DIR/$skill" ]; then
+      # Keep any project facts the removed skill's block held.
+      if [ -s "$CONTEXT_DIR/$skill.ctx" ] && block_has_facts "$CONTEXT_DIR/$skill.ctx"; then
+        backup_project_context "$skill" "$CONTEXT_DIR/$skill.ctx"
+      fi
       rm -rf "$installed_skill_dir"
     fi
   done
@@ -518,9 +543,18 @@ done
 templates_modified_count=0
 for f in $TEMPLATES_MODIFIED; do templates_modified_count=$((templates_modified_count+1)); done
 
-pc_moved_count=0
-for s in $PC_MOVED; do pc_moved_count=$((pc_moved_count+1)); done
-ATTENTION=$(( TEMPLATES_SKIPPED + pc_moved_count ))
+# Every backup still in .project-context-backup/ needs moving into CLAUDE.md,
+# whichever run wrote it; each is listed once until the user deletes it.
+PC_PENDING=""
+if [ -d "$SKILLS_DIR/.project-context-backup" ]; then
+  for b in "$SKILLS_DIR/.project-context-backup/"*.md; do
+    [ -f "$b" ] || continue
+    PC_PENDING="$PC_PENDING $(basename "$b")"
+  done
+fi
+pc_pending_count=0
+for b in $PC_PENDING; do pc_pending_count=$((pc_pending_count+1)); done
+ATTENTION=$(( TEMPLATES_SKIPPED + pc_pending_count ))
 
 TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count + rules_modified_count + profiles_modified_count + templates_modified_count + ATTENTION ))
 
@@ -691,10 +725,19 @@ if [ "$ATTENTION" -gt 0 ]; then
   if [ "$TEMPLATES_SKIPPED" = "1" ]; then
     echo "  templates/ was not updated: it has no .from-skills marker (see the warning above)."
   fi
-  for s in $PC_MOVED; do
-    echo "  $s: its ## Project Context block held project facts. Skills no longer carry"
-    echo "    them; move them into CLAUDE.md. Copy kept at .project-context-backup/$s.md:"
-    sed 's/^/      /' "$SKILLS_DIR/.project-context-backup/$s.md"
+  for b in $PC_PENDING; do
+    case " $PC_NEW " in
+      *" $b "*)
+        echo "  .project-context-backup/$b: a skill's ## Project Context block held project"
+        echo "    facts. Skills no longer carry them: move them into CLAUDE.md, then delete"
+        echo "    this file (it is listed on every update until you do). Saved this run:"
+        sed 's/^/      /' "$SKILLS_DIR/.project-context-backup/$b"
+        ;;
+      *)
+        echo "  .project-context-backup/$b: saved by an earlier update, still to move into"
+        echo "    CLAUDE.md (delete the file once done)."
+        ;;
+    esac
   done
   echo ""
 fi

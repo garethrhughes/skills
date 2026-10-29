@@ -257,11 +257,11 @@ Use the project-onboard skill to onboard this existing codebase.
 ## Customisation
 
 Project facts (stack, structure, conventions, decisions, overrides) live only in the
-project's `CLAUDE.md`; skills read it first and carry no per-project block. Edit
-`CLAUDE.md` to change them. An older install whose skills have filled-in
+project's `CLAUDE.md`, for the reasons in
+[`RULES.md#project-facts`](RULES.md#project-facts). Edit `CLAUDE.md` to change them. An older install whose skills have filled-in
 `## Project Context` blocks: `update-skills` keeps a copy of each in
-`.opencode/skills/.project-context-backup/` and asks you to move the facts into
-`CLAUDE.md`.
+`.opencode/skills/.project-context-backup/` and lists it on every update until you have
+moved the facts into `CLAUDE.md` and deleted it.
 
 ## CLAUDE.md Template
 

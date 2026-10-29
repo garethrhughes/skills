@@ -317,5 +317,7 @@ For every agent, at every step:
 
 - Project facts (stack, structure, conventions, decisions, overrides) live **only** in
   the project's `CLAUDE.md`. Skills read it first; they carry no per-project block.
+  `CLAUDE.md` is loaded into every session, while a skill's block was read only when
+  that skill ran, and one copy cannot drift between skills.
 - `CLAUDE.md` holds rules and pointers, not history. A settled decision is one line:
   the rule as it stands and the ADRs it amends or supersedes.

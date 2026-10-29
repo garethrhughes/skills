@@ -83,8 +83,10 @@ If any of these were modified in this update, **call it out at the top of the re
   step, or `templates/README.md`) and add the `## Process` section of
   `CLAUDE.md.template`, recording the privacy adoption point there.
 - A skill whose old `## Project Context` block held project facts is listed under
-  NEEDS ATTENTION, with a copy in `.project-context-backup/`: tell the user to move the
-  facts into `CLAUDE.md` ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+  NEEDS ATTENTION, with a copy in `.project-context-backup/` (never overwritten: changed
+  content goes to `<skill>.2.md`, …): tell the user to move the facts into `CLAUDE.md`
+  ([`RULES.md#project-facts`](../RULES.md#project-facts)) and delete the file; every
+  update lists the backups still there.
 - `.rules-upstream.cksum` records the `RULES.md` last installed, so only a real local
   edit triggers the "edited locally" warning. The installers write it for an
   unmodified git checkout of the skills; otherwise the first update writes it, and
