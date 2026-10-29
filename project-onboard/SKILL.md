@@ -112,12 +112,15 @@ offer the same migration `update-skills` runs:
 
 On yes, run `bash .opencode/skills/scripts/migrate-agents-md.sh` (from any directory;
 it finds the project root from the skills dir) and show the user its output. It changes
-nothing, and says why, when both files hold content, either is a symlink, or the root is
-unclear: relay those items and ask the user how to merge. On no, read `CLAUDE.md` as the
-existing facts and write the outputs anyway; tell the user Claude Code will ignore
-`AGENTS.md` until `CLAUDE.md` is the import. Either way, the existing content is input to
-every phase below: keep each fact it holds unless the user drops it, never discard it.
-An `AGENTS.md` alone gets its `CLAUDE.md` in Output 2.
+nothing, and says why, when both files hold content, either is a symlink, `CLAUDE.md` is
+private to the checkout (git-ignored, skip-worktree or assume-unchanged), or the root is
+unclear: relay those items and ask the user how to merge. On no, leave `CLAUDE.md`
+exactly as it is (never copy the template over it), read it as the existing facts, and
+write `AGENTS.md` anyway; tell the user that Claude Code ignores `AGENTS.md` until
+`CLAUDE.md` is the import, and that the next `update-skills` run will report "both
+exist" until they merge it. Either way, the existing content is input to every phase
+below: keep each fact it holds unless the user drops it, never discard it. An
+`AGENTS.md` alone gets its `CLAUDE.md` in Output 2.
 
 ---
 
@@ -838,7 +841,9 @@ to delete it once the gaps are addressed or explicitly accepted.*
 `CLAUDE.md` next to `AGENTS.md` is an unchanged copy of the skills' `CLAUDE.md.template`
 (in the skills dir, `.opencode/skills/` by default; also [here](../CLAUDE.md.template)
 when this skill is read from there): the import line `@AGENTS.md` and a comment. After
-Step 0.1a it is already; for a project with only `AGENTS.md`, or none, copy it. Claude Code reads only `CLAUDE.md` when both exist, so this is how it loads
+an accepted Step 0.1a it is already. Copy it only when there is no `CLAUDE.md` (a project
+with only `AGENTS.md`, or none); a `CLAUDE.md` kept by a declined Step 0.1a is never
+overwritten. Claude Code reads only `CLAUDE.md` when both exist, so this is how it loads
 `AGENTS.md`. Claude-only instructions, if any, go below the import; project facts never
 do.
 

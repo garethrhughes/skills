@@ -288,7 +288,8 @@ automatically on its next run: it backs up `CLAUDE.md` to
 `AGENTS.md` (its `@`-imports still resolve: same directory), makes `CLAUDE.md` the import,
 and reports it at the top. It changes nothing when both files already hold content,
 either is a symlink, `CLAUDE.md` is git-ignored (private) or `AGENTS.md` would be, or
-it cannot tell where the project root is, and lists those under NEEDS ATTENTION
+`CLAUDE.md` is marked skip-worktree / assume-unchanged, or it cannot tell where the
+project root is, and lists those under NEEDS ATTENTION
 instead; it never overwrites `AGENTS.md`. The backup directory ignores itself in git.
 If you delete `CLAUDE.md` on purpose (Claude Code v2.1.277+ reads `AGENTS.md` itself),
 add an empty `.opencode/skills/.no-claude-md` so updates stop re-creating it. The cases are in

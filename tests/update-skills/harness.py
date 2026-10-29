@@ -68,7 +68,7 @@ class Env:
                          GIT_COMMITTER_EMAIL='t@t', LC_ALL='C.UTF-8', LANG='C.UTF-8')
 
     def run(self, args, cwd, env=None, stdin=None):
-        assert os.path.realpath(cwd).startswith(os.path.realpath(self.root)) or cwd == '/', cwd
+        assert os.path.realpath(cwd).startswith(os.path.realpath(self.root)), cwd
         e = dict(self.base); e.update(env or {})
         return subprocess.run(args, cwd=cwd, env=e, input=stdin, capture_output=True)
 
@@ -126,8 +126,8 @@ class Harness:
         r = self.env.run(['tar', '-x', '-C', dest], cwd=self.env.root, stdin=tar.stdout)
         assert r.returncode == 0, r.stderr
 
-    def project(self, name, files=None, skills_rel='.opencode/skills', git=True, commit=True, ref=MIGRATION_BASE):
-        P = os.path.join(self.env.root, 'cases', name, 'p'); os.makedirs(P)
+    def project(self, name, files=None, skills_rel='.opencode/skills', git=True, commit=True, ref=MIGRATION_BASE, leaf='p'):
+        P = os.path.join(self.env.root, 'cases', name, leaf); os.makedirs(P)
         if git: self.env.git('init', '-q', cwd=P)
         S = os.path.join(P, skills_rel)
         if skills_rel: self.install(S, ref)
@@ -173,6 +173,7 @@ def migration(h):
     bk = S + '/.agents-md-backup'
     h.check('a', 'AGENTS.md == original CLAUDE.md, byte for byte', rd(P + '/AGENTS.md') == REAL)
     h.check('a', 'CLAUDE.md == CLAUDE.md.template, byte for byte', rd(P + '/CLAUDE.md') == TPL)
+    h.check('a', 'new CLAUDE.md has the mode of a new file (0644 under umask 022)', mode(P + '/CLAUDE.md') == 0o644)
     h.check('a', 'backup .agents-md-backup/CLAUDE.md.backup == original', rd(bk + '/CLAUDE.md.backup') == REAL)
     h.check('a', 'backup dir holds the backup and its .gitignore only', listdir(bk) == ['.gitignore', 'CLAUDE.md.backup'])
     h.check('a', 'git ignores the backup (not in git status, check-ignore says so)',
@@ -317,10 +318,75 @@ def migration(h):
     h.check('l', 'nothing changed at either candidate', rd(P + '/CLAUDE.md') == REAL and rd(P + '/apps/web/CLAUDE.md') == REAL and not os.path.lexists(P + '/AGENTS.md') and not os.path.lexists(P + '/apps/web/AGENTS.md'))
     h.check('l', 'NEEDS ATTENTION names both candidates', 'default layout gives' in att(out) and 'git repository is' in att(out) and status(out) == 'needs-attention')
 
-    # (m) skills elsewhere inside a git repository, run from /: the git top is the root
+    # (m) skills elsewhere inside a git repository, run from an unrelated directory: the git top is the root
     P, S = h.project('m', {'CLAUDE.md': REAL}, skills_rel='tools/skills')
-    rc, out, err = h.update(P, skills_rel='tools/skills', cwd='/'); h.common('m', rc, out, err)
-    h.check('m', 'migrated at the git top', rd(P + '/AGENTS.md') == REAL and rd(P + '/CLAUDE.md') == TPL)
+    elsewhere = os.path.join(env.root, 'cases', 'm', 'elsewhere'); os.makedirs(elsewhere)
+    rc, out, err = h.update(P, skills_rel='tools/skills', cwd=elsewhere); h.common('m', rc, out, err)
+    h.check('m', 'migrated at the git top, nothing written where it ran', rd(P + '/AGENTS.md') == REAL and rd(P + '/CLAUDE.md') == TPL and os.listdir(elsewhere) == [])
+
+    # (k2) SKILLS_PROJECT_ROOT names a directory that does not hold the skills; (k3) it names the home dir
+    P, S = h.project('k2', {'CLAUDE.md': REAL})
+    other = os.path.join(env.root, 'cases', 'k2', 'other'); os.makedirs(other)
+    rc, out, err = h.update(P, env={'SKILLS_PROJECT_ROOT': other}); h.common('k2', rc, out, err)
+    h.check('k2', 'refused: does not contain the skills; nothing changed', 'does not contain the skills directory' in att(out) and rd(P + '/CLAUDE.md') == REAL and not os.path.lexists(P + '/AGENTS.md') and os.listdir(other) == [])
+    P, S = h.project('k3', {'CLAUDE.md': REAL})
+    rc, out, err = h.update(P, env={'SKILLS_PROJECT_ROOT': P, 'HOME': P}); h.common('k3', rc, out, err)
+    h.check('k3', 'SKILLS_PROJECT_ROOT = the home dir: refused with that reason (from SKILLS_PROJECT_ROOT)', 'is the home directory, not a project (from SKILLS_PROJECT_ROOT' in att(out) and rd(P + '/CLAUDE.md') == REAL and not os.path.lexists(P + '/AGENTS.md'))
+
+    # (v) the last @ token scanned is not an existing file: the migration must not stop
+    for sub, body, listed, unlisted in [('v-mention', b'ask @gareth\n', [], ['@gareth']),
+                                         ('v-missing', b'see @docs/missing.md\n', ['@docs/missing.md (not found, as before)'], []),
+                                         ('v-scope', b'uses @nestjs/common\n', ['@nestjs/common (not found, as before)'], []),
+                                         ('v-decorator', b'mark routes @Public()\n', [], ['@Public'])]:
+        body = b'# Facts\n\nSee @docs/real.md.\n' + body
+        P, S = h.project(sub, {'CLAUDE.md': body, 'docs/real.md': b'r\n'})
+        rc, out, err = h.update(P); h.common(sub, rc, out, err)
+        m = mig(out)
+        h.check(sub, 'migrated (no "stopped"), bytes moved', rd(P + '/AGENTS.md') == body and rd(P + '/CLAUDE.md') == TPL and 'stopped' not in out)
+        h.check(sub, 'imports listed as expected', '@docs/real.md' in m and all(x in m for x in listed) and not any(x in m for x in unlisted))
+
+    # (x) project paths with "|", "[" and a space: no abort, every path in the report relative
+    for sub, leaf in [('x-pipe', 'p|x'), ('x-bracket', 'p[1]'), ('x-space', 'p q')]:
+        P, S = h.project(sub, {'CLAUDE.md': REAL, 'docs/setup.md': b'see CLAUDE.md\n', 'backend/CLAUDE.md': b'n\n', '.claude/CLAUDE.md': b'c\n'}, leaf=leaf)
+        rc, out, err = h.update(P); h.common(sub, rc, out, err)
+        rep = mig(out) + notes(out)
+        h.check(sub, 'migrated', rd(P + '/AGENTS.md') == REAL and rd(P + '/CLAUDE.md') == TPL)
+        h.check(sub, 'report paths relative (backup, mentions, nested), .claude/ not listed as nested',
+                '.opencode/skills/.agents-md-backup/CLAUDE.md.backup' in rep and '    docs/setup.md' in rep and '  backend/CLAUDE.md' in rep
+                and P not in rep and '.claude/CLAUDE.md' not in notes(out))
+
+    # (sw) CLAUDE.md marked skip-worktree / assume-unchanged: private like an ignored file
+    for sub, flag in [('sw-skip', '--skip-worktree'), ('sw-assume', '--assume-unchanged')]:
+        P, S = h.project(sub, {'CLAUDE.md': REAL})
+        env.git('update-index', flag, 'CLAUDE.md', cwd=P)
+        rc, out, err = h.update(P); h.common(sub, rc, out, err)
+        h.check(sub, 'nothing changed, NEEDS ATTENTION names the flag', rd(P + '/CLAUDE.md') == REAL and not os.path.lexists(P + '/AGENTS.md') and ('marked ' + flag[2:] + ' in git') in att(out))
+
+    # (bl) the backup directory, or a backup name, is a symlink: never written through
+    P, S = h.project('bl-dir', {'CLAUDE.md': REAL}, commit=False)
+    elsewhere = os.path.join(env.root, 'cases', 'bl-dir', 'elsewhere'); os.makedirs(elsewhere)
+    os.symlink(elsewhere, S + '/.agents-md-backup'); env.git('add', '-A', cwd=P); env.git('commit', '-qm', 'i', cwd=P)
+    rc, out, err = h.update(P); h.common('bl-dir', rc, out, err)
+    h.check('bl-dir', 'refused, nothing changed, nothing written through the link', 'is a symlink, and the backup is never' in att(out) and rd(P + '/CLAUDE.md') == REAL and not os.path.lexists(P + '/AGENTS.md') and os.listdir(elsewhere) == [])
+    P, S = h.project('bl-name', {'CLAUDE.md': REAL}, commit=False)
+    os.makedirs(S + '/.agents-md-backup'); tgt = os.path.join(env.root, 'cases', 'bl-name', 'target'); open(tgt, 'wb').write(b'other\n')
+    os.symlink(tgt, S + '/.agents-md-backup/CLAUDE.md.backup'); env.git('add', '-A', cwd=P); env.git('commit', '-qm', 'i', cwd=P)
+    rc, out, err = h.update(P); h.common('bl-name', rc, out, err)
+    h.check('bl-name', 'refused, the link target unchanged', 'is a symlink, and the backup is never' in att(out) and rd(tgt) == b'other\n' and not os.path.lexists(P + '/AGENTS.md'))
+
+    # (d-opt-local) opted out but CLAUDE.local.md exists: warn; (d-opt-zero) SKILLS_NO_CLAUDE_MD=0 is not an opt-out
+    P, S = h.project('d-opt-local', {'AGENTS.md': REAL, 'CLAUDE.local.md': b'mine\n', '.opencode/skills/.no-claude-md': b''})
+    rc, out, err = h.update(P); h.common('d-opt-local', rc, out, err)
+    h.check('d-opt-local', 'CLAUDE.md not created; NEEDS ATTENTION: Claude Code reads CLAUDE.local.md instead', not os.path.lexists(P + '/CLAUDE.md') and 'reads that instead of AGENTS.md' in att(out))
+    P, S = h.project('d-opt-zero', {'AGENTS.md': REAL})
+    rc, out, err = h.update(P, env={'SKILLS_NO_CLAUDE_MD': '0'}); h.common('d-opt-zero', rc, out, err)
+    h.check('d-opt-zero', 'SKILLS_NO_CLAUDE_MD=0: CLAUDE.md created', rd(P + '/CLAUDE.md') == TPL)
+
+    # (nr) CLAUDE.md is a directory and AGENTS.md exists: refused, the directory untouched
+    P, S = h.project('nr', {'AGENTS.md': REAL, 'CLAUDE.md/notes.md': b'n\n'})
+    before = tree(P + '/CLAUDE.md')
+    rc, out, err = h.update(P); h.common('nr', rc, out, err)
+    h.check('nr', 'NEEDS ATTENTION: not a regular file; directory unchanged', 'CLAUDE.md is not a regular file' in att(out) and tree(P + '/CLAUDE.md') == before)
 
     # (n) .claude/CLAUDE.md alone; (n2) with a root CLAUDE.md: root migrated, .claude/ left
     P, S = h.project('n', {'.claude/CLAUDE.md': REAL})
@@ -411,6 +477,26 @@ def migration(h):
     o = r.stdout.decode()
     h.check('z', 'reported, CLAUDE.md unchanged, no .CLAUDE.md.agents-md.* left',
             'could not be' in o and rd(P + '/CLAUDE.md') == REAL and not [f for f in os.listdir(P) if f.startswith('.CLAUDE.md.agents-md')] and r.stderr.decode().strip() == '')
+
+    # (z2) mv "succeeds" without moving anything: the check after mv catches it
+    P, S = h.project('z2', {'CLAUDE.md': REAL})
+    shim = os.path.join(env.root, 'cases', 'z2', 'bin'); os.makedirs(shim)
+    open(shim + '/mv', 'w').write('#!/bin/sh\nexit 0\n'); os.chmod(shim + '/mv', stat.S_IRWXU)  # a lying mv for this case only
+    new = os.path.join(env.root, 'cases', 'z2', 'new'); h.install(new, h.src_ref)
+    r = env.run(['bash', new + '/scripts/migrate-agents-md.sh', '--skills-dir', S, '--template', new + '/CLAUDE.md.template'],
+                cwd=P, env={'PATH': shim + os.pathsep + env.base['PATH']})
+    o = r.stdout.decode()
+    h.check('z2', 'not reported as migrated; NEEDS ATTENTION; CLAUDE.md unchanged, no temp file left',
+            'MIGRATED' not in o and 'could not be' in o and rd(P + '/CLAUDE.md') == REAL and not [f for f in os.listdir(P) if f.startswith('.CLAUDE.md.')] and r.stderr.decode().strip() == '')
+
+    # (ab) an unexpected failure inside the script: update.sh shows where and why it stopped
+    P, S = h.project('ab', {'CLAUDE.md': REAL})
+    shim = os.path.join(env.root, 'cases', 'ab', 'bin'); os.makedirs(shim)
+    real_dirname = shutil.which('dirname')
+    open(shim + '/dirname', 'w').write('#!/bin/sh\nif [ "$1" = "$FAIL_DIRNAME_OF" ]; then exit 1; fi\nexec "%s" "$@"\n' % real_dirname); os.chmod(shim + '/dirname', stat.S_IRWXU)
+    rc, out, err = h.update(P, env={'PATH': shim + os.pathsep + env.base['PATH'], 'FAIL_DIRNAME_OF': P}); h.common('ab', rc, out, err)
+    h.check('ab', 'NEEDS ATTENTION: stopped, with the line and the command', 'the AGENTS.md migration stopped (exit 1)' in att(out) and 'stopped at line' in att(out) and 'running: ' in att(out) and 'dirname' in att(out))
+    h.check('ab', 'nothing changed', rd(P + '/CLAUDE.md') == REAL and not os.path.lexists(P + '/AGENTS.md'))
 
     # (q) skills already current: the migration alone sets STATUS
     P, S = h.project('q', {'CLAUDE.md': REAL}, ref=h.src_ref)
@@ -529,6 +615,7 @@ def main():
     groups = [g for g in a.groups.split(',') if g]
     bad = [g for g in groups if g not in GROUPS]
     if bad: ap.error('unknown group(s): ' + ', '.join(bad))
+    os.umask(0o022)  # file modes are checked
     scratch = tempfile.mkdtemp(prefix='update-skills-harness-')
     env = Env(scratch)
     try:

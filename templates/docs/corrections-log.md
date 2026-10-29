@@ -63,7 +63,14 @@ what never applies, and add a pattern only when none fits.
     directory made it migrate the repository on the other side of the link. **Check:**
     before moving or rewriting, ask git about both ends (`git check-ignore`, tracked or
     not) and resolve paths the way the caller sees them; refuse and report when either
-    end differs.
+    end differs. Git has more than one "local only" state: ignored, and tracked but
+    marked skip-worktree or assume-unchanged (`git ls-files -v`); check each.
+17. **`set -e` stops on a helper's last command.** *Example:* a function's loop ended on
+    `[ -f "$x" ] && echo "$x"`; when the last item failed the test, the function
+    returned 1, the command substitution that called it failed, and the script exited
+    with no message. **Check:** write conditions as `if ...; then ...; fi`, end every
+    function with `return 0`, add an `ERR` trap that names the line, and test inputs
+    whose last item takes the "no" branch.
 
 ## Ledger
 

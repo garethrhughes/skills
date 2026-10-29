@@ -22,19 +22,19 @@ MUTANTS = [
     ('M1', 'no backup taken', [(M, 'if ! backup="$(backup_claude_md "$CL")"; then', 'if ! backup="(none)"; then')]),
     ('M2', 'migrate although AGENTS.md exists', [(M, 'elif [ -f "$CL" ] && [ -f "$AG" ]; then\n  if ! is_import "$CL"; then', 'elif false; then\n  if ! is_import "$CL"; then')]),
     ('M3', 'a symlinked CLAUDE.md is not refused', [(M, 'elif [ -L "$CL" ]; then', 'elif false; then')]),
-    ('M4', 'the import is never recognised', [(M, 'is_import() { [ -r "$1" ] && [ "$(first_content_line "$1")" = "@AGENTS.md" ]; }', 'is_import() { false; }')]),
+    ('M4', 'the import is never recognised', [(M, '  if [ "$(first_content_line "$1")" = "@AGENTS.md" ]; then return 0; fi\n', '')]),
     ('M5', 'an ambiguous root is accepted', [(M, 'if [ -n "$by_layout" ] && [ -n "$by_git" ] && [ "$by_layout" != "$by_git" ]; then', 'if false; then')]),
-    ('M6', 'a backup overwrites an older one', [(M, '  if [ -e "$target" ] || [ -L "$target" ]; then\n    if cmp', '  if false; then\n    if cmp')]),
+    ('M6', 'a backup overwrites an older one', [(M, '  if [ -e "$target" ]; then\n    if cmp', '  if false; then\n    if cmp')]),
     ('M7', 'uncommitted state not reported', [(M, 'git_state="$(git -C "$ROOT" status --porcelain -- CLAUDE.md 2>/dev/null | cut -c1-2 || true)"', 'git_state=""')]),
     ('M8', 'no root found: guess the parent', [(M, '    root_refused "the skills are not in <root>/.opencode/skills and not inside a git repository."', '    ROOT="$(dirname "$SKILLS_DIR")"; ROOT_HOW=guess')]),
     ('M9', 'MIGRATED not counted in STATUS', [(U, '+ migrated_count + ATTENTION ))', '+ ATTENTION ))')]),
     ('M10', 'the migration\'s ATTENTION not counted', [(U, 'ATTENTION=$(( TEMPLATES_SKIPPED + pc_pending_count + migrate_attention_count ))', 'ATTENTION=$(( TEMPLATES_SKIPPED + pc_pending_count ))')]),
     ('M11', 'PROJECT MIGRATED printed after the diffs', [(U, 'if [ "$migrated_count" -gt 0 ]; then\n  echo "--- PROJECT MIGRATED', 'if false; then\n  echo "--- PROJECT MIGRATED'), (U, 'if [ "$ATTENTION" -gt 0 ]; then\n  echo "NEEDS ATTENTION: $ATTENTION', 'if [ "$migrated_count" -gt 0 ]; then echo "--- PROJECT MIGRATED ($migrated_count) ---"; migrate_blocks MIGRATED; fi\nif [ "$ATTENTION" -gt 0 ]; then\n  echo "NEEDS ATTENTION: $ATTENTION')]),
-    ('M12', 'AGENTS.md not byte-equal (a newline added)', [(M, 'copy_exact() { cp "$1" "$2" && chmod u+w "$2" && cmp -s "$1" "$2"; }', 'copy_exact() { { cat "$1"; echo; } > "$2"; }')]),
+    ('M12', 'AGENTS.md not byte-equal (a newline added)', [(M, '  if cp "$1" "$2" && chmod u+w "$2" && cmp -s "$1" "$2"; then return 0; fi', '  { cat "$1"; echo; } > "$2"; return 0')]),
     ('M13', 'nested CLAUDE.md files not listed', [(M, 'if [ -n "$nested" ]; then', 'if false; then')]),
     ('M14', 'CLAUDE.local.md not noted', [(M, 'if [ -e "$ROOT/CLAUDE.local.md" ] || [ -L "$ROOT/CLAUDE.local.md" ]; then', 'if false; then')]),
     ('M15', 'code spans not stripped from imports', [(M, '      gsub(/`[^`]*`/, "", line)\n', '')]),
-    ('M16', 'the home directory accepted as the root', [(M, 'if [ "$ROOT" = "/" ] || { [ -n "$home_l" ] && { [ "$ROOT" = "$home_l" ] || [ "$ROOT" = "$home_p" ]; }; }; then', 'if false; then')]),
+    ('M16', 'the home directory accepted as the root', [(M, '  if [ "$ROOT" = "$home_l" ] || [ "$ROOT" = "$home_p" ] || [ "$root_p" = "$home_p" ]; then', '  if false; then')]),
     ('M17', 'a new root file diffed against nothing', [(U, 'if [ -f "$BEFORE_DIR/__root__$rf" ]; then', 'if true; then')]),
     ('M18', 'a git-ignored CLAUDE.md is migrated', [(M, '  elif git_ignored CLAUDE.md; then', '  elif false; then')]),
     ('M19', 'a git-ignored AGENTS.md is written', [(M, '  elif git_ignored AGENTS.md; then\n    echo "ATTENTION: AGENTS.md is ignored by git here', '  elif false; then\n    echo "ATTENTION: AGENTS.md is ignored by git here')]),
@@ -44,21 +44,37 @@ MUTANTS = [
     ('M23', 'a byte order mark not skipped', [(M, 'NR == 1 { bom = sprintf("%c%c%c", 239, 187, 191); if (index($0, bom) == 1) $0 = substr($0, 4) }', 'NR == 0 { }')]),
     ('M24', 'multi-line HTML comments not skipped', [(M, '       incomment { if (index($0, "-->")) incomment = 0; next }\n', ''), (M, '/^[[:space:]]*<!--/ { if (!index($0, "-->")) incomment = 1; next }', '/^[[:space:]]*<!--.*-->[[:space:]]*$/ { next }')]),
     ('M25', 'a self-importing CLAUDE.md is migrated', [(M, '  elif [ "$self_import" = "1" ]; then', '  elif false; then')]),
-    ('M26', 'AGENTS.md keeps a read-only mode', [(M, 'copy_exact() { cp "$1" "$2" && chmod u+w "$2" && cmp -s "$1" "$2"; }', 'copy_exact() { cp -p "$1" "$2" && cmp -s "$1" "$2"; }')]),
-    ('M27', '@mentions listed as imports', [(M, '      *) [ -f "$(resolve_import "$f" "$imp")" ] && echo "$imp" ;;', '      *) echo "$imp" ;;')]),
+    ('M26', 'AGENTS.md keeps a read-only mode', [(M, '  if cp "$1" "$2" && chmod u+w "$2" && cmp -s "$1" "$2"; then return 0; fi', '  if cp -p "$1" "$2" && cmp -s "$1" "$2"; then return 0; fi')]),
+    ('M27', '@mentions listed as imports', [(M, '      *) if [ -f "$(resolve_import "$f" "$imp")" ]; then echo "$imp"; fi ;;', '      *) echo "$imp" ;;')]),
     ('M28', 'the import list is not capped', [(M, 'printf \'%s\\n\' "$hops" | head -n 20 | while', 'printf \'%s\\n\' "$hops" | while')]),
     ('M29', 'imports near the hop limit not flagged', [(M, '  if [ $((hop + 1)) -eq 4 ]; then note="$note (now at hop 4, Claude Code\'s limit)"; fi\n', ''), (M, '  if [ $((hop + 1)) -gt 4 ]; then note="$note (now at hop $((hop + 1)): Claude Code no longer loads it)"; fi\n', '')]),
     ('M30', 'awk runs in the user\'s locale', [(M, 'export LC_ALL=C   # byte-wise awk/grep/sort: no multibyte warnings on any content', ':')]),
     ('M31', 'an unreadable CLAUDE.md is not caught up front', [(M, 'elif [ -f "$CL" ] && [ ! -r "$CL" ]; then', 'elif false; then')]),
     ('M32', 'the temporary file outlives a failure', [(M, '  rm -f "$tmp"\n  return 1', '  return 1')]),
-    ('M33', 'a dot-directory in the home directory accepted', [(M, '      .*) root_refused "that would make $ROOT, a dot-directory in the home directory, the project." ;;', '      .*) ;;')]),
-    ('M34', 'the backup directory not ignored by git', [(M, '  [ -e "$dir/.gitignore" ] || printf', '  false && printf')]),
-    ('M35', 'the CLAUDE.md opt-out ignored', [(M, '  if [ -n "${SKILLS_NO_CLAUDE_MD:-}" ] || [ -e "$SKILLS_DIR/.no-claude-md" ]; then', '  if false; then')]),
+    ('M33', 'a dot-directory in the home directory accepted', [(M, '      .*) root_refused "$ROOT is a dot-directory in the home directory, not a project (from $ROOT_HOW)." ;;', '      .*) ;;')]),
+    ('M34', 'the backup directory not ignored by git', [(M, '  if [ ! -e "$BACKUP_DIR/.gitignore" ]; then', '  if false; then')]),
+    ('M35', 'the CLAUDE.md opt-out ignored', [(M, '  if [ "${SKILLS_NO_CLAUDE_MD:-}" = "1" ] || [ -e "$SKILLS_DIR/.no-claude-md" ]; then', '  if false; then')]),
     ('M36', 'remaining CLAUDE.md mentions not listed', [(M, '      if [ -n "$mentions" ]; then', '      if false; then')]),
     ('M37', 'no reminder to re-run the installers or not to commit the backup', [(M, '      echo "  git ignores the backup directory (its own .gitignore): do not commit it, and"\n', ''), (M, '      echo "  Re-run scripts/install-claude-agents.sh / install-copilot-agents.sh if you use"\n', '')]),
     ('M38', 'the working-tree wording dropped', [(M, '        *) echo "  CLAUDE.md had uncommitted changes (git status \'$git_state\'): the working-tree"\n           echo "  version is what moved to AGENTS.md and the backup." ;;', '        *) echo "  CLAUDE.md had uncommitted changes." ;;')]),
     ('M39', '.claude/CLAUDE.md not reported', [(M, 'if [ -e "$ROOT/.claude/CLAUDE.md" ] || [ -L "$ROOT/.claude/CLAUDE.md" ]; then', 'if false; then')]),
     ('M40', 'update.sh leaves its self-copy in TMPDIR', [(U, '  if [ -n "${_UPDATE_SKILLS_TMP_SELF:-}" ]; then rm -f "$_UPDATE_SKILLS_TMP_SELF"; fi\n', '')]),
+    # The trap the re-review found: import_hops' loop ended on a failed `test && ...`. (The same
+    # edit in imports_of alone is an equivalent mutant: no caller reads its status, it feeds a
+    # pipe into `while` and a process substitution.)
+    ('M42', 'a helper ends on a failed test (set -e stops the script)', [(M, '    if [ -f "$p" ] && [ -r "$p" ]; then import_hops "$p" $((hop+1)); fi\n  done\n  return 0', '    [ -f "$p" ] && [ -r "$p" ] && import_hops "$p" $((hop+1))\n  done')]),
+    ('M43', 'no ERR trap: an abort gives no reason', [(M, "trap 'rc=$?; echo \"ATTENTION: migrate-agents-md.sh stopped at line", "true 'rc=$?; echo \"ATTENTION: migrate-agents-md.sh stopped at line")]),
+    ('M44', 'the root stripped as a pattern, not literally', [(M, '    "$1"/*) printf \'%s\\n\' "${2#"$1/"}" ;;', '    $1/*) printf \'%s\\n\' "${2#$1/}" ;;')]),
+    ('M45', 'find -path given the raw path', [(M, 'find_literal() { printf \'%s\\n\' "$1" | sed \'s/[][*?\\\\]/\\\\&/g\'; return 0; }', 'find_literal() { printf \'%s\\n\' "$1"; return 0; }')]),
+    ('M46', 'skip-worktree / assume-unchanged not refused', [(M, '  elif [ -n "$local_flag" ]; then', '  elif false; then')]),
+    ('M47', 'a symlinked backup directory or name not refused', [(M, '  elif [ -n "$unsafe" ]; then', '  elif false; then')]),
+    ('M48', 'any SKILLS_NO_CLAUDE_MD value opts out', [(M, '  if [ "${SKILLS_NO_CLAUDE_MD:-}" = "1" ] || [ -e "$SKILLS_DIR/.no-claude-md" ]; then', '  if [ -n "${SKILLS_NO_CLAUDE_MD:-}" ] || [ -e "$SKILLS_DIR/.no-claude-md" ]; then')]),
+    ('M49', 'opt-out with CLAUDE.local.md not warned', [(M, '    if [ "$HAS_LOCAL" = "1" ] || [ "$HAS_DOT_CLAUDE" = "1" ]; then', '    if false; then')]),
+    ('M50', 'home refusals skipped for SKILLS_PROJECT_ROOT', [(M, 'if [ -n "$home_l" ]; then\n  if [ "$ROOT" = "$home_l" ]', 'if [ -n "$home_l" ] && [ -z "${SKILLS_PROJECT_ROOT:-}" ]; then\n  if [ "$ROOT" = "$home_l" ]')]),
+    ('M51', 'SKILLS_PROJECT_ROOT containment not checked', [(M, '    *) root_refused "SKILLS_PROJECT_ROOT ($ROOT) does not contain the skills directory ($SKILLS_DIR)." ;;', '    *) ROOT_HOW="SKILLS_PROJECT_ROOT" ;;')]),
+    ('M52', 'a non-regular CLAUDE.md not refused', [(M, 'elif [ -e "$CL" ] && [ ! -f "$CL" ]; then\n  echo "ATTENTION: CLAUDE.md is not a regular file and was not changed."\n', '')]),
+    ('M53', 'no check after mv', [(M, 'mv -f "$tmp" "$1" && cmp -s "$TEMPLATE" "$1"; then', 'mv -f "$tmp" "$1"; then')]),
+    ('M54', 'the new CLAUDE.md keeps mktemp\'s 0600', [(M, ' && chmod "$perm" "$tmp" && mv -f', ' && mv -f')]),
     ('M41', 'the self-update exec leaves its temporary files', [(U, '  rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT" "$MIGRATE_OUT"\n  _UPDATE_SKILLS_SELF_UPDATED=1', '  _UPDATE_SKILLS_SELF_UPDATED=1')]),
 ]
 
@@ -69,8 +85,10 @@ def main(argv):
     want = set(argv)
     chosen = [m for m in MUTANTS if not want or m[0] in want]
     scratch = tempfile.mkdtemp(prefix='update-skills-mutants-')
-    env = {k: v for k, v in os.environ.items() if not k.startswith(('GIT_', 'SKILLS_'))}
-    env.update(GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t')
+    gitconfig = os.path.join(scratch, 'gitconfig'); open(gitconfig, 'w').close()
+    env = {k: v for k, v in os.environ.items() if not k.startswith(('GIT_', 'SKILLS_', '_UPDATE_SKILLS'))}
+    env.update(GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t',
+               GIT_CONFIG_GLOBAL=gitconfig, GIT_CONFIG_NOSYSTEM='1')
     survivors = []
     try:
         for mid, desc, edits in chosen:
