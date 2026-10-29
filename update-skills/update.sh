@@ -564,14 +564,44 @@ if [ $TOTAL -eq 0 ]; then
   exit 0
 fi
 
-if [ "$TOTAL" -eq "$ATTENTION" ]; then
+# Anything that needs the user (project facts to move, a templates/ left alone)
+# sets the status and is reported first, before the diffs, so it is never lost
+# at the bottom of a long report.
+if [ "$ATTENTION" -gt 0 ]; then
   echo "STATUS: needs-attention"
-  echo "Nothing was updated, but an item needs attention (below)."
+  if [ "$TOTAL" -gt "$ATTENTION" ]; then
+    echo "CHANGES: $TOTAL item(s) affected, $ATTENTION of them need your action (first below)"
+  else
+    echo "Nothing was updated, but $ATTENTION item(s) need your action (below)."
+  fi
 else
   echo "STATUS: updated"
   echo "CHANGES: $TOTAL item(s) affected"
 fi
 echo ""
+
+if [ "$ATTENTION" -gt 0 ]; then
+  echo "--- NEEDS ATTENTION ($ATTENTION) ---"
+  if [ "$TEMPLATES_SKIPPED" = "1" ]; then
+    echo "  templates/ was not updated: it has no .from-skills marker (see the warning above)."
+  fi
+  for b in $PC_PENDING; do
+    case " $PC_NEW " in
+      *" $b "*)
+        echo "  .project-context-backup/$b: a skill's ## Project Context block held project"
+        echo "    facts. Skills no longer carry them: move them into CLAUDE.md, then delete"
+        echo "    this file (it is listed on every update until you do). Saved this run:"
+        sed 's/^/      /' "$SKILLS_DIR/.project-context-backup/$b"
+        ;;
+      *)
+        echo "  .project-context-backup/$b: saved by an earlier update, still to move into"
+        echo "    CLAUDE.md (delete the file once done)."
+        ;;
+    esac
+  done
+  echo ""
+fi
+
 
 if [ $added_count -gt 0 ]; then
   echo "--- ADDED ($added_count) ---"
@@ -720,27 +750,6 @@ if [ $profiles_modified_count -gt 0 ]; then
   echo ""
 fi
 
-if [ "$ATTENTION" -gt 0 ]; then
-  echo "--- NEEDS ATTENTION ($ATTENTION) ---"
-  if [ "$TEMPLATES_SKIPPED" = "1" ]; then
-    echo "  templates/ was not updated: it has no .from-skills marker (see the warning above)."
-  fi
-  for b in $PC_PENDING; do
-    case " $PC_NEW " in
-      *" $b "*)
-        echo "  .project-context-backup/$b: a skill's ## Project Context block held project"
-        echo "    facts. Skills no longer carry them: move them into CLAUDE.md, then delete"
-        echo "    this file (it is listed on every update until you do). Saved this run:"
-        sed 's/^/      /' "$SKILLS_DIR/.project-context-backup/$b"
-        ;;
-      *)
-        echo "  .project-context-backup/$b: saved by an earlier update, still to move into"
-        echo "    CLAUDE.md (delete the file once done)."
-        ;;
-    esac
-  done
-  echo ""
-fi
 
 if [ $templates_modified_count -gt 0 ]; then
   echo "--- TEMPLATES UPDATED ($templates_modified_count) ---"
@@ -767,4 +776,8 @@ if [ $templates_modified_count -gt 0 ]; then
     esac
   done
   echo ""
+fi
+
+if [ "$ATTENTION" -gt 0 ]; then
+  echo "NEEDS ATTENTION: $ATTENTION item(s) need your action; see the top of this report."
 fi

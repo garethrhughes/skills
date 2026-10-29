@@ -37,7 +37,8 @@ After the script completes, present the results using this format:
 
 **Repository:** `<remote URL>`
 **Branch:** `<branch>`
-**Status:** Up to date | Updated | Needs attention (relay every NEEDS ATTENTION item)
+**Status:** Up to date | Updated | Needs attention (the script prints `STATUS: needs-attention`
+whenever something needs the user, and lists those items first: relay every one)
 
 If updated, for each changed skill list:
 
