@@ -16,7 +16,7 @@ either has blocking issues, state them and stop — there is no value reviewing 
 implements a flawed or misaligned design.
 
 **Project facts** (stack, structure, conventions, decisions) are in the project's
-`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+`AGENTS.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -27,7 +27,7 @@ The convention checks below are role-tailored summaries of:
 1. The language-agnostic rules in [`RULES.md`](../RULES.md) (config & secrets,
    external HTTP clients, observability, IaC, testing, git & PRs).
 2. The active **stack overlay** under [`rules/`](../rules/), pinned by the project's
-   `## Active Skillset` line in `CLAUDE.md` — e.g.
+   `## Active Skillset` line in `AGENTS.md` — e.g.
    [`rules/typescript.md`](../rules/typescript.md) or
    [`rules/dotnet.md`](../rules/dotnet.md).
 
@@ -37,7 +37,7 @@ deviation is a finding (severity depends on which rule). Frequent reference sect
 *Logging & Observability*, *Testing*, *Infrastructure as Code* (core only), plus the
 overlay's *Language Conventions*.
 
-If `CLAUDE.md` does not declare an active skillset, default to the
+If `AGENTS.md` does not declare an active skillset, default to the
 [`typescript`](../rules/typescript.md) overlay for backwards compatibility.
 
 ---
@@ -99,7 +99,7 @@ Read the full feature document and check the following.
 - The `Related proposal` field should be populated — if blank, flag as **Minor**.
 
 **Privacy screening** ([`RULES.md#privacy`](../RULES.md#privacy)): present and complete
-(unless the doc predates the adoption point in `CLAUDE.md`), any Yes links an existing
+(unless the doc predates the adoption point in `AGENTS.md`), any Yes links an existing
 PIA, and the diff stays within the PIA's data table. Any failure → **Blocker**. Run the
 project's privacy-screening guard if it has one.
 
@@ -216,7 +216,7 @@ Read the diff and flag any deviation. Severity is determined as follows:
 
 ### Process Checks — each failure → **BLOCK**
 
-- **CI evidence** per [`RULES.md#git--prs`](../RULES.md#git--prs). If `CLAUDE.md` does
+- **CI evidence** per [`RULES.md#git--prs`](../RULES.md#git--prs). If `AGENTS.md` does
   not say whether CI runs on pull requests, read the workflows' `on:` triggers, apply
   the matching case and ask the owner to record it. On an open PR, red or missing on the
   head blocks; still running is recorded as pending.

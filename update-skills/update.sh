@@ -5,9 +5,15 @@
 # and does NOT need to be a git repository. Clones upstream to a temp dir,
 # diffs each SKILL.md against the installed version and copies in changes.
 # Skills carry no per-project block any more (project facts live in the
-# project's CLAUDE.md): a customised "## Project Context" block found in an
+# project's AGENTS.md): a customised "## Project Context" block found in an
 # installed skill is saved under .project-context-backup/ and reported, never
 # silently dropped.
+#
+# Each run also migrates the PROJECT (the directory holding the skills, see
+# scripts/migrate-agents-md.sh for how it is found) to AGENTS.md: a CLAUDE.md is
+# moved to AGENTS.md byte for byte, backed up under .agents-md-backup/, and
+# replaced with the import of AGENTS.md (CLAUDE.md.template). Anything it cannot
+# do safely is reported under NEEDS ATTENTION, and nothing is changed for it.
 #
 # Compatible with bash 3 (macOS default).
 
@@ -18,6 +24,7 @@ if [ -z "${_UPDATE_SKILLS_SELF_COPY:-}" ]; then
   cp "$0" "$_tmp_self"
   chmod +x "$_tmp_self"
   _UPDATE_SKILLS_ORIG_DIR="$(cd "$(dirname "$0")" && pwd)" \
+  _UPDATE_SKILLS_TMP_SELF="$_tmp_self" \
   _UPDATE_SKILLS_SELF_COPY=1 exec bash "$_tmp_self" "$@"
 fi
 
@@ -81,7 +88,7 @@ backup_project_context() {
 # RULES.md is the canonical rules file — overrides live in per-project ADRs,
 # never in RULES.md itself, so it is safe to copy verbatim. A warning is
 # emitted below if the installed RULES.md has been locally modified.
-ROOT_FILES="README.md CLAUDE.md.template RULES.md"
+ROOT_FILES="README.md AGENTS.md.template CLAUDE.md.template RULES.md"
 
 if [ -n "${_UPDATE_SKILLS_REUSE_CLONE:-}" ] && [ -d "$_UPDATE_SKILLS_REUSE_CLONE" ]; then
   CLONE_DIR="$_UPDATE_SKILLS_REUSE_CLONE"
@@ -100,9 +107,12 @@ fi
 BEFORE_DIR="$(mktemp -d)"
 AFTER_DIR="$(mktemp -d)"
 CONTEXT_DIR="$(mktemp -d)"
+MIGRATE_OUT="$(mktemp)"
 cleanup() {
   [ "$OWN_CLONE_DIR" = "1" ] && rm -rf "$CLONE_DIR"
-  rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT"
+  rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT" "$MIGRATE_OUT"
+  # The copy of this script the guard at the top runs from (bash keeps it open).
+  if [ -n "${_UPDATE_SKILLS_TMP_SELF:-}" ]; then rm -f "$_UPDATE_SKILLS_TMP_SELF"; fi
 }
 trap cleanup EXIT
 
@@ -131,7 +141,9 @@ if [ -z "${_UPDATE_SKILLS_SELF_UPDATED:-}" ] \
   chmod +x "$INSTALLED_UPDATE"
   # Hand the existing clone to the next run so we don't pay for a second
   # `git clone`. The cleanup trap won't fire because exec replaces this
-  # process; the new run will manage CLONE_DIR via its own trap.
+  # process: remove this run's own temporary files now; the new run manages
+  # CLONE_DIR (and the self-copy) via its own trap.
+  rm -rf "$BEFORE_DIR" "$AFTER_DIR" "$CONTEXT_DIR" "$AWK_EXTRACT" "$MIGRATE_OUT"
   _UPDATE_SKILLS_SELF_UPDATED=1 \
   _UPDATE_SKILLS_REUSE_CLONE="$CLONE_DIR" \
   _UPDATE_SKILLS_OWN_CLONE=1 \
@@ -212,7 +224,7 @@ for upstream_skill_dir in "$CLONE_DIR"/*/; do
 
   # Skills no longer carry project facts. A block that holds any (including
   # facts added under the old placeholder) is backed up and reported, so the
-  # user moves it into CLAUDE.md; a pure placeholder is simply dropped.
+  # user moves it into AGENTS.md; a pure placeholder is simply dropped.
   ctx_file="$CONTEXT_DIR/$skill.ctx"
   if [ -s "$ctx_file" ] && block_has_facts "$ctx_file"; then
     backup_project_context "$skill" "$ctx_file"
@@ -259,7 +271,7 @@ if [ -f "$SKILLS_DIR/RULES.md" ] && [ -f "$CLONE_DIR/RULES.md" ]; then
   elif ! diff -q "$SKILLS_DIR/RULES.md" "$CLONE_DIR/RULES.md" >/dev/null 2>&1; then
     echo ""
     echo "Note: RULES.md differs from upstream (a local edit or an upstream change) and"
-    echo "      was replaced; re-apply any local edit in CLAUDE.md (project overrides) or"
+    echo "      was replaced; re-apply any local edit in AGENTS.md (project overrides) or"
     echo "      an ADR, never in RULES.md. The ROOT FILES diff below shows the change."
     echo "      (No .rules-upstream.cksum record existed; it is written from this run on.)"
   fi
@@ -348,6 +360,37 @@ elif [ -f "$SKILLS_DIR/templates/.from-skills" ]; then
   # Removed upstream: mirror the removal (reported below as REMOVED upstream)
   rm -rf "$SKILLS_DIR/templates"
 fi
+
+# Migrate the project to AGENTS.md (once per run, from the new upstream's script
+# and template). Its report is folded into this one: MIGRATED items count as
+# changes, ATTENTION items as items needing the user, INFO items are notes.
+MIGRATE_SCRIPT="$CLONE_DIR/scripts/migrate-agents-md.sh"
+if [ -f "$MIGRATE_SCRIPT" ]; then
+  migrate_rc=0
+  bash "$MIGRATE_SCRIPT" --skills-dir "$SKILLS_DIR" --template "$CLONE_DIR/CLAUDE.md.template" \
+    > "$MIGRATE_OUT" 2>&1 || migrate_rc=$?
+  if [ "$migrate_rc" != "0" ]; then
+    # An unexpected stop: report everything it printed as one item to look at.
+    { echo "ATTENTION: the AGENTS.md migration stopped (exit $migrate_rc). Check AGENTS.md,"
+      echo "  CLAUDE.md and .agents-md-backup/ in the project; what it printed:"
+      sed 's/^/    /' "$MIGRATE_OUT"; } > "$MIGRATE_OUT.stopped"
+    mv "$MIGRATE_OUT.stopped" "$MIGRATE_OUT"
+  fi
+else
+  echo "INFO: upstream has no scripts/migrate-agents-md.sh; the project's AGENTS.md was not checked." > "$MIGRATE_OUT"
+fi
+# Print the blocks of one kind (MIGRATED / ATTENTION / INFO), indented.
+migrate_blocks() {
+  LC_ALL=C awk -v tag="$1: " '
+    index($0, tag) == 1 { on = 1; print "  " substr($0, length(tag) + 1); next }
+    /^  / && on { print "  " $0; next }
+    { on = 0 }' "$MIGRATE_OUT"
+}
+migrate_count() { grep -c "^$1: " "$MIGRATE_OUT" || true; }
+PROJECT_ROOT_LINE="$(sed -n 's/^ROOT: //p' "$MIGRATE_OUT" | head -n 1)"
+migrated_count="$(migrate_count MIGRATED)"
+migrate_attention_count="$(migrate_count ATTENTION)"
+migrate_info_count="$(migrate_count INFO)"
 
 for f in "$SKILLS_DIR"/*/SKILL.md; do
   [ -f "$f" ] || continue
@@ -543,7 +586,7 @@ done
 templates_modified_count=0
 for f in $TEMPLATES_MODIFIED; do templates_modified_count=$((templates_modified_count+1)); done
 
-# Every backup still in .project-context-backup/ needs moving into CLAUDE.md,
+# Every backup still in .project-context-backup/ needs moving into AGENTS.md,
 # whichever run wrote it; each is listed once until the user deletes it.
 PC_PENDING=""
 if [ -d "$SKILLS_DIR/.project-context-backup" ]; then
@@ -554,13 +597,24 @@ if [ -d "$SKILLS_DIR/.project-context-backup" ]; then
 fi
 pc_pending_count=0
 for b in $PC_PENDING; do pc_pending_count=$((pc_pending_count+1)); done
-ATTENTION=$(( TEMPLATES_SKIPPED + pc_pending_count ))
+ATTENTION=$(( TEMPLATES_SKIPPED + pc_pending_count + migrate_attention_count ))
 
-TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count + rules_modified_count + profiles_modified_count + templates_modified_count + ATTENTION ))
+TOTAL=$(( added_count + removed_count + modified_count + root_modified_count + scripts_modified_count + extras_modified_count + rules_modified_count + profiles_modified_count + templates_modified_count + migrated_count + ATTENTION ))
+
+[ -n "$PROJECT_ROOT_LINE" ] && echo "Project    : $PROJECT_ROOT_LINE"
+
+print_migrate_notes() {
+  if [ "$migrate_info_count" -gt 0 ]; then
+    echo "--- PROJECT NOTES ($migrate_info_count) ---"
+    migrate_blocks INFO
+    echo ""
+  fi
+}
 
 if [ $TOTAL -eq 0 ]; then
   echo "STATUS: up-to-date"
   echo "All skills are already up to date. No changes applied."
+  if [ "$migrate_info_count" -gt 0 ]; then echo ""; print_migrate_notes; fi
   exit 0
 fi
 
@@ -578,6 +632,9 @@ else
   echo "STATUS: updated"
   echo "CHANGES: $TOTAL item(s) affected"
 fi
+if [ "$migrated_count" -gt 0 ]; then
+  echo "PROJECT: $migrated_count change(s) to the project's own files (AGENTS.md / CLAUDE.md), listed below"
+fi
 echo ""
 
 if [ "$ATTENTION" -gt 0 ]; then
@@ -589,18 +646,26 @@ if [ "$ATTENTION" -gt 0 ]; then
     case " $PC_NEW " in
       *" $b "*)
         echo "  .project-context-backup/$b: a skill's ## Project Context block held project"
-        echo "    facts. Skills no longer carry them: move them into CLAUDE.md, then delete"
+        echo "    facts. Skills no longer carry them: move them into AGENTS.md, then delete"
         echo "    this file (it is listed on every update until you do). Saved this run:"
         sed 's/^/      /' "$SKILLS_DIR/.project-context-backup/$b"
         ;;
       *)
         echo "  .project-context-backup/$b: saved by an earlier update, still to move into"
-        echo "    CLAUDE.md (delete the file once done)."
+        echo "    AGENTS.md (delete the file once done)."
         ;;
     esac
   done
+  migrate_blocks ATTENTION
   echo ""
 fi
+
+if [ "$migrated_count" -gt 0 ]; then
+  echo "--- PROJECT MIGRATED ($migrated_count) ---"
+  migrate_blocks MIGRATED
+  echo ""
+fi
+print_migrate_notes
 
 
 if [ $added_count -gt 0 ]; then
@@ -635,11 +700,15 @@ if [ $root_modified_count -gt 0 ]; then
   for rf in $ROOT_MODIFIED; do
     echo ""
     echo "  file: $rf"
-    diff --unified=3 \
-      --label "before/$rf" \
-      --label "after/$rf" \
-      "$BEFORE_DIR/__root__$rf" "$AFTER_DIR/__root__$rf" \
-      | sed 's/^/    /' || true
+    if [ -f "$BEFORE_DIR/__root__$rf" ]; then
+      diff --unified=3 \
+        --label "before/$rf" \
+        --label "after/$rf" \
+        "$BEFORE_DIR/__root__$rf" "$AFTER_DIR/__root__$rf" \
+        | sed 's/^/    /' || true
+    else
+      echo "    (new file)"
+    fi
   done
   echo ""
 fi

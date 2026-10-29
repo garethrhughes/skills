@@ -25,7 +25,7 @@ Two sentences: what the change does with data about people that it did not do be
 One row per field or record the change collects, derives, logs, stores, exposes or
 sends. Identifiers count (account ids, entity ids, key prefixes, IPs, emails,
 timestamps, counts of use). Class is one of the project's data classes (see
-`CLAUDE.md`). Name the code for each claim.
+`AGENTS.md`). Name the code for each claim.
 
 | Field / record | Class | Source | Purpose | Who can read it | Where stored (service, region) | Retention and how it is deleted | Protection |
 |---|---|---|---|---|---|---|---|
@@ -77,7 +77,7 @@ Drop rows that do not apply only with a one-line reason.
 ## Confidentiality checks
 
 Adapt these to the project's own guarantees (for example zero-knowledge or client-side
-encryption, see `CLAUDE.md`):
+encryption, see `AGENTS.md`):
 
 - Does any user content, or anything derived from it, reach a place the project says it
   must not (the server, a log, an audit row, an error, a processor)? (must be no)

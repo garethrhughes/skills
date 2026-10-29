@@ -12,7 +12,7 @@ log in `docs/decisions/` so the team has a traceable history of why the system i
 way it is.
 
 **Project facts** (stack, structure, conventions, decisions) are in the project's
-`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+`AGENTS.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -22,14 +22,14 @@ The project-wide engineering conventions live in two layers:
 
 1. The language-agnostic core in [`RULES.md`](../RULES.md).
 2. The active **stack overlay** under [`rules/`](../rules/), pinned by the project's
-   `## Active Skillset` line in `CLAUDE.md` — e.g.
+   `## Active Skillset` line in `AGENTS.md` — e.g.
    [`rules/typescript.md`](../rules/typescript.md) or
    [`rules/dotnet.md`](../rules/dotnet.md).
 
 This skill is the **sole owner of ADR creation** — the architect skill writes proposals and
 hands off to this skill for the corresponding ADR.
 
-If `CLAUDE.md` does not declare an active skillset, default to the
+If `AGENTS.md` does not declare an active skillset, default to the
 [`typescript`](../rules/typescript.md) overlay for backwards compatibility.
 
 ### ADRs that override a rule
@@ -43,7 +43,7 @@ If a decision overrides a rule in `RULES.md` **or in the active overlay**, the A
 3. Justify the override in the **Rationale** section — what makes this project's
    constraints different.
 4. List the additional risk and mitigation in **Consequences → Risks**.
-5. Be referenced from the project's `CLAUDE.md` "project-specific overrides" table so
+5. Be referenced from the project's `AGENTS.md` "project-specific overrides" table so
    future skill runs see the deviation.
 
 Never weaken a rule in `RULES.md` or an overlay itself — overrides are per-project and live
@@ -137,7 +137,7 @@ When asked to log a decision:
 4. Add a one-line entry to `docs/decisions/README.md` in the decision index table
 5. Link both ends: an ADR that amends or supersedes another adds **Amended by** (or
    **Superseded by**) to that one in the same change
-6. Add one line to `CLAUDE.md`'s Settled Decisions, naming the ADRs it amends or
+6. Add one line to `AGENTS.md`'s Settled Decisions, naming the ADRs it amends or
    supersedes
    ([`RULES.md#project-facts`](../RULES.md#project-facts)) and rewrite any row this ADR
    changes; reconcile the other copies of the rule

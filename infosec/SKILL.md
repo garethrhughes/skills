@@ -16,7 +16,7 @@ trails, secrets handling, infrastructure exposure, supply-chain integrity, compl
 and privacy violations.
 
 **Project facts** (stack, structure, conventions, decisions) are in the project's
-`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+`AGENTS.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -26,7 +26,7 @@ The control checks below cite ISO27001:2022 Annex A. Project-wide engineering ru
 that this skill audits against (secrets handling, IAM scoping, logging redaction,
 encryption defaults, dependency hygiene) are defined in [`RULES.md`](../RULES.md)
 (language-agnostic core) plus the active **stack overlay** under [`rules/`](../rules/),
-pinned by the project's `## Active Skillset` line in `CLAUDE.md`.
+pinned by the project's `## Active Skillset` line in `AGENTS.md`.
 
 When auditing, both this skill and (`RULES.md` + the active overlay) apply; any
 deviation is at minimum a **REQUIRES CHANGES** finding mapped to the relevant control.
@@ -39,7 +39,7 @@ Frequent reference sections:
 *Configuration & Secrets* and *Logging* sections (for stack-specific concrete
 mechanisms — `ConfigService`/`IOptions<T>`, `pino`/`Serilog`, etc.).
 
-If `CLAUDE.md` does not declare an active skillset, default to the
+If `AGENTS.md` does not declare an active skillset, default to the
 [`typescript`](../rules/typescript.md) overlay for backwards compatibility.
 
 Before auditing, read `docs/risk-register.md` (accepted risks), `docs/privacy/` (this
@@ -53,7 +53,7 @@ the project has them.
 By default this skill is aligned with **ISO/IEC 27001:2022 Annex A controls** (the 93
 controls organised under four themes: A.5 Organizational, A.6 People, A.7 Physical,
 A.8 Technological). If your project uses SOC2, HIPAA, PCI-DSS, or another framework,
-record the framework and its controls in `CLAUDE.md`.
+record the framework and its controls in `AGENTS.md`.
 
 | Control | Title | Applies To |
 |---|---|---|
@@ -88,7 +88,7 @@ record the framework and its controls in `CLAUDE.md`.
 
 ### 1. Sensitive Field Exposure
 
-Identify the project's confidential/PII fields from `CLAUDE.md` (e.g. encrypted
+Identify the project's confidential/PII fields from `AGENTS.md` (e.g. encrypted
 payloads, password hashes, API keys, personal data). Flag any code that:
 
 - Logs these fields at any log level (including `debug`, `trace`)
@@ -502,7 +502,7 @@ Use the Filesystem MCP server to:
 - Read `docs/proposals/` to understand the full scope of the change under review,
   including the Infrastructure Addendum if present
 - Read existing data classification or access control matrix documents referenced in
-  `CLAUDE.md`
+  `AGENTS.md`
 
 ---
 

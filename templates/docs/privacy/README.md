@@ -9,7 +9,7 @@ and lawful basis* is {product owner}'s field and reads `legal review needed` unt
 - [`data-inventory.md`](data-inventory.md): the personal data the system holds.
 
 **Adoption point:** feature documents from {first screened feature number}, proposals
-from {first screened proposal number} (as recorded in `CLAUDE.md`).
+from {first screened proposal number} (as recorded in `AGENTS.md`).
 
 ## The screening
 

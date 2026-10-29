@@ -1,7 +1,7 @@
 # .NET Stack Overlay
 
 **Stack:** C# + ASP.NET Core (backend) + EF Core + PostgreSQL/SQL Server; optional Blazor or SPA frontend
-**Activated when:** the project's `CLAUDE.md` declares `## Active Skillset: dotnet`
+**Activated when:** the project's `AGENTS.md` declares `## Active Skillset: dotnet`
 
 This file is a stack-specific overlay on top of the language-agnostic
 [`RULES.md`](../RULES.md). Where this file and `RULES.md` overlap, this file wins for

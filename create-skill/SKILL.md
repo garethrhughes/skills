@@ -55,7 +55,7 @@ drip-feed one question at a time. Wait for answers before generating.
 - For each: in what specific situations should it be used within this skill?
 
 ### 6. Project Facts
-- What project facts does the skill need from `CLAUDE.md`? Skills carry no per-project
+- What project facts does the skill need from `AGENTS.md`? Skills carry no per-project
   block ([`RULES.md#project-facts`](../RULES.md#project-facts)); the skill names what it
   reads there.
 
@@ -112,7 +112,7 @@ Every skill must have these sections in this order:
    task-style skills do not (`# Update Skills`, `# Create Feature Skill` is either).
    Match the closest existing skill.
 2. The project-facts pointer line ("**Project facts** (stack, structure, conventions,
-   decisions) are in the project's `CLAUDE.md`; read it first."), omitted only for
+   decisions) are in the project's `AGENTS.md`; read it first."), omitted only for
    skills that operate on the skills repo itself, such as `update-skills`
 3. `## Authoritative Rules` — required for any skill that writes, reviews, or audits
    project code or infrastructure (see format below). Omit for skills that only operate on
@@ -136,7 +136,7 @@ The conventions in this skill are role-tailored summaries of:
 1. The language-agnostic rules in [`RULES.md`](../RULES.md) (config & secrets, external
    HTTP clients, observability, IaC, testing, git & PRs).
 2. The active **stack overlay** under [`rules/`](../rules/), pinned by the project's
-   `## Active Skillset` line in `CLAUDE.md` — e.g.
+   `## Active Skillset` line in `AGENTS.md` — e.g.
    [`rules/typescript.md`](../rules/typescript.md) or
    [`rules/dotnet.md`](../rules/dotnet.md).
 
@@ -145,7 +145,7 @@ file; for skills that review or audit, any deviation from them is a finding.]
 
 Sections most relevant to this skill: [list the specific sections].
 
-If `CLAUDE.md` does not declare an active skillset, default to the
+If `AGENTS.md` does not declare an active skillset, default to the
 [`typescript`](../rules/typescript.md) overlay for backwards compatibility.
 ```
 
@@ -156,7 +156,7 @@ against `RULES.md` or the overlay, never a weakened copy inside a skill.
 
 ```markdown
 **Project facts** (stack, structure, conventions, decisions) are in the project's
-`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+`AGENTS.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 ```
 
 Add one sentence naming the facts this skill relies on, if they are not obvious.
@@ -264,7 +264,7 @@ README needs to be updated to reflect the change.
 ## Rules
 
 - Never generate a partial SKILL.md and ask the user to complete it. Produce the full file.
-- Never add a per-project block to a skill; project facts go in `CLAUDE.md`.
+- Never add a per-project block to a skill; project facts go in `AGENTS.md`.
 - Never omit the `## Authoritative Rules` section for a skill that touches project code or
   infrastructure — and always reference both layers (`RULES.md` + the active overlay),
   never `RULES.md` alone.

@@ -1,0 +1,2 @@
+# Python bytecode from running the harness or importing the mutant list
+__pycache__/

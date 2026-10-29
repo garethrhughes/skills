@@ -100,7 +100,7 @@ skill_description() {
       echo "Use to walk through the full feature development cycle: proposal → implementation → code review → infosec sign-off → decision logging → PR."
       ;;
     project-bootstrap)
-      echo "Use once at the start of a new project to generate a complete CLAUDE.md (the only home of project facts). Covers app stack, IaC, observability, and security/compliance posture."
+      echo "Use once at the start of a new project to generate a complete AGENTS.md (the only home of project facts) and the CLAUDE.md that imports it. Covers app stack, IaC, observability, and security/compliance posture."
       ;;
     *)
       echo ""
