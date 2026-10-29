@@ -1,14 +1,14 @@
 # Project Rules — Core
 
-**Version:** 2.1
+**Version:** 2.2
 **Last updated:** 2026-10-29
 
 Single source of truth for the **language-agnostic** conventions enforced across these
 skills. Every skill references the sections below by anchor (e.g.
 `RULES.md#configuration--secrets`) rather than restating the rules locally.
 
-If you need to override a rule for your project, do so in your `CLAUDE.md` — never
-weaken the rule here. See [Project Facts](#project-facts) for what else `CLAUDE.md`
+If you need to override a rule for your project, do so in your `AGENTS.md` — never
+weaken the rule here. See [Project Facts](#project-facts) for what else `AGENTS.md`
 holds.
 
 ---
@@ -24,7 +24,7 @@ These core rules are deliberately language-agnostic. Stack-specific conventions
 | `typescript` | [`rules/typescript.md`](rules/typescript.md) — TypeScript + NestJS + Next.js + TypeORM + pino + Jest/Vitest |
 | `dotnet` | [`rules/dotnet.md`](rules/dotnet.md) — C# + ASP.NET Core + EF Core + Serilog + xUnit |
 
-Your project's `CLAUDE.md` pins the active overlay via the `## Active Skillset` line —
+Your project's `AGENTS.md` pins the active overlay via the `## Active Skillset` line —
 written automatically by `project-bootstrap` or `project-onboard`. When no overlay is
 pinned (legacy projects), skills default to `typescript`.
 
@@ -154,12 +154,12 @@ For any gate that scores a model, ranker, search or classifier against questions
   testing performed.
 - CI must pass before merge: lint, typecheck/build, unit + integration tests,
   `tofu plan` for infra changes, dependency / SAST scan.
-- **CI evidence.** `CLAUDE.md` records whether CI runs on pull requests.
+- **CI evidence.** `AGENTS.md` records whether CI runs on pull requests.
   - *CI runs on PRs:* a review held before the PR exists records **"pending: hosted CI
     on the PR head"**; before merge the head must be green, and whoever opens the PR
     waits for the run and reports it, failures quoted.
-  - *CI does not run on PRs* (or `CLAUDE.md` asks for a local report): a local CI report
-    is required at review time. A project with no CI records in `CLAUDE.md` the
+  - *CI does not run on PRs* (or `AGENTS.md` asks for a local report): a local CI report
+    is required at review time. A project with no CI records in `AGENTS.md` the
     commands it runs instead (lint, test, build); the report covers those.
   - A local report covers every CI job the change touches (all of them for a
     dependency, workflow or config change), runs against the committed head (pass the
@@ -206,7 +206,7 @@ For projects with a user-facing changelog:
   with `git log <last tag>..HEAD`.
 - An entry is a bold one-sentence headline plus at most two short sentences, on one
   line, written for a user (no internal names, intervals, options, rationale). Limit:
-  **300 characters**, unless the project's `CLAUDE.md` sets another in one line.
+  **300 characters**, unless the project's `AGENTS.md` sets another in one line.
 - A user-visible change to shipped behaviour has an entry (missing → BLOCK); an entry
   has no second paragraph or nested list. Internal-only work gets no entry. A rule that
   can be measured gets a test.
@@ -252,7 +252,7 @@ skills' [`templates/`](templates/README.md); a project without them installs the
 - **The data inventory** (`docs/privacy/data-inventory.md`) cites a file per row;
   `unverified` is an open item to resolve before a claim rests on it. A PR that changes
   a row updates it (and a privacy policy kept in the repository).
-- **Adoption point.** `CLAUDE.md` records the first feature-doc and proposal numbers
+- **Adoption point.** `AGENTS.md` records the first feature-doc and proposal numbers
   screened (newest + 1 when adopting; `0001` for a new project; the guard's
   `FIRST_SCREENED_*`). Older documents are exempt unless reopened (then listed in
   `ALSO_SCREENED_*`). If none is recorded, documents that existed at adoption are
@@ -291,7 +291,7 @@ For every agent, at every step:
   writer of the same state. Rule out another caller by testing each symptom there.
 - **Reconcile every copy.** When a rule, claim or name changes, search every file the
   branch touches for the old wording, and check both ends of every link.
-- **After removing a dependency, file or name**, search `docs/`, `CLAUDE.md` and the
+- **After removing a dependency, file or name**, search `docs/`, `AGENTS.md` and the
   agent/skill files for it.
 - **State what a mitigation does not cover**: construct each failure and confirm the
   control fires; observe (old vs new code) before claiming a behaviour changed.
@@ -316,8 +316,14 @@ For every agent, at every step:
 ## Project Facts
 
 - Project facts (stack, structure, conventions, decisions, overrides) live **only** in
-  the project's `CLAUDE.md`. Skills read it first; they carry no per-project block.
-  `CLAUDE.md` is loaded into every session, while a skill's block was read only when
-  that skill ran, and one copy cannot drift between skills.
-- `CLAUDE.md` holds rules and pointers, not history. A settled decision is one line:
+  the project's `AGENTS.md` at its root, the file every coding agent reads (Claude Code,
+  Copilot, Codex, Cursor, opencode). Skills read it first; they carry no per-project
+  block. `AGENTS.md` is loaded into every session, while a skill's block was read only
+  when that skill ran, and one copy cannot drift between skills.
+- **Claude Code** reads `AGENTS.md` itself only when no `CLAUDE.md` (or `CLAUDE.local.md`)
+  exists; with both it reads `CLAUDE.md` alone. So the project also has a `CLAUDE.md`
+  whose first line is the import `@AGENTS.md` (from `CLAUDE.md.template`), not a
+  symlink. Claude-only instructions go below the import; nothing else goes in it.
+  `update-skills` migrates a project that has only a `CLAUDE.md`, keeping a backup.
+- `AGENTS.md` holds rules and pointers, not history. A settled decision is one line:
   the rule as it stands and the ADRs it amends or supersedes.

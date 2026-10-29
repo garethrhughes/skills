@@ -13,7 +13,7 @@ them installs them by hand from this table. Installed copies belong to the proje
 | [`scripts/privacy-screening.guard.mjs.template`](scripts/privacy-screening.guard.mjs.template) (optional) | `scripts/__tests__/privacy-screening.test.mjs` |
 
 When installing: replace `{product owner}` and the adoption-point placeholders with the
-values in `CLAUDE.md`; never overwrite an existing file. The guard ships as `*.template`
+values in `AGENTS.md`; never overwrite an existing file. The guard ships as `*.template`
 so no test runner collects it where the skills are installed; it is installed only on
 request, renamed, with `FIRST_SCREENED_*` set to the adoption point.
 

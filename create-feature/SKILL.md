@@ -10,7 +10,7 @@ This skill describes the complete feature development cycle used in this project
 these steps in order for any non-trivial piece of work. Each step maps to a specific skill.
 
 **Project facts** (stack, structure, conventions, decisions) are in the project's
-`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+`AGENTS.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -21,7 +21,7 @@ layers:
 
 1. The language-agnostic core in [`RULES.md`](../RULES.md).
 2. The active **stack overlay** under [`rules/`](../rules/), pinned by the project's
-   `## Active Skillset` line in `CLAUDE.md` — e.g.
+   `## Active Skillset` line in `AGENTS.md` — e.g.
    [`rules/typescript.md`](../rules/typescript.md) or
    [`rules/dotnet.md`](../rules/dotnet.md).
 
@@ -29,7 +29,7 @@ Each downstream skill (`architect`, `design`, `developer`, `reviewer`, `infosec`
 same two files. When orchestrating a feature, treat (`RULES.md` + the active overlay) as the
 contract that all output must satisfy.
 
-If `CLAUDE.md` does not declare an active skillset, downstream skills default to the
+If `AGENTS.md` does not declare an active skillset, downstream skills default to the
 [`typescript`](../rules/typescript.md) overlay.
 
 ---
@@ -232,7 +232,7 @@ Use the **developer** skill to:
    ([`RULES.md#privacy`](../RULES.md#privacy)); a Yes makes Step 4 required
 1. Create a new branch: `git checkout -b feature/NNNN-short-title` *(adjust the branch
    naming convention to match your project's standard, or use the convention defined in
-   your CLAUDE.md)*
+   your AGENTS.md)*
 2. Follow the red-green-refactor TDD cycle for every unit of behaviour:
    - Write a failing test first
    - Write the minimum code to make it pass
@@ -335,7 +335,7 @@ Use the **decision-log** skill to log any significant decisions made during Step
 - Proposal accepted (if not already logged in Step 1)
 
 Update any proposals in `docs/proposals/` whose status is still `Draft` or `Under Review`
-to `Accepted`, linking the ADR numbers. Add one line per settled decision to `CLAUDE.md`
+to `Accepted`, linking the ADR numbers. Add one line per settled decision to `AGENTS.md`
 ([`RULES.md#project-facts`](../RULES.md#project-facts)), and append anything that went
 wrong to `docs/corrections-log.md`.
 

@@ -11,10 +11,10 @@ project conventions exactly and do not introduce new dependencies (packages, mod
 provider versions) without calling them out explicitly.
 
 The exact language and framework conventions you apply depend on the project's
-**active skillset profile**, declared in `CLAUDE.md` under `## Active Skillset`.
+**active skillset profile**, declared in `AGENTS.md` under `## Active Skillset`.
 
 **Project facts** (stack, structure, conventions, decisions) are in the project's
-`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+`AGENTS.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -25,7 +25,7 @@ The conventions in this skill are role-tailored summaries of:
 1. The language-agnostic rules in [`RULES.md`](../RULES.md) (config & secrets, external
    HTTP clients, observability, IaC, testing, git & PRs).
 2. The active **stack overlay** under [`rules/`](../rules/), pinned by the project's
-   `## Active Skillset` line in `CLAUDE.md`. Examples:
+   `## Active Skillset` line in `AGENTS.md`. Examples:
    [`rules/typescript.md`](../rules/typescript.md),
    [`rules/dotnet.md`](../rules/dotnet.md).
 
@@ -36,7 +36,7 @@ Sections most relevant to this skill (read both the core file and the overlay):
 *Configuration & Secrets*, *External HTTP Clients*, *Backend Rules*, *Frontend Rules*,
 *Logging & Observability*, *Testing*, plus *Infrastructure as Code* (core only).
 
-If `CLAUDE.md` does not declare an active skillset, default to the
+If `AGENTS.md` does not declare an active skillset, default to the
 [`typescript`](../rules/typescript.md) overlay for backwards compatibility.
 
 ---

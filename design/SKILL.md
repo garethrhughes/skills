@@ -24,7 +24,7 @@ aesthetic risk when it is justified. Then implement them to the same standard as
 production code in the repo — TDD, typed, accessible, no shortcuts.
 
 **Project facts** (stack, structure, conventions, decisions) are in the project's
-`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)). It
+`AGENTS.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)). It
 names the styling system, design system, brand and accessibility target.
 
 ---
@@ -36,17 +36,17 @@ The conventions in this skill are role-tailored and sit **on top of**:
 1. The language-agnostic rules in [`RULES.md`](../RULES.md) (config & secrets, external
    HTTP clients, observability, testing, git & PRs).
 2. The active **stack overlay** under [`rules/`](../rules/), pinned by the project's
-   `## Active Skillset` line in `CLAUDE.md` — e.g.
+   `## Active Skillset` line in `AGENTS.md` — e.g.
    [`rules/typescript.md`](../rules/typescript.md) *Frontend Rules* and *TypeScript
    Conventions*, or [`rules/dotnet.md`](../rules/dotnet.md) *Frontend Rules* (Blazor).
-3. The project's styling choice as captured in `CLAUDE.md` → *Tech Stack → Frontend →
+3. The project's styling choice as captured in `AGENTS.md` → *Tech Stack → Frontend →
    Styling*. Per-profile defaults live under [`profiles/`](../profiles/) in
    `{profile}/bootstrap.md`, row 2B.2.
 
 Design freedom never overrides those files. If a design cannot be built without breaking
 a rule, say so and propose an alternative treatment — do not break the rule quietly.
 
-If `CLAUDE.md` does not declare an active skillset, default to the
+If `AGENTS.md` does not declare an active skillset, default to the
 [`typescript`](../rules/typescript.md) overlay.
 
 ---
@@ -58,7 +58,7 @@ Before designing anything, establish three things and state them back in one lin
 | # | Question | How to answer |
 |---|---|---|
 | 0.1 | Which mode? | **Handover port** / **net-new design** / **restyle of existing UI** |
-| 0.2 | What is the styling system and is there an existing design system? | Read `CLAUDE.md` (Frontend table), then the actual code: token file (`globals.css` `@theme`, `tailwind.config.*`, `_variables.scss`), existing `components/ui/`, any component library (shadcn/ui, MUI, Radix, Bootstrap) |
+| 0.2 | What is the styling system and is there an existing design system? | Read `AGENTS.md` (Frontend table), then the actual code: token file (`globals.css` `@theme`, `tailwind.config.*`, `_variables.scss`), existing `components/ui/`, any component library (shadcn/ui, MUI, Radix, Bootstrap) |
 | 0.3 | What is the subject matter, audience, and primary job of this UI? | From the feature doc (`docs/features/`), the proposal (`docs/proposals/`), or the handover itself. If none of them say, propose a concrete answer and confirm it with the user before designing |
 
 0.3 is not optional ceremony. The subject's industry, materials, and vernacular are where
@@ -431,7 +431,7 @@ performed — do not imply screenshots were reviewed when they were not.
 Use the Filesystem MCP server to:
 
 - Read the handover artifact in full, including large single-file HTML
-- Read the project's token file, existing components, and `CLAUDE.md` before designing
+- Read the project's token file, existing components, and `AGENTS.md` before designing
 - List `docs/design/` to find the next `NNNN`
 - Write the design plan and update `docs/design/README.md`
 - Read `docs/features/` and `docs/proposals/` for the brief behind the design

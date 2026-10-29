@@ -12,7 +12,7 @@ cost before implementation detail. Before any significant change is implemented,
 a proposal in `docs/proposals/`.
 
 **Project facts** (stack, structure, conventions, decisions) are in the project's
-`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+`AGENTS.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 
 ---
 
@@ -62,7 +62,7 @@ The canonical project rules live in [`RULES.md`](../RULES.md) (language-agnostic
 plus the active stack overlay under [`rules/`](../rules/) (e.g.
 [`rules/typescript.md`](../rules/typescript.md),
 [`rules/dotnet.md`](../rules/dotnet.md)) — apply them to every proposal. The active
-overlay is pinned by the project's `## Active Skillset` line in `CLAUDE.md`.
+overlay is pinned by the project's `## Active Skillset` line in `AGENTS.md`.
 
 As architect, you are the primary enforcer of:
 

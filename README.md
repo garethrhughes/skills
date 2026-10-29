@@ -15,7 +15,8 @@ The skills are organised in two layers so they can target multiple stacks:
 evidence and review briefs, Semgrep, changelog, privacy screening with PIAs, risk
 register, evaluation gates). Starter files for the process documents are in
 [`templates/`](templates/README.md). Project facts live only in the project's
-`CLAUDE.md`; skills carry no per-project block.
+`AGENTS.md`, which every coding agent reads; skills carry no per-project block. Claude
+Code reads it through a one-line `CLAUDE.md` that imports it.
 
 Selectable skillset profiles:
 
@@ -24,7 +25,7 @@ Selectable skillset profiles:
 | [`typescript`](rules/typescript.md) | [`rules/typescript.md`](rules/typescript.md) | NestJS + Next.js + TypeORM + pino + Jest/Vitest (the original opinionated stack) |
 | [`dotnet`](rules/dotnet.md) | [`rules/dotnet.md`](rules/dotnet.md) | ASP.NET Core + EF Core + Serilog + xUnit + FluentValidation |
 
-The active profile for a project is pinned in its `CLAUDE.md` via the
+The active profile for a project is pinned in its `AGENTS.md` via the
 `## Active Skillset` line — written automatically by `project-bootstrap` (interactive)
 or `project-onboard` (auto-detects from `*.csproj` / `package.json` / etc.).
 
@@ -51,8 +52,8 @@ async-all-the-way, no `dynamic` for `dotnet`).
 | [decision-log](decision-log/SKILL.md) | Sole owner of ADR creation. Captures and maintains architectural decisions in `docs/decisions/` with a running index; invoked by `architect` after a proposal is accepted |
 | [create-feature](create-feature/SKILL.md) | Full feature development cycle: proposal → design plan (UI work) → implementation → review → infosec sign-off → decision logging → PR |
 | [jira-feature](jira-feature/SKILL.md) | Loads a Jira ticket by URL or issue key, extracts description and acceptance criteria, and drives the full create-feature cycle with that ticket as the requirement source |
-| [project-bootstrap](project-bootstrap/SKILL.md) | Interactive bootstrap for new projects — asks structured questions covering app stack, IaC, observability, security/compliance, domain, and Jira integration, then produces a complete `CLAUDE.md` and installs the process documents |
-| [project-onboard](project-onboard/SKILL.md) | Interactive onboarding for an existing codebase — investigates the repo to fill in `CLAUDE.md`, asking the user only what the code can't answer; covers the same 9 phases as project-bootstrap including optional Jira integration |
+| [project-bootstrap](project-bootstrap/SKILL.md) | Interactive bootstrap for new projects — asks structured questions covering app stack, IaC, observability, security/compliance, domain, and Jira integration, then produces a complete `AGENTS.md` and installs the process documents |
+| [project-onboard](project-onboard/SKILL.md) | Interactive onboarding for an existing codebase — investigates the repo to fill in `AGENTS.md`, asking the user only what the code can't answer; covers the same 9 phases as project-bootstrap including optional Jira integration |
 | [mcp-setup](mcp-setup/SKILL.md) | Interactive MCP server setup — presents a menu of available MCP servers (Context7, GitHub, Filesystem, Memory, Squirrel Notes, Semgrep, Jira, Playwright) and writes the chosen config into `opencode.json`; invoked automatically by `project-bootstrap` and `project-onboard` |
 | [create-skill](create-skill/SKILL.md) | Interactively creates or updates OpenCode skills — asks structured questions about purpose, workflow, MCP tools, and output format, then produces a complete SKILL.md and updates the README |
 | [update-skills](update-skills/SKILL.md) | Pulls the latest skills from the upstream repository and reports what changed (added, removed, modified) with a unified diff per skill |
@@ -103,8 +104,9 @@ Once installed, configure the skills for your project by running either:
 - **New project:** `Use the project-bootstrap skill to set up this project.`
 - **Existing project:** `Use the project-onboard skill to onboard this existing codebase.`
 
-Both skills will interview you (or read your codebase), produce a `CLAUDE.md`, install
-the process documents into `docs/`, and guide you through MCP server setup.
+Both skills will interview you (or read your codebase), produce an `AGENTS.md` and the
+`CLAUDE.md` that imports it, install the process documents into `docs/`, and guide you
+through MCP server setup. The installers above never create or change either file.
 
 ## Usage
 
@@ -230,7 +232,7 @@ app stack, infrastructure, observability, security/compliance, domain decisions,
 optional Jira integration. Accept the opinionated defaults by saying "yes" or "default"
 at any phase, or provide your own values. At the end it produces:
 
-- A fully populated `CLAUDE.md` in the project root
+- A fully populated `AGENTS.md` in the project root, and a `CLAUDE.md` that imports it
 - The process documents (`docs/corrections-log.md`, `docs/risk-register.md`, `docs/privacy/`)
 - MCP server config written to `opencode.json` via `mcp-setup`
 
@@ -245,10 +247,11 @@ from scratch, it reads the repo first — package files, config, IaC, CI/CD — 
 for what the code cannot answer. It covers the same 9 phases as `project-bootstrap`,
 including optional Jira integration, and produces the same outputs:
 
-- A fully populated `CLAUDE.md` in the project root
+- A fully populated `AGENTS.md` in the project root, and a `CLAUDE.md` that imports it
+  (an existing `CLAUDE.md` is moved to `AGENTS.md` first, with a backup)
 - The process documents the project lacks, with the data inventory seeded from the code
 - MCP server config written to `opencode.json` via `mcp-setup`
-- An **Onboarding Notes** section in `CLAUDE.md` listing gaps between the current code and the standard rules
+- An **Onboarding Notes** section in `AGENTS.md` listing gaps between the current code and the standard rules
 
 ```
 Use the project-onboard skill to onboard this existing codebase.
@@ -257,13 +260,34 @@ Use the project-onboard skill to onboard this existing codebase.
 ## Customisation
 
 Project facts (stack, structure, conventions, decisions, overrides) live only in the
-project's `CLAUDE.md`, for the reasons in
-[`RULES.md#project-facts`](RULES.md#project-facts). Edit `CLAUDE.md` to change them. An older install whose skills have filled-in
+project's `AGENTS.md`, for the reasons in
+[`RULES.md#project-facts`](RULES.md#project-facts). Edit `AGENTS.md` to change them. An older install whose skills have filled-in
 `## Project Context` blocks: `update-skills` keeps a copy of each in
 `.opencode/skills/.project-context-backup/` and lists it on every update until you have
-moved the facts into `CLAUDE.md` and deleted it.
+moved the facts into `AGENTS.md` and deleted it.
 
-## CLAUDE.md Template
+## AGENTS.md and CLAUDE.md
 
-See [`CLAUDE.md.template`](CLAUDE.md.template) for a generic `CLAUDE.md` structure you can
-copy into any new project and fill in manually, without running `project-bootstrap`.
+`AGENTS.md` at the project root is the project's single instruction file: Copilot,
+Codex, Cursor and opencode read it, and so does Claude Code, but Claude Code reads only
+`CLAUDE.md` when both exist (and some sessions read only `CLAUDE.md`). So a project has
+both:
+
+- [`AGENTS.md.template`](AGENTS.md.template): the generic `AGENTS.md` structure, to copy
+  into a new project and fill in by hand instead of running `project-bootstrap`.
+- [`CLAUDE.md.template`](CLAUDE.md.template): the whole `CLAUDE.md`, the import
+  `@AGENTS.md` and a comment. Claude-only instructions, if any, go below the import.
+  An import rather than a symlink: editors refuse to write through a symlink, and
+  Windows checks one out as a one-line file.
+
+### Moving from CLAUDE.md
+
+Projects set up before this kept their facts in `CLAUDE.md`. `update-skills` moves them
+automatically on its next run: it backs up `CLAUDE.md` to
+`.opencode/skills/.agents-md-backup/CLAUDE.md.backup`, writes its exact content to
+`AGENTS.md` (its `@`-imports still resolve: same directory), makes `CLAUDE.md` the import,
+and reports it at the top. It changes nothing when both files already hold content,
+either is a symlink, or it cannot tell where the project root is, and lists those under
+NEEDS ATTENTION instead; it never overwrites `AGENTS.md`. The cases are in
+[`update-skills/SKILL.md`](update-skills/SKILL.md#the-projects-agentsmd-migration). To
+run only the migration: `bash .opencode/skills/scripts/migrate-agents-md.sh`.

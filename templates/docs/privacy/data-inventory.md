@@ -12,7 +12,7 @@ and it is an open item: before any claim rests on it, read the code to the end a
 replace the word with a file and line. This is an engineering inventory, not a legal
 record of processing.
 
-**Classes:** the project's data classification scheme (see `CLAUDE.md`), for example
+**Classes:** the project's data classification scheme (see `AGENTS.md`), for example
 `public` / `internal` / `confidential` / `pii`, or `restricted` / `metadata` / `pii`.
 
 **Where:** the accounts, regions and processors every store below lives in, with the

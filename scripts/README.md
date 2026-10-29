@@ -37,6 +37,22 @@ Symlinks each `SKILL.md` into `.github/agents/<skill>.md` for GitHub Copilot.
 .opencode/skills/scripts/install-copilot-agents.sh
 ```
 
+### `migrate-agents-md.sh`
+
+Moves the project to `AGENTS.md` as its instruction file: a `CLAUDE.md` alone becomes
+`AGENTS.md` (byte for byte, backed up first under `.agents-md-backup/` in the skills
+dir) and `CLAUDE.md` becomes the import of it (`CLAUDE.md.template`); an `AGENTS.md`
+alone gets that `CLAUDE.md`. Anything else (both files with content, symlinks, a root
+it cannot determine) is reported and left alone. `update-skills` runs it on every
+update and `project-onboard` on a project with only a `CLAUDE.md`; it is safe to run
+again. The header comment says how it finds the project root and lists the cases.
+
+```bash
+bash .opencode/skills/scripts/migrate-agents-md.sh
+```
+
+The two installers never create or change `AGENTS.md` or `CLAUDE.md`.
+
 ## When to re-run
 
 Re-run the installer for your assistant after every `update-skills` run so that

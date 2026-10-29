@@ -38,7 +38,9 @@ After the script completes, present the results using this format:
 **Repository:** `<remote URL>`
 **Branch:** `<branch>`
 **Status:** Up to date | Updated | Needs attention (the script prints `STATUS: needs-attention`
-whenever something needs the user, and lists those items first: relay every one)
+whenever something needs the user, and lists those items first: relay every one; a
+`PROJECT:` line under it means the update also changed the project's own `AGENTS.md` /
+`CLAUDE.md`, so say so in the status)
 
 If updated, for each changed skill list:
 
@@ -69,10 +71,39 @@ If any of these were modified in this update, **call it out at the top of the re
   tightened rules, relaxed rules)
 - For each modified `profiles/<profile>/bootstrap.md` or `scaffolders.md`: which
   defaults or commands changed
-- Any project-specific overrides in the project's `CLAUDE.md` that may now conflict
+- Any project-specific overrides in the project's `AGENTS.md` that may now conflict
   with the new rules — flag these so the user can review them
 - New profiles/overlays added — list them so the user knows new skillsets are
   selectable
+
+### The project's AGENTS.md (migration)
+
+Project facts live in `AGENTS.md` at the project root
+([`RULES.md#project-facts`](../RULES.md#project-facts)), and `CLAUDE.md` is only the
+import `@AGENTS.md` (`CLAUDE.md.template`), because Claude Code reads only `CLAUDE.md`
+when both exist. Every run migrates the project with `scripts/migrate-agents-md.sh`,
+automatically and with a backup. Relay its items: **PROJECT MIGRATED** (a change to the
+project's own files, no action needed beyond committing them), the AGENTS.md items under
+**NEEDS ATTENTION**, and **PROJECT NOTES**.
+
+The project root is the directory holding the skills: `<root>` for the default
+`<root>/.opencode/skills`, or the top of the git repository that holds them. If the two
+disagree, neither exists, or the result is the home directory, nothing is changed and
+NEEDS ATTENTION says so; the user can name it with `SKILLS_PROJECT_ROOT=<root>`.
+
+| At the root | What the update does |
+|---|---|
+| Only `CLAUDE.md` | Copies it to `.agents-md-backup/CLAUDE.md.backup` in the skills dir (`.backup.2`, … if a different one is there; never overwritten or deleted), writes its exact bytes to `AGENTS.md`, replaces `CLAUDE.md` with the import. Reported as migrated, with the backup path, a note if `CLAUDE.md` had uncommitted changes, and its `@`-imports (they resolve the same from `AGENTS.md`, same directory) |
+| `CLAUDE.md` is the import (first line that is not blank or an HTML comment is `@AGENTS.md`) and `AGENTS.md` exists | Nothing, not reported |
+| Both, `CLAUDE.md` not the import | Nothing changed; NEEDS ATTENTION: merge `CLAUDE.md` into `AGENTS.md`, then make `CLAUDE.md` the import (until then Claude Code ignores `AGENTS.md`) |
+| Only `AGENTS.md` | Creates `CLAUDE.md` as the import (reported), for Claude Code sessions that do not read `AGENTS.md` themselves |
+| Neither | Nothing; one note (`project-bootstrap` / `project-onboard` write them) |
+| `CLAUDE.md` or `AGENTS.md` a symlink, `.claude/CLAUDE.md`, or the import with no `AGENTS.md` | Nothing changed; NEEDS ATTENTION |
+| `CLAUDE.local.md`, `CLAUDE.md` files in subdirectories | Never touched; a note lists them |
+
+It never overwrites `AGENTS.md` and never deletes a project file. A second run changes
+nothing. Tell the user to commit `AGENTS.md` and `CLAUDE.md`, and that the backup can be
+deleted once they have checked them. Claude-only instructions may go below the import.
 
 ### templates/ and other notices
 
@@ -82,10 +113,10 @@ If any of these were modified in this update, **call it out at the top of the re
   When every template is "(new file)", the project predates them: tell the user to
   install them once (the `project-onboard` skill's *Install the process documents*
   step, or `templates/README.md`) and add the `## Process` section of
-  `CLAUDE.md.template`, recording the privacy adoption point there.
+  `AGENTS.md.template`, recording the privacy adoption point there.
 - A skill whose old `## Project Context` block held project facts is listed under
   NEEDS ATTENTION, with a copy in `.project-context-backup/` (never overwritten: changed
-  content goes to `<skill>.2.md`, …): tell the user to move the facts into `CLAUDE.md`
+  content goes to `<skill>.2.md`, …): tell the user to move the facts into `AGENTS.md`
   ([`RULES.md#project-facts`](../RULES.md#project-facts)) and delete the file; every
   update lists the backups still there.
 - `.rules-upstream.cksum` records the `RULES.md` last installed, so only a real local
@@ -117,7 +148,7 @@ a successful update, remind the user:
   directly.
 
 If the rule files were updated, remind the user to compare any overrides in their
-project `CLAUDE.md` against the new rules — paying particular attention to the active
+project `AGENTS.md` against the new rules — paying particular attention to the active
 overlay declared by the `## Active Skillset` line.
 
 ### Self-updating script

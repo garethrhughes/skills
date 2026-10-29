@@ -17,9 +17,9 @@ through setting it up before proceeding.
 ---
 
 **Project facts** (stack, structure, conventions, decisions) are in the project's
-`CLAUDE.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+`AGENTS.md`; read it first ([`RULES.md#project-facts`](../RULES.md#project-facts)).
 Jira settings (instance URL, project keys, where acceptance criteria live) are in
-`CLAUDE.md`'s `## Jira Integration` section.
+`AGENTS.md`'s `## Jira Integration` section.
 
 ---
 

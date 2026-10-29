@@ -1,14 +1,17 @@
 ---
 name: project-bootstrap
-description: Interactive bootstrap for new projects. Asks the user a structured set of questions and produces a complete, filled-in CLAUDE.md. Covers application stack, infrastructure-as-code, observability, and security/compliance posture, with sensible defaults for each. Run this once at the start of a new project before using any other skill.
+description: Interactive bootstrap for new projects. Asks the user a structured set of questions and produces a complete, filled-in AGENTS.md (and the CLAUDE.md that imports it). Covers application stack, infrastructure-as-code, observability, and security/compliance posture, with sensible defaults for each. Run this once at the start of a new project before using any other skill.
 compatibility: opencode
 ---
 
 # Project Bootstrap Skill
 
 You are the Project Bootstrap agent. Your job is to interview the user and produce
-one ready-to-use output: a complete, filled-in **`CLAUDE.md`** for the new project. It is the only home of project facts; skills carry no per-project block
-([`RULES.md#project-facts`](../RULES.md#project-facts)).
+two ready-to-use outputs: a complete, filled-in **`AGENTS.md`** for the new project, and
+a **`CLAUDE.md`** that only imports it. `AGENTS.md` is the only home of project facts;
+skills carry no per-project block ([`RULES.md#project-facts`](../RULES.md#project-facts)).
+If the project already has an `AGENTS.md` or `CLAUDE.md`, use `project-onboard` instead:
+it keeps what they hold.
 
 Work through the interview in clearly labelled phases. Ask one phase at a time.
 Do not ask all questions at once — it is overwhelming. After each phase, confirm
@@ -26,7 +29,7 @@ conventions in [`RULES.md`](../RULES.md) (language-agnostic core) plus the activ
 **stack overlay** in [`rules/`](../rules/) and the matching **profile** in
 [`profiles/`](../profiles/). When a user accepts the defaults, they are accepting
 `RULES.md` + the chosen overlay verbatim. Where a user overrides a default in a way
-that conflicts, capture the override in their generated `CLAUDE.md` and call it out
+that conflicts, capture the override in their generated `AGENTS.md` and call it out
 explicitly so future skill runs know the project deviates.
 
 Available profiles (extensible — drop another directory under `profiles/` to add one):
@@ -42,7 +45,7 @@ Available profiles (extensible — drop another directory under `profiles/` to a
 
 Before asking any questions, tell the user:
 
-> "I'll ask you a series of short questions to bootstrap your project's CLAUDE.md. There are **10 phases** covering project identity, **skillset
+> "I'll ask you a series of short questions to bootstrap your project's AGENTS.md. There are **10 phases** covering project identity, **skillset
 > profile**, application stack, infrastructure-as-code, repository structure,
 > conventions, observability, security/compliance, domain, and Jira integration
 > (optional). Answer as much or as little as you know — I'll mark anything unknown as
@@ -61,7 +64,7 @@ Before asking any questions, tell the user:
 Ask the following. All are required (use `[TBD]` if the user doesn't know yet).
 There are no defaults for this phase — every answer is project-specific.
 
-| # | Question | CLAUDE.md field |
+| # | Question | AGENTS.md field |
 |---|---|---|
 | 1.1 | What is the project name? | Document title |
 | 1.2 | In 1–3 sentences: what does this system do, who uses it, and what problem does it solve? | `## Project Overview` |
@@ -91,7 +94,7 @@ answer in brackets comes from the profile.
 
 The chosen profile also determines:
 
-- The **stack overlay** (`rules/{profile}.md`) referenced by the generated `CLAUDE.md`
+- The **stack overlay** (`rules/{profile}.md`) referenced by the generated `AGENTS.md`
 - The **scaffolder commands** (`profiles/{profile}/scaffolders.md`) used in Step 3.1
 - The **smoke-test commands** (`profiles/{profile}/scaffolders.md`) used in Step 5
 
@@ -202,7 +205,7 @@ both verbatim. Ask:
 > to **override** (and why)?"
 
 Capture project-specific additions and overrides. These become the
-"## Architecture Rules" section of `CLAUDE.md`, written as: `See RULES.md +
+"## Architecture Rules" section of `AGENTS.md`, written as: `See RULES.md +
 rules/{profile}.md, plus the following project-specific rules: ...`.
 
 ---
@@ -269,7 +272,7 @@ Defaults (shown in brackets) are based on the reference stack.
 Ask:
 - What are the key domain concepts or entities in this system? (e.g. "User, Order, Product, Invoice" — a rough list, not a schema) [**No default — this is project-specific**]
 - For each entity, what is its data classification? [**Use the scheme from Phase 7**]
-- Have any significant architectural decisions already been made? For each: what was decided, and why (brief). These will seed the `## Settled Decisions` table in CLAUDE.md. [**Suggest seeding with the choices already confirmed from Phases 2–7, e.g. "Use PostgreSQL as the primary data store", "OpenTofu over Terraform for licence reasons", "Zero formal compliance framework", "No application-level auth — CORS/WAF as sole access control" (if applicable)**]
+- Have any significant architectural decisions already been made? For each: what was decided, and why (brief). These will seed the `## Settled Decisions` table in AGENTS.md. [**Suggest seeding with the choices already confirmed from Phases 2–7, e.g. "Use PostgreSQL as the primary data store", "OpenTofu over Terraform for licence reasons", "Zero formal compliance framework", "No application-level auth — CORS/WAF as sole access control" (if applicable)**]
 - Known edge cases or gotchas? [**Examples to prompt thinking: timezone handling, external API rate limits, pagination of large result sets, partial/in-progress domain objects, idempotency on retried mutations**]
 
 ---
@@ -310,16 +313,16 @@ Once all phases are complete, produce the following output.
 value** into the output — never write "default" or "same as reference stack". The output
 must always be a complete, specific, human-readable document.
 
-### Output 1 — CLAUDE.md
+### Output 1 — AGENTS.md
 
-Generate a complete, filled-in `CLAUDE.md` using the template structure below.
+Generate a complete, filled-in `AGENTS.md` using the template structure below.
 Fill in every `[fill in]` placeholder with the user's answers.
 Use `[TBD]` for anything not yet known.
 Include the user's domain concepts in a `## Domain Model` section if they provided entity names.
 Include the settled decisions table populated with any decisions from Phase 8.
 
 ```markdown
-# CLAUDE.md — {project name}
+# AGENTS.md — {project name}
 
 ## Active Skillset: {profile}
 
@@ -521,7 +524,13 @@ One line per decision ([`RULES.md#project-facts`](https://github.com/garethrhugh
 {edge cases from Phase 8}
 ```
 
----
+### Output 2 — CLAUDE.md
+
+Copy the skills' `CLAUDE.md.template` (in the skills dir, `.opencode/skills/` by
+default; also [here](../CLAUDE.md.template) when this skill is read from there) to
+`CLAUDE.md` next to `AGENTS.md`, unchanged: the import line `@AGENTS.md` and a comment. Claude Code reads only `CLAUDE.md` when both exist, so this is how it loads
+`AGENTS.md`; other agents read `AGENTS.md` directly. Claude-only instructions, if the
+user has any, go below the import; project facts never do.
 
 ---
 
@@ -540,10 +549,10 @@ filled-in `## Project Context` block from an older version, and read
 `.opencode/skills/.project-context-backup/*.md` (where `update-skills`, usually run
 first, keeps the blocks it removed).
 
-### Step 2 — Move old Project Context blocks into CLAUDE.md
+### Step 2 — Move old Project Context blocks into AGENTS.md
 
-For each block or backup found, move any fact it holds that the new `CLAUDE.md` lacks into the
-matching `CLAUDE.md` section, show the user what moved, and delete the block from the
+For each block or backup found, move any fact it holds that the new `AGENTS.md` lacks into the
+matching `AGENTS.md` section, show the user what moved, and delete the block from the
 skill (`update-skills` also saves a copy of each under
 `.opencode/skills/.project-context-backup/`). If none was found, say so.
 
@@ -706,7 +715,7 @@ For each app:
 #### 3.8 Docs directories
 
 Create `docs/proposals/` and `docs/decisions/` regardless of stack — these are required
-by the proposal/ADR workflow that all generated `CLAUDE.md` files reference. Add a
+by the proposal/ADR workflow that all generated `AGENTS.md` files reference. Add a
 single `.gitkeep` in each so git tracks them while empty.
 
 Also create `docs/features/` (written by `create-feature` / `jira-feature`) and, if the
@@ -724,7 +733,7 @@ Then install the process documents from the skills' [`templates/`](../templates/
 | `templates/scripts/privacy-screening.guard.mjs.template` | `scripts/__tests__/privacy-screening.test.mjs` (renamed), **only if the user opted in** |
 
 Never overwrite an existing file. Replace `{product owner}` with the Phase 7 name and
-the adoption-point placeholders with the numbers in CLAUDE.md (they also go in the
+the adoption-point placeholders with the numbers in AGENTS.md (they also go in the
 guard's `FIRST_SCREENED_*`). If the guard was installed: run it; then write
 `9999-no-screening.md` (no screening) in a scratch directory, run the guard with
 `PRIVACY_FEATURES_DIR` pointing there and confirm it fails; and exclude
@@ -797,7 +806,7 @@ its one-line description.}
 
 ## Documentation
 
-- [`CLAUDE.md`](./CLAUDE.md) — authoritative project context, conventions, and rules
+- [`AGENTS.md`](./AGENTS.md) — authoritative project context, conventions, and rules
 - [`docs/features/`](./docs/features/) — feature briefs
 - [`docs/proposals/`](./docs/proposals/) — technical design proposals
 - [`docs/decisions/`](./docs/decisions/) — architecture decision records (ADRs)
@@ -807,7 +816,7 @@ its one-line description.}
 
 ## Contributing
 
-This project follows the conventions in [`CLAUDE.md`](./CLAUDE.md), which references
+This project follows the conventions in [`AGENTS.md`](./AGENTS.md), which references
 the canonical engineering rules. Please read it before opening a PR.
 ```
 
@@ -850,7 +859,7 @@ Tell the user:
 > "Your project is bootstrapped, installed, and verified.
 >
 > Suggested next steps:
-> 1. Commit `CLAUDE.md`, `README.md`, `opencode.json` and the `docs/` process documents to version control
+> 1. Commit `AGENTS.md`, `CLAUDE.md`, `README.md`, `opencode.json` and the `docs/` process documents to version control
 > 2. Start developing — the dev command is `{actual dev command from the scaffold}`
 > 3. If you have existing architectural decisions, run: `use the decision-log skill to seed the initial ADRs`
 > 4. For your first feature, run: `use the create-feature skill`"
