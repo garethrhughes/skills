@@ -105,6 +105,10 @@ implementation:
   state settled (`await expect(el).toBeFocused()`, `await waitFor(...)`) before
   `keyboard.press` / `user.keyboard`. Never `el.focus()` and press a key in the same
   step when the component moves focus in a frame, timer or effect.
+- **Layout needs a browser:** jsdom has no layout, so a fix to scrolling, geometry or
+  on-screen position can only be unit-tested at the request it hands the library (the
+  scroll target, the measure). Add a Playwright test that checks the result, on a mobile
+  project when the bug is a touch one; without one, the PR names the device check still owed.
 - **Process guards** (for example the optional privacy-screening guard from `templates/`,
   or a changelog-shape check) are dependency-free `node --test` scripts under
   `scripts/__tests__/`.
